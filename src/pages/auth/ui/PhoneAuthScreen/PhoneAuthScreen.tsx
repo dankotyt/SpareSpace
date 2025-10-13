@@ -59,10 +59,9 @@ export const PhoneAuthScreen: React.FC = () => {
                 <View style={styles.mainContent}>
                     <ScrollView
                         contentContainerStyle={styles.scrollContent}
-                        keyboardShouldPersistTaps="handled"
-                    >
+                        keyboardShouldPersistTaps="handled">
                         <Text style={styles.title}>Вход или регистрация</Text>
-]
+
                         <PhoneInput
                             value={phone}
                             isFocused={isFocused}

@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     View,
     TextInput,
     Text,
     StyleSheet,
-    TouchableWithoutFeedback
+    TouchableWithoutFeedback,
+    TouchableOpacity,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/shared/constants/colors';
 import { getInputColors } from '@/features/auth/utils/inputColors';
 
@@ -24,7 +26,21 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
                                                                 onFocus,
                                                                 onBlur,
                                                             }) => {
+    const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
     const { borderColor, textColor, labelColor } = getInputColors(value, isFocused);
+
+    const togglePasswordVisibility = () => {
+        setIsPasswordVisible(!isPasswordVisible);
+    };
+
+    const getEyeIconColor = () => {
+        return isPasswordVisible ? COLORS.primary : COLORS.borderEmpty;
+    };
+
+    const getEyeIconName = () => {
+        return isPasswordVisible ? 'eye-off-outline' : 'eye-outline';
+    };
 
     return (
         <TouchableWithoutFeedback onPress={onFocus}>
@@ -48,11 +64,21 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
                         onChangeText={onChangeText}
                         onFocus={onFocus}
                         onBlur={onBlur}
-                        secureTextEntry={true}
+                        secureTextEntry={!isPasswordVisible}
                         autoCapitalize="none"
                         autoCorrect={false}
                         selectionColor={COLORS.primary}
                     />
+                    <TouchableOpacity
+                        style={styles.eyeIcon}
+                        onPress={togglePasswordVisibility}
+                    >
+                        <Ionicons
+                            name={getEyeIconName()}
+                            size={24}
+                            color={getEyeIconColor()}
+                        />
+                    </TouchableOpacity>
                 </View>
             </View>
         </TouchableWithoutFeedback>
@@ -74,11 +100,18 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 4,
         backgroundColor: COLORS.white,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     input: {
         fontSize: 18,
         paddingVertical: 12,
         fontWeight: '500',
         padding: 0,
+        flex: 1,
+    },
+    eyeIcon: {
+        padding: 4,
+        marginLeft: 8,
     },
 });

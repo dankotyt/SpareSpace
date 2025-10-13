@@ -6,26 +6,22 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
-    StatusBar, TouchableOpacity,
+    StatusBar,
+    TouchableOpacity,
 } from 'react-native';
 import { useAuth } from '@/features/auth';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { EmailInput, PasswordInput, AuthButton, SupportLink } from '@/features/auth';
 import { BackButton } from '@/shared/ui/BackButton/BackButton';
 import { COLORS } from '@/shared/constants/colors';
 import { globalStyles } from '@/app/styles/global';
+import { RootStackParamList } from '@/app/navigation/types';
 
-const useTypedNavigation = () => {
-    const navigation = useNavigation();
-    return {
-        navigateToEmail: () => navigation.navigate('Email' as never),
-        navigateToPhone: () => navigation.navigate('Phone' as never),
-        goBack: () => navigation.goBack(),
-    };
-};
+type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 export const EmailAuthScreen: React.FC = () => {
-    const { goBack } = useTypedNavigation();
+    const navigation = useNavigation<NavigationProp>();
     const {
         email,
         password,
@@ -35,15 +31,21 @@ export const EmailAuthScreen: React.FC = () => {
         setPassword,
         setFocus,
         switchScreen,
+        login,
     } = useAuth();
 
     const handleLogin = () => {
         console.log('Login with email:', email);
+        login(); // Вызов функции авторизации
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'MainTabs' }],
+        });
     };
 
     const handleBack = () => {
         switchScreen('phone');
-        goBack();
+        navigation.navigate('PhoneAuth');
     };
 
     const handleRegister = () => {
@@ -95,8 +97,7 @@ export const EmailAuthScreen: React.FC = () => {
 
                         <TouchableOpacity
                             style={styles.forgotPasswordContainer}
-                            onPress={handleForgotPassword}
-                        >
+                            onPress={handleForgotPassword}>
                             <Text style={styles.forgotPasswordText}>Забыли пароль?</Text>
                         </TouchableOpacity>
 
@@ -107,13 +108,6 @@ export const EmailAuthScreen: React.FC = () => {
                                 disabled={!isValid}
                                 variant="primary"
                             />
-
-                            {/*<AuthButton*/}
-                            {/*    title="Другой способ входа"*/}
-                            {/*    onPress={handleSwitchToPhone}*/}
-                            {/*    variant="outline"*/}
-                            {/*/>*/}
-
                             <AuthButton
                                 title="Зарегистрироваться"
                                 onPress={handleRegister}
@@ -151,7 +145,7 @@ const styles = StyleSheet.create({
         color: COLORS.text,
         marginTop: 0,
         marginBottom: 20,
-        alignSelf: 'flex-start', // В левом углу
+        alignSelf: 'flex-start',
     },
     buttonsContainer: {
         marginTop: 30,

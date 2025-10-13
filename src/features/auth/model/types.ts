@@ -5,6 +5,7 @@ export interface AuthState {
     isFocused: boolean;
     isValid: boolean;
     currentScreen: 'phone' | 'email';
+    isAuthenticated : boolean;
 }
 
 export interface AuthActions {
@@ -15,4 +16,6 @@ export interface AuthActions {
     validatePhone: (phone: string) => boolean;
     validateEmail: (email: string) => boolean;
     switchScreen: (screen: 'phone' | 'email') => void;
+    login: () => void;
+    logout: () => void;
 }

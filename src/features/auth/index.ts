@@ -5,3 +5,4 @@ export { PasswordInput } from './ui/components/PasswordInput/PasswordInput';
 export { AuthButton } from './ui/AuthButton/AuthButton';
 export { SupportLink } from './ui/SupportLink/SupportLink';
 export { getInputColors } from './utils/inputColors';
+export { AuthProvider } from './ui/AuthProvider/AuthProvider';

@@ -1,14 +1,15 @@
-import { useState, useCallback } from 'react';
-import { AuthState, AuthActions } from './types';
+import {useState, useCallback, useContext} from 'react';
 import { isCompletePhoneNumber } from '@/shared/utils/phoneFormatter';
+import { AuthContext } from './AuthContext';
 
-export const useAuth = (): AuthState & AuthActions => {
+const useAuthLogic = () => {
     const [phone, setPhone] = useState('+7');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isFocused, setFocus] = useState(false);
     const [isValid, setValid] = useState(false);
     const [currentScreen, setCurrentScreen] = useState<'phone' | 'email'>('phone');
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     const validatePhone = useCallback((phoneNumber: string): boolean => {
         return isCompletePhoneNumber(phoneNumber);
@@ -57,6 +58,14 @@ export const useAuth = (): AuthState & AuthActions => {
         }
     }, [phone, email, validatePhone, validateEmail]);
 
+    const login = useCallback(() => {
+        setIsAuthenticated(true);
+    }, []);
+
+    const logout = useCallback(() => {
+        setIsAuthenticated(false);
+    }, []);
+
     return {
         phone,
         email,
@@ -64,6 +73,7 @@ export const useAuth = (): AuthState & AuthActions => {
         isFocused,
         isValid,
         currentScreen,
+        isAuthenticated,
         setPhone: handleSetPhone,
         setEmail: handleSetEmail,
         setPassword: handleSetPassword,
@@ -71,5 +81,17 @@ export const useAuth = (): AuthState & AuthActions => {
         validatePhone,
         validateEmail,
         switchScreen,
+        login,
+        logout,
     };
 };
+
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+};
+
+export { useAuthLogic };

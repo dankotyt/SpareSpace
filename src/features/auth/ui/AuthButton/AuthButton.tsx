@@ -72,7 +72,7 @@ export const AuthButton: React.FC<AuthButtonProps> = ({
             {loading ? (
                 <ActivityIndicator color={COLORS.white} />
             ) : (
-                <Text style={getTextStyle()}>{title}</Text>
+                <Text style={getTextStyle()}>{title || ''}</Text>
             )}
         </TouchableOpacity>
     );

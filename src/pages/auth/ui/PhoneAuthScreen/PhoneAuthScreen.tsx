@@ -10,20 +10,17 @@ import {
 } from 'react-native';
 import { useAuth } from '@/features/auth';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { PhoneInput, AuthButton, SupportLink } from '@/features/auth';
+import { BackButton } from '@/shared/ui/BackButton/BackButton';
 import { COLORS } from '@/shared/constants/colors';
 import { globalStyles } from '@/app/styles/global';
+import { RootStackParamList } from '@/app/navigation/types';
 
-const useTypedNavigation = () => {
-    const navigation = useNavigation();
-    return {
-        navigateToEmail: () => navigation.navigate('Email' as never),
-        goBack: () => navigation.goBack(),
-    };
-};
+type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 export const PhoneAuthScreen: React.FC = () => {
-    const { navigateToEmail } = useTypedNavigation();
+    const navigation = useNavigation<NavigationProp>();
     const {
         phone,
         isFocused,
@@ -31,15 +28,28 @@ export const PhoneAuthScreen: React.FC = () => {
         setPhone,
         setFocus,
         switchScreen,
+        login,
     } = useAuth();
 
     const handleLogin = () => {
         console.log('Login with phone:', phone);
+        login(); // Вызов функции авторизации
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'MainTabs' }],
+        });
     };
 
     const handleSwitchToEmail = () => {
         switchScreen('email');
-        navigateToEmail();
+        navigation.navigate('EmailAuth');
+    };
+
+    const handleBack = () => {
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'MainTabs' }],
+        });
     };
 
     const handleSupport = () => {
@@ -60,6 +70,9 @@ export const PhoneAuthScreen: React.FC = () => {
                     <ScrollView
                         contentContainerStyle={styles.scrollContent}
                         keyboardShouldPersistTaps="handled">
+
+                        <BackButton onPress={handleBack} />
+
                         <Text style={styles.title}>Вход или регистрация</Text>
 
                         <PhoneInput
@@ -70,7 +83,6 @@ export const PhoneAuthScreen: React.FC = () => {
                             onBlur={() => setFocus(false)}
                         />
 
-                        {/* Кнопки входа */}
                         <View style={styles.buttonsContainer}>
                             <AuthButton
                                 title="Войти"
@@ -88,7 +100,6 @@ export const PhoneAuthScreen: React.FC = () => {
                     </ScrollView>
                 </View>
 
-                {/* Кнопка поддержки в самом низу */}
                 <View style={styles.supportContainer}>
                     <SupportLink onPress={handleSupport} />
                 </View>
@@ -109,15 +120,15 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-start',
         paddingHorizontal: 16,
         paddingBottom: 20,
-        paddingTop: 20,
+        paddingTop: 0,
     },
     title: {
         fontSize: 24,
         fontWeight: 'bold',
         color: COLORS.text,
-        marginTop: 60,
+        marginTop: 0,
         marginBottom: 20,
-        alignSelf: 'flex-start', // В левом углу
+        alignSelf: 'flex-start',
     },
     buttonsContainer: {
         marginTop: 30,

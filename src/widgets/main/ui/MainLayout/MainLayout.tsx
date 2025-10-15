@@ -1,5 +1,15 @@
-import React from 'react';
-import { View, FlatList, StyleSheet, Dimensions, Text } from 'react-native';
+import React, { useRef, useState, useCallback } from 'react';
+import {
+    View,
+    FlatList,
+    ListRenderItem,
+    StyleSheet,
+    Dimensions,
+    Text,
+    Animated,
+    LayoutChangeEvent,
+    RefreshControl,
+} from 'react-native';
 import { Header } from '@/features/main/ui/Header/Header';
 import { CategoryHints } from '@/features/main/ui/CategoryHints/CategoryHints';
 import { BottomToolbar } from '@/shared/ui/BottomToolbar/BottomToolbar';
@@ -17,6 +27,8 @@ interface MainLayoutProps {
     ads: AdItem[];
     selectedCategory: string;
     onCategorySelect: (id: string) => void;
+    onRefresh: () => void;
+    isRefreshing: boolean;
 }
 
 export const MainLayout: React.FC<MainLayoutProps> = ({
@@ -24,8 +36,57 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                                                           ads,
                                                           selectedCategory,
                                                           onCategorySelect,
+                                                          onRefresh,
+                                                          isRefreshing,
                                                       }) => {
-    const renderAdItem = ({ item }: { item: AdItem }) => (
+    const [headerHeight, setHeaderHeight] = useState(0);
+    const [categoriesHeight, setCategoriesHeight] = useState(0);
+    const [bottomToolbarHeight, setBottomToolbarHeight] = useState(0);
+    const [screenHeight, setScreenHeight] = useState(Dimensions.get('window').height);
+
+    const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<AdItem>);
+    const scrollY = useRef(new Animated.Value(0)).current;
+    const flatListRef = useRef<FlatList>(null);
+
+    const maxTranslateY = categoriesHeight + 15;
+
+    // Обработчики измерения размеров
+    const onHeaderLayout = useCallback((event: LayoutChangeEvent) => {
+        setHeaderHeight(event.nativeEvent.layout.height);
+    }, []);
+
+    const onCategoriesLayout = useCallback((event: LayoutChangeEvent) => {
+        setCategoriesHeight(event.nativeEvent.layout.height);
+    }, []);
+
+    const onBottomToolbarLayout = useCallback((event: LayoutChangeEvent) => {
+        setBottomToolbarHeight(event.nativeEvent.layout.height);
+    }, []);
+
+    const onContainerLayout = useCallback((event: LayoutChangeEvent) => {
+        setScreenHeight(event.nativeEvent.layout.height);
+    }, []);
+
+    const renderRefreshControl = () => (
+        <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            colors={['#000000']}
+            tintColor="#000000"
+        />
+    );
+
+    const renderHeader = () => (
+        <View>
+            <View style={styles.homeIndicatorContainer}>
+                <View style={styles.homeIndicator} />
+            </View>
+
+            <Text style={styles.sectionTitle}>Вам может быть интересно</Text>
+        </View>
+    );
+
+    const renderAdItem: ListRenderItem<AdItem> = ({ item }) => (
         <View style={styles.adItem}>
             <View style={styles.imagePlaceholder}>
                 <Text style={styles.imageText}>📷</Text>
@@ -35,67 +96,132 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             <Text style={styles.location}>{item.location}</Text>
         </View>
     );
-
-    const renderAdsGrid = () => (
-        <View style={styles.adsContainer}>
-            <FlatList
-                data={ads}
-                renderItem={renderAdItem}
-                keyExtractor={(item) => item.id}
-                numColumns={2}
-                contentContainerStyle={styles.adsGrid}
-                showsVerticalScrollIndicator={false}
-            />
-        </View>
-    );
+    const swipeableContainerHeight = screenHeight - headerHeight - bottomToolbarHeight;
 
     return (
-        <View style={styles.container}>
-            <Header />
+        <View style={styles.container} onLayout={onContainerLayout}>
+            <View onLayout={onHeaderLayout}>
+                <Header />
+            </View>
 
-            <FlatList
-                data={[]}
-                renderItem={null}
-                showsVerticalScrollIndicator={false}
-                ListHeaderComponent={
-                    <>
-                        <CategoryHints
-                            categories={categories}
-                            selectedCategory={selectedCategory}
-                            onCategorySelect={onCategorySelect}
-                        />
-                        {renderAdsGrid()}
-                    </>
-                }
-                style={styles.scrollView}
-            />
+            <View onLayout={onCategoriesLayout}>
+                <CategoryHints
+                    categories={categories}
+                    selectedCategory={selectedCategory}
+                    onCategorySelect={onCategorySelect}
+                />
+            </View>
 
-            <BottomToolbar />
+            <Animated.View
+                style={[
+                    styles.swipeableContainer,
+                    {
+                        top: headerHeight + categoriesHeight,
+                        height: Math.max(swipeableContainerHeight, 0),
+                        transform: [{
+                            translateY: isRefreshing ? 0 : scrollY.interpolate({
+                                inputRange: [0, maxTranslateY],
+                                outputRange: [0, -maxTranslateY],
+                                extrapolate: 'clamp',
+                            })
+                        }]
+                    },
+                ]}
+            >
+                <AnimatedFlatList
+                    ref={flatListRef}
+                    data={ads}
+                    renderItem={renderAdItem}
+                    ListHeaderComponent={renderHeader}
+                    keyExtractor={(item: AdItem) => item.id}
+                    numColumns={2}
+                    contentContainerStyle={styles.adsGrid}
+                    showsVerticalScrollIndicator={false}
+                    scrollEventThrottle={16}
+                    scrollEnabled={true}
+                    refreshControl={renderRefreshControl()}
+                    alwaysBounceVertical={true}
+                    bounces={true}
+                    overScrollMode="always"
+                    style={styles.flatList}
+
+                    onScroll={Animated.event(
+                        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                        { useNativeDriver: true }
+                    )}
+                />
+            </Animated.View>
+            <View style={styles.bottomToolbarWrapper} onLayout={onBottomToolbarLayout}>
+                <BottomToolbar />
+            </View>
         </View>
     );
 };
 
 const { width } = Dimensions.get('window');
-const itemWidth = (width - 48) / 2; // 48 = 16*2 (padding) + 8*2 (margin)
+const itemWidth = (width - 48) / 2;
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FFFFFF',
     },
-    scrollView: {
+    swipeableContainer: {
+        marginTop: 15,
+        position: 'absolute',
+        backgroundColor: '#FFFFFF',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: -2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 10,
+        zIndex: 10,
+    },
+    bottomToolbarWrapper: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 20,
+    },
+    homeIndicatorContainer: {
+        width: '100%',
+        alignItems: 'center',
+        paddingTop: 12,
+        paddingBottom: 15,
+    },
+    homeIndicator: {
+        width: 40,
+        height: 4,
+        backgroundColor: '#E5E7EB',
+        borderRadius: 2,
+    },
+    refreshIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 10,
+        marginBottom: 10,
+    },
+    flatList: {
         flex: 1,
     },
-    adsContainer: {
-        paddingHorizontal: 16,
-        marginTop: 20,
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#202020',
+        marginBottom: 10,
+        marginLeft: 10,
     },
     adsGrid: {
-        paddingBottom: 80,
-    },
-    categoriesHeader: {
-        marginBottom: 20,
-        zIndex: 5,
+        paddingHorizontal: 16,
+        paddingBottom: 200,
+        paddingTop: 8,
     },
     adItem: {
         width: itemWidth,

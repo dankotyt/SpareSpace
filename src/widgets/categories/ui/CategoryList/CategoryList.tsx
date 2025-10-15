@@ -17,7 +17,7 @@ interface CategoryListProps {
 
 export const CategoryList: React.FC<CategoryListProps> = ({
                                                               categories,
-                                                              selectedCategory,
+                                                              // selectedCategory,
                                                               onCategorySelect,
                                                           }) => {
 
@@ -46,7 +46,7 @@ export const CategoryList: React.FC<CategoryListProps> = ({
                         key={category.id}
                         style={[
                             styles.categoryItem,
-                            selectedCategory === category.id && styles.categoryItemSelected
+                            // selectedCategory === category.id && styles.categoryItemSelected
                         ]}
                         onPress={() => onCategorySelect(category.id)}
                     >

@@ -9,5 +9,5 @@ export interface AdItem {
 export interface CategoryItem {
     id: string;
     title: string;
-    type: 'parking' | 'garage' | 'pantry'; // | 'other';
+    type: 'parking' | 'garage' | 'pantry' | 'other';
 }

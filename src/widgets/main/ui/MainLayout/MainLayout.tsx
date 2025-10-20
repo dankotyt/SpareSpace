@@ -92,10 +92,6 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 
     const renderHeader = () => (
         <View>
-            <View style={styles.homeIndicatorContainer}>
-                <View style={styles.homeIndicator} />
-            </View>
-
             <Text style={styles.sectionTitle}>Вам может быть интересно</Text>
         </View>
     );
@@ -142,6 +138,11 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                     },
                 ]}
             >
+
+                <View style={styles.homeIndicatorContainer}>
+                    <View style={styles.homeIndicator} />
+                </View>
+
                 <AnimatedFlatList
                     ref={flatListRef}
                     data={ads}
@@ -212,7 +213,7 @@ const styles = StyleSheet.create({
         width: '100%',
         alignItems: 'center',
         paddingTop: 12,
-        paddingBottom: 15,
+        paddingBottom: 5,
     },
     homeIndicator: {
         width: 40,

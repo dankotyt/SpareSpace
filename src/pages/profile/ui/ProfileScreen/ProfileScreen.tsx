@@ -1,49 +1,152 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useCallback } from 'react';
+import {
+    View,
+    ScrollView,
+    RefreshControl,
+    StyleSheet,
+    Alert,
+    ActivityIndicator,
+    Text,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { useAuth } from '@/features/auth';
-import { RootStackParamList } from '@/app/navigation/types';
-import { BackButton } from '@/shared/ui/BackButton/BackButton';
+import { useProfile } from '@/features/profile/model/useProfile';
+import { ProfileHeader } from '@/features/profile/ui/ProfileHeader/ProfileHeader';
+import { ProfileMenu } from '@/features/profile/ui/ProfileMenu/ProfileMenu';
+import { AssetsSection } from '@/features/profile/ui/AssetsSection/AssetsSection';
+import { BalanceSection } from '@/features/profile/ui/BalanceSection/BalanceSection';
 import { BottomToolbar } from '@/shared/ui/BottomToolbar/BottomToolbar';
+import { UnauthorizedProfile } from '@/features/profile/ui/UnauthorizedProfile/UnauthorizedProfile';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { COLORS } from '@/shared/constants/colors';
+import {ProfileStackParamList} from "@/app/navigation/types";
 
-type NavigationProp = StackNavigationProp<RootStackParamList>;
+type ProfileScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
 
 export const ProfileScreen: React.FC = () => {
-    const navigation = useNavigation<NavigationProp>();
-    const { isAuthenticated, logout } = useAuth();
+    const { isAuthenticated, userProfile, userAssets, refreshing, loading, handleRefresh, logout, login } = useProfile();
+    const insets = useSafeAreaInsets();
+    const navigation = useNavigation<ProfileScreenNavigationProp>();
 
-    const handleLogin = () => {
+    const handleMenuItemPress = useCallback((itemId: string) => {
+        Alert.alert('Menu Item Pressed', `You pressed: ${itemId}`);
+    }, []);
+
+    const handleTopUp = useCallback(() => {
+        Alert.alert('Пополнение', 'Пополнение баланса');
+    }, []);
+
+    const handleWithdraw = useCallback(() => {
+        Alert.alert('Вывод', 'Вывод средств');
+    }, []);
+
+    const handlePromoCode = useCallback(() => {
+        Alert.alert('Промокод', 'Ввод промокода');
+    }, []);
+
+    const handleOperations = useCallback(() => {
+        Alert.alert('Операции', 'Просмотр операций');
+    }, []);
+
+    const handleReviewsPress = useCallback(() => {
+        Alert.alert('Отзывы', 'Открытие экрана со всеми отзывами');
+    }, []);
+
+    const handleAllAdsPress = useCallback(() => {
+        Alert.alert('Мои объявления', 'Открытие экрана со всеми объявлениями');
+    }, []);
+
+    const handleAssetPress = useCallback((asset: any) => {
+        Alert.alert('Объявление', `Открытие: ${asset.title}`);
+    }, []);
+
+    const handleLoginPress = useCallback(() => {
         navigation.navigate('PhoneAuth');
-    };
-
-    const handleLogout = () => {
-        logout();
-    };
+    }, [navigation]);
 
     if (!isAuthenticated) {
         return (
-            <View style={styles.container}>
-                <BackButton onPress={navigation.goBack} />
-                <Text style={styles.title}>Профиль</Text>
-                <Text style={styles.subtitle}>Вы не авторизованы</Text>
-                <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-                    <Text style={styles.loginButtonText}>Войти</Text>
-                </TouchableOpacity>
-                <BottomToolbar />
+            <View style={[styles.container, { paddingTop: insets.top }]}>
+                <ScrollView
+                    style={styles.scrollView}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={handleRefresh}
+                            colors={[COLORS.primary]}
+                            tintColor={COLORS.primary}
+                        />
+                    }
+                    showsVerticalScrollIndicator={false}
+                >
+                    <UnauthorizedProfile onLoginPress={handleLoginPress} />
+                </ScrollView>
+
+                <View style={styles.bottomToolbarWrapper}>
+                    <BottomToolbar />
+                </View>
+            </View>
+        );
+    }
+
+    // Загрузка
+    if (loading && !userProfile) {
+        return (
+            <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
+                <Text style={styles.loadingText}>Загрузка профиля...</Text>
+            </View>
+        );
+    }
+
+    // Ошибка загрузки
+    if (!userProfile) {
+        return (
+            <View style={[styles.errorContainer, { paddingTop: insets.top }]}>
+                <Text style={styles.errorText}>Не удалось загрузить профиль</Text>
             </View>
         );
     }
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Профиль</Text>
-            <Text style={styles.subtitle}>Вы авторизованы</Text>
-            <Text style={styles.userInfo}>Добро пожаловать!</Text>
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-                <Text style={styles.logoutButtonText}>Выйти</Text>
-            </TouchableOpacity>
-            <BottomToolbar />
+            <ScrollView
+                style={styles.scrollView}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        colors={[COLORS.primary]}
+                        tintColor={COLORS.primary}
+                    />
+                }
+                showsVerticalScrollIndicator={false}
+            >
+                <ProfileHeader
+                    profile={userProfile}
+                    onReviewsPress={handleReviewsPress}
+                />
+
+                <AssetsSection
+                    assets={userAssets}
+                    onAllAdsPress={handleAllAdsPress}
+                    onAssetPress={handleAssetPress}
+                />
+
+                <BalanceSection
+                    balance={userProfile.balance}
+                    onTopUp={handleTopUp}
+                    onWithdraw={handleWithdraw}
+                    onPromoCode={handlePromoCode}
+                    operations={handleOperations}
+                />
+
+                <ProfileMenu onMenuItemPress={handleMenuItemPress}  onLogout={logout} />
+            </ScrollView>
+
+            <View style={styles.bottomToolbarWrapper}>
+                <BottomToolbar />
+            </View>
         </View>
     );
 };
@@ -51,47 +154,37 @@ export const ProfileScreen: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: COLORS.white,
+    },
+    scrollView: {
+        flex: 1,
+    },
+    loadingContainer: {
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 16,
+        backgroundColor: COLORS.background,
     },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 10,
-    },
-    subtitle: {
+    loadingText: {
+        marginTop: 12,
         fontSize: 16,
-        color: '#666',
-        marginBottom: 20,
+        color: COLORS.gray[500],
     },
-    userInfo: {
-        fontSize: 16,
-        marginBottom: 20,
-        color: '#333',
-    },
-    loginButton: {
-        backgroundColor: '#631BFF',
-        padding: 16,
-        borderRadius: 8,
-        width: '100%',
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: COLORS.background,
     },
-    loginButtonText: {
-        color: '#FFFFFF',
+    errorText: {
         fontSize: 16,
-        fontWeight: 'bold',
+        color: COLORS.red[500],
     },
-    logoutButton: {
-        backgroundColor: '#FF3B30',
-        padding: 16,
-        borderRadius: 8,
-        width: '100%',
-        alignItems: 'center',
-    },
-    logoutButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: 'bold',
+    bottomToolbarWrapper: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 20,
     },
 });

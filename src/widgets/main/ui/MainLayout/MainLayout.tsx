@@ -67,10 +67,24 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         setScreenHeight(event.nativeEvent.layout.height);
     }, []);
 
+    const handleRefresh = useCallback(() => {
+        console.log('Refresh started - state:', {
+            headerHeight,
+            categoriesHeight,
+            bottomToolbarHeight,
+            screenHeight,
+            maxTranslateY,
+            adsCount: ads?.length || 0,
+            isRefreshing
+        });
+
+        onRefresh();
+    }, [onRefresh, headerHeight, categoriesHeight, bottomToolbarHeight, screenHeight, maxTranslateY, ads, isRefreshing]);
+
     const renderRefreshControl = () => (
         <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={onRefresh}
+            onRefresh={handleRefresh}
             colors={['#000000']}
             tintColor="#000000"
         />
@@ -165,6 +179,11 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FFFFFF',
+    },
+    debugText: {
+        fontSize: 10,
+        color: '#999',
+        marginTop: 4,
     },
     swipeableContainer: {
         marginTop: 15,

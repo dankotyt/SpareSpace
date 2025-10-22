@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { formatPrice } from '@/shared/utils/priceFormatter';
 import { COLORS } from '@/shared/constants/colors';
 
 interface PublishStepProps {
@@ -18,13 +19,13 @@ export const PublishStep: React.FC<PublishStepProps> = ({ formData }) => {
 
     const getPriceText = () => {
         if (formData.price?.daily && formData.price.daily !== '') {
-            return `${formData.price.daily} руб./день`;
+            return `${formatPrice(formData.price.daily)} ₽/день`;
         }
         if (formData.price?.weekly && formData.price.weekly !== '') {
-            return `${formData.price.weekly} руб./неделя`;
+            return `${formatPrice(formData.price.weekly)} ₽/неделя`;
         }
         if (formData.price?.monthly && formData.price.monthly !== '') {
-            return `${formData.price.monthly} руб./месяц`;
+            return `${formatPrice(formData.price.monthly)} ₽/месяц`;
         }
         return 'Не указана';
     };

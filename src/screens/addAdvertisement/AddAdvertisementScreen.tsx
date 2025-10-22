@@ -12,8 +12,11 @@ import { COLORS } from '@/shared/constants/colors';
 import {useNavigation} from "@react-navigation/native";
 import {StackNavigationProp} from "@react-navigation/stack";
 import {RootStackParamList} from "@/navigation/types";
+import { useAdvertisement } from '@/services/AdvertisementContext';
+import { formatPrice } from '@/shared/utils/priceFormatter';
 
 export const AddAdvertisementScreen: React.FC = () => {
+    const { addAdvertisement } = useAdvertisement();
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const [currentStep, setCurrentStep] = useState<AdvertisementStep>(1);
     const [formData, setFormData] = useState<AdvertisementFormData>({
@@ -125,6 +128,9 @@ export const AddAdvertisementScreen: React.FC = () => {
 
             if (response.ok) {
                 console.log('Объявление успешно опубликовано!');
+                const mainScreenAd = createMainScreenAd(formData);
+                addAdvertisement(mainScreenAd);
+
                 navigation.goBack();
             } else {
                 console.error('Ошибка при публикации:', response.status);
@@ -138,8 +144,41 @@ export const AddAdvertisementScreen: React.FC = () => {
         }
     };
 
+    const createMainScreenAd = (formData: AdvertisementFormData) => {
+        const getTypeLabel = (type: string) => {
+            switch (type) {
+                case 'parking': return 'Парковочное место';
+                case 'pantry': return 'Кладовое помещение';
+                case 'garage': return 'Гараж';
+                default: return 'Помещение';
+            }
+        };
+
+        const getPriceText = () => {
+            if (formData.price?.daily && formData.price.daily !== '') {
+                return `${formatPrice(formData.price.daily)} ₽/сут.`;
+            }
+            if (formData.price?.weekly && formData.price.weekly !== '') {
+                return `${formatPrice(formData.price.weekly)} ₽/нед.`;
+            }
+            if (formData.price?.monthly && formData.price.monthly !== '') {
+                return `${formatPrice(formData.price.monthly)} ₽/мес.`;
+            }
+            return 'Цена не указана';
+        };
+
+        return {
+            price: getPriceText(),
+            type: getTypeLabel(formData.type || ''),
+            location: formData.address,
+            image: formData.photos?.[0] || undefined,
+        };
+    };
+
     const handleBack = () => {
-        if (currentStep > 1) {
+        if (currentStep === 1) {
+            navigation.goBack();
+        } else if (currentStep > 1) {
             setCurrentStep(prev => (prev - 1) as AdvertisementStep);
         }
     };

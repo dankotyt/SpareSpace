@@ -9,6 +9,7 @@ import {
     Animated,
     LayoutChangeEvent,
     RefreshControl,
+    Image,
 } from 'react-native';
 import { Header } from '@/components/main/Header';
 import { CategoryHints } from '@/components/main/CategoryHints';
@@ -98,9 +99,17 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 
     const renderAdItem: ListRenderItem<AdItem> = ({ item }) => (
         <View style={styles.adItem}>
-            <View style={styles.imagePlaceholder}>
-                <Text style={styles.imageText}>📷</Text>
-            </View>
+            {item.image ? (
+                <Image
+                    source={{ uri: item.image }}
+                    style={styles.adImage}
+                    resizeMode="cover"
+                />
+            ) : (
+                <View style={styles.imagePlaceholder}>
+                    <Text style={styles.imageText}>📷</Text>
+                </View>
+            )}
             <Text style={styles.price}>{item.price}</Text>
             <Text style={styles.type}>{item.type}</Text>
             <Text style={styles.location}>{item.location}</Text>
@@ -185,6 +194,12 @@ const styles = StyleSheet.create({
         fontSize: 10,
         color: '#999',
         marginTop: 4,
+    },
+    adImage: {
+        width: '100%',
+        height: 120,
+        borderRadius: 12,
+        marginBottom: 8,
     },
     swipeableContainer: {
         marginTop: 15,

@@ -9,8 +9,6 @@ import {
     TextInput,
     Alert,
     Image,
-    Platform,
-    KeyboardAvoidingView
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { COLORS } from '@/shared/constants/colors';

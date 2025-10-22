@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Modal } from 'react-native';
 import { COLORS } from '@/shared/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
+import { formatPrice } from '@/shared/utils/priceFormatter';
 
 interface PriceStepProps {
     price: {
@@ -23,6 +24,7 @@ export const PriceStep: React.FC<PriceStepProps> = ({
                                                         onPriceChange,
                                                         onAvailabilityChange,
                                                     }) => {
+    const [formattedPrice, setFormattedPrice] = useState('');
     const [selectedPriceType, setSelectedPriceType] = useState<'daily' | 'weekly' | 'monthly' | null>(null);
     const [showCalendar, setShowCalendar] = useState(false);
     const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
@@ -34,7 +36,6 @@ export const PriceStep: React.FC<PriceStepProps> = ({
         { key: 'monthly', label: 'Цена за месяц', placeholder: 'руб./месяц' },
     ];
 
-    // Генерация календаря на ближайшие 12 месяцев
     const generateCalendar = () => {
         const today = new Date();
         const months = [];
@@ -83,6 +84,7 @@ export const PriceStep: React.FC<PriceStepProps> = ({
         if (selectedPriceType) {
             const newPrice = { ...price, [selectedPriceType]: value };
             onPriceChange(newPrice);
+            setFormattedPrice(formatPrice(value));
         }
     };
 
@@ -90,7 +92,6 @@ export const PriceStep: React.FC<PriceStepProps> = ({
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Нельзя выбрать прошедшие даты
         if (date < today) return;
 
         if (!selectedStartDate) {

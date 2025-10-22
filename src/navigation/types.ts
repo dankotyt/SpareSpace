@@ -5,6 +5,7 @@ export type RootStackParamList = {
     PhoneAuth: undefined;
     EmailAuth: undefined;
     Profile: undefined;
+    AddAdvertisement: undefined;
 };
 
 export type NavigationProps = {

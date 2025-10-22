@@ -71,7 +71,9 @@ export const PhoneAuthScreen: React.FC = () => {
                         contentContainerStyle={styles.scrollContent}
                         keyboardShouldPersistTaps="handled">
 
-                        <BackButton onPress={handleBack} />
+                        <View style={styles.headerTop}>
+                            <BackButton onPress={handleBack} />
+                        </View>
 
                         <Text style={styles.title}>Вход или регистрация</Text>
 
@@ -114,6 +116,13 @@ const styles = StyleSheet.create({
     },
     mainContent: {
         flex: 1,
+    },
+    headerTop: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 40,
+        marginTop: 60,
     },
     scrollContent: {
         flexGrow: 1,

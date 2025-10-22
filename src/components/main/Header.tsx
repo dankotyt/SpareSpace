@@ -1,13 +1,23 @@
 import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { COLORS } from '@/shared/constants/colors';
+import {RootStackParamList} from "@/navigation/types";
 
 export const Header: React.FC = () => {
+
+    const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
+    const handleAddAdvertisement = () => {
+        navigation.navigate('AddAdvertisement');
+    };
+
     return (
         <View style={styles.header}>
             <View style={styles.topRow}>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={handleAddAdvertisement}>
                     <Text style={styles.addButtonText}>+ Добавить объявление</Text>
                 </TouchableOpacity>
 

@@ -1,2 +1,2 @@
-export { PhoneAuthScreen } from './ui/PhoneAuthScreen/PhoneAuthScreen';
-export { EmailAuthScreen } from './ui/EmailAuthScreen/EmailAuthScreen';
+export { PhoneAuthScreen } from './ui/PhoneAuthScreen';
+export { EmailAuthScreen } from './ui/EmailAuthScreen';

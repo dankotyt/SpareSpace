@@ -7,35 +7,32 @@ import {
     Platform,
     ScrollView,
     StatusBar,
-    TouchableOpacity,
 } from 'react-native';
 import { useAuth } from '@/features/auth';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { EmailInput, PasswordInput, AuthButton, SupportLink } from '@/features/auth';
-import { BackButton } from '@/shared/ui/BackButton/BackButton';
+import { PhoneInput, AuthButton, SupportLink } from '@/features/auth';
+import { BackButton } from '@/shared/ui/BackButton';
 import { COLORS } from '@/shared/constants/colors';
 import { globalStyles } from '@/app/styles/global';
 import { RootStackParamList } from '@/app/navigation/types';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
-export const EmailAuthScreen: React.FC = () => {
+export const PhoneAuthScreen: React.FC = () => {
     const navigation = useNavigation<NavigationProp>();
     const {
-        email,
-        password,
+        phone,
         isFocused,
         isValid,
-        setEmail,
-        setPassword,
+        setPhone,
         setFocus,
         switchScreen,
         login,
     } = useAuth();
 
     const handleLogin = () => {
-        console.log('Login with email:', email);
+        console.log('Login with phone:', phone);
         login(); // Вызов функции авторизации
         navigation.reset({
             index: 0,
@@ -43,17 +40,16 @@ export const EmailAuthScreen: React.FC = () => {
         });
     };
 
+    const handleSwitchToEmail = () => {
+        switchScreen('email');
+        navigation.navigate('EmailAuth');
+    };
+
     const handleBack = () => {
-        switchScreen('phone');
-        navigation.navigate('PhoneAuth');
-    };
-
-    const handleRegister = () => {
-        console.log('Navigate to registration');
-    };
-
-    const handleForgotPassword = () => {
-        console.log('Navigate to forgot password');
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'MainTabs' }],
+        });
     };
 
     const handleSupport = () => {
@@ -73,33 +69,19 @@ export const EmailAuthScreen: React.FC = () => {
                 <View style={styles.mainContent}>
                     <ScrollView
                         contentContainerStyle={styles.scrollContent}
-                        keyboardShouldPersistTaps="handled"
-                    >
+                        keyboardShouldPersistTaps="handled">
+
                         <BackButton onPress={handleBack} />
 
                         <Text style={styles.title}>Вход или регистрация</Text>
 
-                        <EmailInput
-                            value={email}
+                        <PhoneInput
+                            value={phone}
                             isFocused={isFocused}
-                            onChangeText={setEmail}
+                            onChangeText={setPhone}
                             onFocus={() => setFocus(true)}
                             onBlur={() => setFocus(false)}
                         />
-
-                        <PasswordInput
-                            value={password}
-                            isFocused={isFocused}
-                            onChangeText={setPassword}
-                            onFocus={() => setFocus(true)}
-                            onBlur={() => setFocus(false)}
-                        />
-
-                        <TouchableOpacity
-                            style={styles.forgotPasswordContainer}
-                            onPress={handleForgotPassword}>
-                            <Text style={styles.forgotPasswordText}>Забыли пароль?</Text>
-                        </TouchableOpacity>
 
                         <View style={styles.buttonsContainer}>
                             <AuthButton
@@ -108,9 +90,10 @@ export const EmailAuthScreen: React.FC = () => {
                                 disabled={!isValid}
                                 variant="primary"
                             />
+
                             <AuthButton
-                                title="Зарегистрироваться"
-                                onPress={handleRegister}
+                                title="Другой способ входа"
+                                onPress={handleSwitchToEmail}
                                 variant="outline"
                             />
                         </View>
@@ -150,21 +133,6 @@ const styles = StyleSheet.create({
     buttonsContainer: {
         marginTop: 30,
         marginBottom: 0,
-    },
-    rowButtonsContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        gap: 12,
-    },
-    forgotPasswordContainer: {
-        alignSelf: 'flex-end',
-        marginTop: 8,
-        marginBottom: 20,
-    },
-    forgotPasswordText: {
-        color: COLORS.primary,
-        fontSize: 14,
-        fontWeight: '500',
     },
     supportContainer: {
         justifyContent: 'space-between',

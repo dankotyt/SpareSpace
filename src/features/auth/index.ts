@@ -1,8 +1,8 @@
 export { useAuth } from './model/useAuth';
-export { PhoneInput } from '@/features/auth/ui/components/PhoneInput/PhoneInput';
-export { EmailInput } from '@/features/auth/ui/components/EmailInput/EmailInput';
-export { PasswordInput } from './ui/components/PasswordInput/PasswordInput';
-export { AuthButton } from './ui/AuthButton/AuthButton';
-export { SupportLink } from './ui/SupportLink/SupportLink';
+export { PhoneInput } from '@/features/auth/ui/components/PhoneInput';
+export { EmailInput } from '@/features/auth/ui/components/EmailInput';
+export { PasswordInput } from './ui/components/PasswordInput';
+export { AuthButton } from './ui/AuthButton';
+export { SupportLink } from './ui/SupportLink';
 export { getInputColors } from './utils/inputColors';
-export { AuthProvider } from './ui/AuthProvider/AuthProvider';
+export { AuthProvider } from './ui/AuthProvider';

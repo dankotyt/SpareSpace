@@ -1,8 +1,8 @@
 import React from 'react';
 import { View } from 'react-native';
 import { useAuth } from '@/features/auth';
-import { PhoneAuthScreen } from '@/pages/auth/ui/PhoneAuthScreen/PhoneAuthScreen';
-import { EmailAuthScreen } from '@/pages/auth/ui/EmailAuthScreen/EmailAuthScreen';
+import { PhoneAuthScreen } from '@/pages/auth/ui/PhoneAuthScreen';
+import { EmailAuthScreen } from '@/pages/auth/ui/EmailAuthScreen';
 
 export const AuthProcess: React.FC = () => {
     const { currentScreen } = useAuth();

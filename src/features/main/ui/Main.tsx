@@ -1,5 +1,5 @@
 import React from 'react';
-import { useMain } from '../../model/useMain';
+import { useMain } from '../model/useMain';
 import { MainLayout } from '@/widgets/main';
 
 export const Main: React.FC = () => {

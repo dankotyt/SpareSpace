@@ -10,9 +10,9 @@ import {
     LayoutChangeEvent,
     RefreshControl,
 } from 'react-native';
-import { Header } from '@/features/main/ui/Header/Header';
-import { CategoryHints } from '@/features/main/ui/CategoryHints/CategoryHints';
-import { BottomToolbar } from '@/shared/ui/BottomToolbar/BottomToolbar';
+import { Header } from '@/features/main/ui/Header';
+import { CategoryHints } from '@/features/main/ui/CategoryHints';
+import { BottomToolbar } from '@/shared/ui/BottomToolbar';
 
 interface AdItem {
     id: string;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { CategoryList } from '@/widgets/categories';
-import { CategoryItem } from '../../model/types';
+import { CategoryItem } from '../model/types';
 
 interface CategoryHintsProps {
     categories: CategoryItem[];

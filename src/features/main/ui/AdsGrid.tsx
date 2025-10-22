@@ -1,6 +1,6 @@
 import React from 'react';
 import { AdsGrid as AdsGridWidget } from '@/widgets/ads';
-import { AdItem } from '../../model/types';
+import { AdItem } from '../model/types';
 
 interface AdsGridProps {
     ads: AdItem[];

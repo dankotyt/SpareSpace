@@ -1,1 +1,1 @@
-export { AdsGrid } from './ui/AdsGrid/AdsGrid';
+export { AdsGrid } from './ui/AdsGrid';

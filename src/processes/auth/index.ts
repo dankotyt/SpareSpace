@@ -1,1 +1,0 @@
-export { AuthProcess } from './ui/AuthProcess';

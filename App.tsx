@@ -1,6 +1,6 @@
 import React from 'react';
-import { AppNavigator } from '@/app/navigation/AppNavigator';
-import { AuthProvider } from '@/features/auth';
+import { AppNavigator } from '@/navigation/AppNavigator';
+import { AuthProvider } from '@/services/AuthProvider';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function App() {

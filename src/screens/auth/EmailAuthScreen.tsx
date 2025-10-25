@@ -50,6 +50,7 @@ export const EmailAuthScreen: React.FC = () => {
 
     const handleRegister = () => {
         console.log('Navigate to registration');
+        navigation.navigate('Registration');
     };
 
     const handleForgotPassword = () => {

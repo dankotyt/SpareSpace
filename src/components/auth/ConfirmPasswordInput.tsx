@@ -11,30 +11,34 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/shared/constants/colors';
 import { getInputColors } from '@/shared/utils/inputColors';
 
-interface PasswordInputProps {
+interface ConfirmPasswordInputProps {
     value: string;
+    password: string;
     isFocused: boolean;
     onChangeText: (text: string) => void;
     onFocus: () => void;
     onBlur: () => void;
 }
 
-export const PasswordInput: React.FC<PasswordInputProps> = ({
-                                                                value,
-                                                                isFocused,
-                                                                onChangeText,
-                                                                onFocus,
-                                                                onBlur,
-                                                            }) => {
+export const ConfirmPasswordInput: React.FC<ConfirmPasswordInputProps> = ({
+                                                                              value,
+                                                                              password,
+                                                                              isFocused,
+                                                                              onChangeText,
+                                                                              onFocus,
+                                                                              onBlur,
+                                                                          }) => {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
     const { borderColor, textColor, labelColor } = getInputColors(value, isFocused);
+    const isError = value !== '' && value !== password;
 
     const togglePasswordVisibility = () => {
         setIsPasswordVisible(!isPasswordVisible);
     };
 
     const getEyeIconColor = () => {
+        if (isError) return COLORS.red[500];
         return isPasswordVisible ? COLORS.primary : COLORS.borderEmpty;
     };
 
@@ -42,18 +46,28 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
         return isPasswordVisible ? 'eye-off-outline' : 'eye-outline';
     };
 
+    const getFinalBorderColor = () => {
+        if (isError) return COLORS.red[500];
+        return borderColor;
+    };
+
+    const getFinalLabelColor = () => {
+        if (isError) return COLORS.red[500];
+        return labelColor;
+    };
+
     return (
         <TouchableWithoutFeedback onPress={onFocus}>
             <View style={styles.container}>
                 <Text style={[
                     styles.label,
-                    { color: labelColor }
+                    { color: getFinalLabelColor() }
                 ]}>
-                    Пароль
+                    Повторите пароль
                 </Text>
                 <View style={[
                     styles.inputContainer,
-                    { borderColor }
+                    { borderColor: getFinalBorderColor() }
                 ]}>
                     <TextInput
                         style={[
@@ -64,6 +78,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
                         onChangeText={onChangeText}
                         onFocus={onFocus}
                         onBlur={onBlur}
+                        placeholderTextColor={COLORS.gray[400]}
                         secureTextEntry={!isPasswordVisible}
                         autoCapitalize="none"
                         autoCorrect={false}
@@ -80,6 +95,9 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
                         />
                     </TouchableOpacity>
                 </View>
+                {isError && (
+                    <Text style={styles.errorText}>Пароли не совпадают</Text>
+                )}
             </View>
         </TouchableWithoutFeedback>
     );
@@ -107,12 +125,18 @@ const styles = StyleSheet.create({
     input: {
         fontSize: 18,
         paddingVertical: 12,
-        fontWeight: '500',
+        fontWeight: '400',
         padding: 0,
         flex: 1,
     },
     eyeIcon: {
         padding: 4,
         marginLeft: 8,
+    },
+    errorText: {
+        color: COLORS.red[500],
+        fontSize: 14,
+        marginTop: 8,
+        marginLeft: 4,
     },
 });

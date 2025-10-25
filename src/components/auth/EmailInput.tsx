@@ -68,6 +68,7 @@ export const EmailInput: React.FC<EmailInputProps> = ({
 const styles = StyleSheet.create({
     container: {
         marginTop: 0,
+        marginBottom: 16,
     },
     label: {
         fontSize: 16,

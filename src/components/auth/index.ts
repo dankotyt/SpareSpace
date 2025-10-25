@@ -1,5 +1,8 @@
+export { AuthButton } from './AuthButton';
+export { PhoneInput } from './PhoneInput';
 export { EmailInput } from './EmailInput';
 export { PasswordInput } from './PasswordInput';
-export { AuthButton } from './AuthButton';
 export { SupportLink } from './SupportLink';
-export { PhoneInput } from './PhoneInput';
+export { NameInput } from './NameInput';
+export { SurnameInput } from './SurnameInput';
+export { ConfirmPasswordInput } from './ConfirmPasswordInput';

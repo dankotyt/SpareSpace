@@ -23,6 +23,9 @@ export const AuthButton: React.FC<AuthButtonProps> = ({
                                                           loading = false,
                                                       }) => {
     const getButtonStyle = () => {
+        if (disabled || loading) {
+            return [styles.button, styles.disabled];
+        }
 
         if (variant === 'secondary') {
             return [styles.button, styles.secondary];
@@ -36,14 +39,14 @@ export const AuthButton: React.FC<AuthButtonProps> = ({
             return [styles.button, styles.outline];
         }
 
-        if (disabled) {
-            return [styles.button, styles.disabled];
-        }
-
         return [styles.button, styles.primary];
     };
 
     const getTextStyle = () => {
+        if (disabled || loading) {
+            return [styles.text, styles.textDisabled];
+        }
+
         if (variant === 'secondary') {
             return [styles.text, styles.textSecondary];
         }
@@ -56,11 +59,14 @@ export const AuthButton: React.FC<AuthButtonProps> = ({
             return [styles.text, styles.textOutline];
         }
 
-        if (disabled) {
-            return [styles.text, styles.textDisabled];
-        }
-
         return [styles.text, styles.textPrimary];
+    };
+
+    const getActivityIndicatorColor = () => {
+        if (variant === 'outline' || variant === 'secondary') {
+            return COLORS.primary;
+        }
+        return COLORS.white;
     };
 
     return (
@@ -70,7 +76,10 @@ export const AuthButton: React.FC<AuthButtonProps> = ({
             disabled={disabled || loading}
         >
             {loading ? (
-                <ActivityIndicator color={COLORS.white} />
+                <ActivityIndicator
+                    color={getActivityIndicatorColor()}
+                    size="small"
+                />
             ) : (
                 <Text style={getTextStyle()}>{title || ''}</Text>
             )}

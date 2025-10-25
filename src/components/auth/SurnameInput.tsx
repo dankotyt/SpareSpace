@@ -8,9 +8,8 @@ import {
 } from 'react-native';
 import { COLORS } from '@/shared/constants/colors';
 import { getInputColors } from '@/shared/utils/inputColors';
-import { formatPhoneNumber } from '@/shared/utils/phoneFormatter';
 
-interface PhoneInputProps {
+interface SurnameInputProps {
     value: string;
     isFocused: boolean;
     onChangeText: (text: string) => void;
@@ -18,17 +17,13 @@ interface PhoneInputProps {
     onBlur: () => void;
 }
 
-export const PhoneInput: React.FC<PhoneInputProps> = ({
-                                                          value,
-                                                          isFocused,
-                                                          onChangeText,
-                                                          onFocus,
-                                                          onBlur,
-                                                      }) => {
-    const handleTextChange = (text: string) => {
-        const formatted = formatPhoneNumber(text);
-        onChangeText(formatted);
-    };
+export const SurnameInput: React.FC<SurnameInputProps> = ({
+                                                                value,
+                                                                isFocused,
+                                                                onChangeText,
+                                                                onFocus,
+                                                                onBlur,
+                                                            }) => {
 
     const { borderColor, textColor, labelColor } = getInputColors(value, isFocused);
 
@@ -39,25 +34,29 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
                     styles.label,
                     { color: labelColor }
                 ]}>
-                    Номер телефона
+                    Фамилия
                 </Text>
                 <View style={[
                     styles.inputContainer,
                     {
-                        borderColor,
+                        borderColor: borderColor,
                     }
                 ]}>
                     <TextInput
                         style={[
                             styles.input,
-                            { color: textColor },
+                            {
+                                color: textColor,
+                            }
                         ]}
                         value={value}
-                        onChangeText={handleTextChange}
+                        onChangeText={onChangeText}
                         onFocus={onFocus}
                         onBlur={onBlur}
-                        keyboardType="phone-pad"
-                        maxLength={16}
+                        placeholderTextColor={COLORS.gray[400]}
+                        autoCapitalize="words"
+                        autoComplete="name-family"
+                        autoCorrect={false}
                         selectionColor={COLORS.primary}
                     />
                 </View>
@@ -68,13 +67,13 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
 
 const styles = StyleSheet.create({
     container: {
-        marginTop: 0,
         marginBottom: 16,
     },
     label: {
         fontSize: 16,
         marginBottom: 8,
         fontWeight: '500',
+        color: COLORS.gray[400],
     },
     inputContainer: {
         borderWidth: 2,

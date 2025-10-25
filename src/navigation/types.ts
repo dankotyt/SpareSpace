@@ -4,6 +4,7 @@ export type RootStackParamList = {
     MainTabs: undefined;
     PhoneAuth: undefined;
     EmailAuth: undefined;
+    Registration: undefined;
     Profile: undefined;
     AddAdvertisement: undefined;
 };

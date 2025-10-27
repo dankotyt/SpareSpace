@@ -7,6 +7,7 @@ import {
     Platform,
     ScrollView,
     StatusBar,
+    Alert,
 } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigation } from '@react-navigation/native';
@@ -25,19 +26,43 @@ export const PhoneAuthScreen: React.FC = () => {
         phone,
         isFocused,
         isValid,
+        isLoading,
         setPhone,
         setFocus,
         switchScreen,
-        login,
+        checkPhone,
+        clearError,
     } = useAuth();
 
-    const handleLogin = () => {
-        console.log('Login with phone:', phone);
-        login(); // Вызов функции авторизации
-        navigation.reset({
-            index: 0,
-            routes: [{ name: 'MainTabs' }],
-        });
+    const handlePhoneLogin = async () => {
+        try {
+            const result = await checkPhone();
+
+            if (result.exists) {
+                Alert.alert('Успешно', result.message);
+                // Здесь можно перейти на экран ввода SMS кода
+                // navigation.navigate('SmsVerification', { phone });
+            } else {
+                Alert.alert(
+                    'Номер не найден',
+                    result.message,
+                    [
+                        {
+                            text: 'Зарегистрироваться',
+                            onPress: () => navigation.navigate('Registration')
+                        },
+                        {
+                            text: 'Отмена',
+                            style: 'cancel'
+                        }
+                    ]
+                );
+            }
+        } catch (error) {
+            console.log('Phone check error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Ошибка проверки номера';
+            Alert.alert('Ошибка', errorMessage);
+        }
     };
 
     const handleSwitchToEmail = () => {
@@ -87,10 +112,11 @@ export const PhoneAuthScreen: React.FC = () => {
 
                         <View style={styles.buttonsContainer}>
                             <AuthButton
-                                title="Войти"
-                                onPress={handleLogin}
-                                disabled={!isValid}
+                                title={isLoading ? "Проверка..." : "Продолжить"}
+                                onPress={handlePhoneLogin}
+                                disabled={!isValid || isLoading}
                                 variant="primary"
+                                loading={isLoading}
                             />
 
                             <AuthButton

@@ -1,17 +1,17 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { UserAsset } from '@/types/profile';
+import { Listing } from '@/types/profile';
 import { COLORS } from '@/shared/constants/colors';
 
-interface AssetsSectionProps {
-    assets: UserAsset[];
+interface ListingsSectionProps {
+    listings: Listing[];
     onAllAdsPress: () => void;
-    onAssetPress: (asset: UserAsset) => void;
+    onAssetPress: (asset: Listing) => void;
 }
 
-export const AssetsSection: React.FC<AssetsSectionProps> = ({
-                                                                assets,
+export const ListingsSection: React.FC<ListingsSectionProps> = ({
+                                                                listings,
                                                                 onAllAdsPress,
                                                                 onAssetPress
                                                             }) => {
@@ -40,7 +40,7 @@ export const AssetsSection: React.FC<AssetsSectionProps> = ({
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
-                {assets.map((asset) => (
+                {listings.map((asset) => (
                     <TouchableOpacity
                         key={asset.id}
                         style={styles.assetItem}

@@ -5,4 +5,5 @@ export { PasswordInput } from './PasswordInput';
 export { SupportLink } from './SupportLink';
 export { NameInput } from './NameInput';
 export { SurnameInput } from './SurnameInput';
+export { PatronymicInput } from './PatronymicInput';
 export { ConfirmPasswordInput } from './ConfirmPasswordInput';

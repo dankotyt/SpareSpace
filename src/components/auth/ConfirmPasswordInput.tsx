@@ -29,16 +29,31 @@ export const ConfirmPasswordInput: React.FC<ConfirmPasswordInputProps> = ({
                                                                               onBlur,
                                                                           }) => {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const [hasBeenTouched, setHasBeenTouched] = useState(false);
 
     const { borderColor, textColor, labelColor } = getInputColors(value, isFocused);
-    const isError = value !== '' && value !== password;
+    const isError = hasBeenTouched && value !== '' && value !== password;
+    const isValid = value !== '' && value === password;
 
     const togglePasswordVisibility = () => {
         setIsPasswordVisible(!isPasswordVisible);
     };
 
+    const handleChangeText = (text: string) => {
+        if (!hasBeenTouched) {
+            setHasBeenTouched(true);
+        }
+        onChangeText(text);
+    };
+
+    const handleBlur = () => {
+        setHasBeenTouched(true);
+        onBlur();
+    };
+
     const getEyeIconColor = () => {
         if (isError) return COLORS.red[500];
+        if (isValid) return COLORS.green[500];
         return isPasswordVisible ? COLORS.primary : COLORS.borderEmpty;
     };
 
@@ -48,11 +63,13 @@ export const ConfirmPasswordInput: React.FC<ConfirmPasswordInputProps> = ({
 
     const getFinalBorderColor = () => {
         if (isError) return COLORS.red[500];
+        if (isValid) return COLORS.green[500];
         return borderColor;
     };
 
     const getFinalLabelColor = () => {
         if (isError) return COLORS.red[500];
+        if (isValid) return COLORS.green[500];
         return labelColor;
     };
 
@@ -75,9 +92,9 @@ export const ConfirmPasswordInput: React.FC<ConfirmPasswordInputProps> = ({
                             { color: textColor }
                         ]}
                         value={value}
-                        onChangeText={onChangeText}
+                        onChangeText={handleChangeText}
                         onFocus={onFocus}
-                        onBlur={onBlur}
+                        onBlur={handleBlur}
                         placeholderTextColor={COLORS.gray[400]}
                         secureTextEntry={!isPasswordVisible}
                         autoCapitalize="none"
@@ -98,6 +115,9 @@ export const ConfirmPasswordInput: React.FC<ConfirmPasswordInputProps> = ({
                 {isError && (
                     <Text style={styles.errorText}>Пароли не совпадают</Text>
                 )}
+                {isValid && (
+                    <Text style={styles.successText}>Пароли совпадают</Text>
+                )}
             </View>
         </TouchableWithoutFeedback>
     );
@@ -105,7 +125,6 @@ export const ConfirmPasswordInput: React.FC<ConfirmPasswordInputProps> = ({
 
 const styles = StyleSheet.create({
     container: {
-        marginTop: 10,
         marginBottom: 16,
     },
     label: {
@@ -125,7 +144,7 @@ const styles = StyleSheet.create({
     input: {
         fontSize: 18,
         paddingVertical: 12,
-        fontWeight: '400',
+        fontWeight: '500',
         padding: 0,
         flex: 1,
     },
@@ -135,6 +154,12 @@ const styles = StyleSheet.create({
     },
     errorText: {
         color: COLORS.red[500],
+        fontSize: 14,
+        marginTop: 8,
+        marginLeft: 4,
+    },
+    successText: {
+        color: COLORS.green[500],
         fontSize: 14,
         marginTop: 8,
         marginLeft: 4,

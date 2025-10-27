@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
-import { authApiService } from '@/services/api/authApi';
-import { ApiResponse } from '@/services/api/authApi';
+import { authApiService, ApiResponse } from '@/services/api/authApi';
+import { isCompletePhoneNumber } from '@/shared/utils/phoneFormatter';
 
 export interface RegistrationData {
-    firstName: string;
-    lastName: string;
+    first_name: string;
+    last_name: string;
+    patronymic?: string;
     phone: string;
     email: string;
     password: string;
@@ -24,11 +25,12 @@ interface UseRegistrationReturn {
     clearError: () => void;
 }
 
-export const useRegistration = () => {
+export const useRegistration = (): UseRegistrationReturn => {
     const [registrationData, setRegistrationData] = useState<RegistrationData>({
-        firstName: '',
-        lastName: '',
-        phone: '',
+        first_name: '',
+        last_name: '',
+        patronymic: '',
+        phone: '+7',
         email: '',
         password: '',
         confirmPassword: '',
@@ -38,6 +40,31 @@ export const useRegistration = () => {
     const [currentField, setCurrentField] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const validateFirstName = useCallback((firstName: string): boolean => {
+        return firstName.trim().length > 0;
+    }, []);
+
+    const validateLastName = useCallback((lastName: string): boolean => {
+        return lastName.trim().length > 0;
+    }, []);
+
+    const validatePhone = useCallback((phone: string): boolean => {
+        return isCompletePhoneNumber(phone);
+    }, []);
+
+    const validateEmail = useCallback((email: string): boolean => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }, []);
+
+    const validatePassword = useCallback((password: string): boolean => {
+        return password.length >= 8;
+    }, []);
+
+    const validateConfirmPassword = useCallback((confirmPassword: string, password: string): boolean => {
+        return confirmPassword === password && confirmPassword.length > 0;
+    }, []);
 
     const updateField = useCallback((field: keyof RegistrationData, value: string) => {
         setRegistrationData(prev => ({
@@ -58,42 +85,53 @@ export const useRegistration = () => {
         setError(null);
     }, []);
 
-    // Валидация формы
     const isValid = useCallback((): boolean => {
-        const { firstName, lastName, phone, email, password, confirmPassword } = registrationData;
+        const { first_name, last_name, phone, email, password, confirmPassword } = registrationData;
 
         return (
-            firstName.trim().length > 0 &&
-            lastName.trim().length > 0 &&
-            phone.trim().length >= 10 &&
-            email.includes('@') &&
-            email.includes('.') &&
-            password.length >= 6 &&
-            password === confirmPassword
+            validateFirstName(first_name) &&
+            validateLastName(last_name) &&
+            validatePhone(phone) &&
+            validateEmail(email) &&
+            validatePassword(password) &&
+            validateConfirmPassword(confirmPassword, password)
         );
-    }, [registrationData]);
+    }, [registrationData, validateFirstName, validateLastName, validatePhone, validateEmail, validatePassword, validateConfirmPassword]);
 
-    const register = useCallback(async () => {
+    const register = useCallback(async (): Promise<ApiResponse> => {
         if (!isValid()) {
-            const errorMessage = 'Не все поля заполнены корректно';
-            setError(errorMessage);
-            throw new Error(errorMessage);
+            const { first_name, last_name, phone, email, password, confirmPassword } = registrationData;
+
+            if (!validateFirstName(first_name)) {
+                throw new Error('Введите имя');
+            }
+            if (!validateLastName(last_name)) {
+                throw new Error('Введите фамилию');
+            }
+            if (!validatePhone(phone)) {
+                throw new Error('Введите корректный номер телефона');
+            }
+            if (!validateEmail(email)) {
+                throw new Error('Введите корректный email');
+            }
+            if (!validatePassword(password)) {
+                throw new Error('Пароль должен содержать минимум 8 символов');
+            }
+            if (!validateConfirmPassword(confirmPassword, password)) {
+                throw new Error('Пароли не совпадают');
+            }
+
+            throw new Error('Не все поля заполнены корректно');
         }
 
         setIsLoading(true);
         setError(null);
-        // Здесь будет вызов API для регистрации
-        console.log('Registration data:', registrationData);
 
         try {
             const response = await authApiService.register(registrationData);
 
-            console.log('Registration successful:', response);
-
-            // Сохраняем токен если он есть в ответе
-            if (response.token) {
-                // Здесь можно сохранить токен в AsyncStorage или Context
-                // await AsyncStorage.setItem('authToken', response.token);
+            if (!response.success) {
+                throw new Error(response.message || 'Ошибка регистрации');
             }
 
             return response;
@@ -104,7 +142,7 @@ export const useRegistration = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [registrationData, isValid]);
+    }, [registrationData, isValid, validateFirstName, validateLastName, validatePhone, validateEmail, validatePassword, validateConfirmPassword]);
 
     return {
         registrationData,

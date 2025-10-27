@@ -19,7 +19,8 @@ import {
     SupportLink,
     NameInput,
     SurnameInput,
-    ConfirmPasswordInput
+    PatronymicInput,
+    ConfirmPasswordInput,
 } from '@/components/auth';
 import { PhoneInput } from '@/components/auth/PhoneInput';
 import { BackButton } from '@/components/ui/BackButton';
@@ -124,18 +125,26 @@ export const RegistrationScreen: React.FC = () => {
                         )}
 
                         <NameInput
-                            value={registrationData.firstName}
-                            isFocused={isFocused && currentField === 'firstName'}
-                            onChangeText={(text) => updateField('firstName', text)}
-                            onFocus={() => setFocus(true, 'firstName')}
+                            value={registrationData.first_name}
+                            isFocused={isFocused && currentField === 'first_name'}
+                            onChangeText={(text) => updateField('first_name', text)}
+                            onFocus={() => setFocus(true, 'first_name')}
                             onBlur={() => setFocus(false)}
                         />
 
                         <SurnameInput
-                            value={registrationData.lastName}
-                            isFocused={isFocused && currentField === 'lastName'}
-                            onChangeText={(text) => updateField('lastName', text)}
-                            onFocus={() => setFocus(true, 'lastName')}
+                            value={registrationData.last_name}
+                            isFocused={isFocused && currentField === 'last_name'}
+                            onChangeText={(text) => updateField('last_name', text)}
+                            onFocus={() => setFocus(true, 'last_name')}
+                            onBlur={() => setFocus(false)}
+                        />
+
+                        <PatronymicInput
+                            value={registrationData.patronymic || ''}
+                            isFocused={isFocused && currentField === 'patronymic'}
+                            onChangeText={(text) => updateField('patronymic', text)}
+                            onFocus={() => setFocus(true, 'patronymic')}
                             onBlur={() => setFocus(false)}
                         />
 
@@ -264,12 +273,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: COLORS.red[50],
+        backgroundColor: COLORS.red[10],
         padding: 12,
         borderRadius: 8,
         marginBottom: 16,
         borderLeftWidth: 4,
-        borderLeftColor: COLORS.red[500],
+        borderLeftColor: COLORS.red[10],
     },
     errorText: {
         color: COLORS.red[600],
@@ -278,7 +287,7 @@ const styles = StyleSheet.create({
         marginRight: 8,
     },
     closeError: {
-        color: COLORS.red[500],
+        color: COLORS.red[600],
         fontSize: 16,
         fontWeight: 'bold',
     },

@@ -1,4 +1,4 @@
-import React from 'react';
-import { AuthState, AuthActions } from '@/types/auth';
+import { createContext } from 'react';
+import { useAuthLogic } from '@/hooks/useAuth';
 
-export const AuthContext = React.createContext<(AuthState & AuthActions) | undefined>(undefined);
+export const AuthContext = createContext<ReturnType<typeof useAuthLogic> | undefined>(undefined);

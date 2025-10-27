@@ -1,0 +1,97 @@
+import React from 'react';
+import {
+    View,
+    TextInput,
+    Text,
+    StyleSheet,
+    TouchableWithoutFeedback
+} from 'react-native';
+import { COLORS } from '@/shared/constants/colors';
+import { getInputColors } from '@/shared/utils/inputColors';
+
+interface PatronymicInputProps {
+    value: string;
+    isFocused: boolean;
+    onChangeText: (text: string) => void;
+    onFocus: () => void;
+    onBlur: () => void;
+}
+
+export const PatronymicInput: React.FC<PatronymicInputProps> = ({
+                                                                    value,
+                                                                    isFocused,
+                                                                    onChangeText,
+                                                                    onFocus,
+                                                                    onBlur,
+                                                                }) => {
+
+    const { borderColor, textColor, labelColor } = getInputColors(value, isFocused);
+
+    return (
+        <TouchableWithoutFeedback onPress={onFocus}>
+            <View style={styles.container}>
+                <View style={styles.labelContainer}>
+                    <Text style={[
+                        styles.label,
+                        { color: labelColor }
+                    ]}>
+                        Отчество (необязательно)
+                    </Text>
+                </View>
+                <View style={[
+                    styles.inputContainer,
+                    {
+                        borderColor: borderColor,
+                    }
+                ]}>
+                    <TextInput
+                        style={[
+                            styles.input,
+                            {
+                                color: textColor,
+                            }
+                        ]}
+                        value={value}
+                        onChangeText={onChangeText}
+                        onFocus={onFocus}
+                        onBlur={onBlur}
+                        placeholderTextColor={COLORS.gray[400]}
+                        autoCapitalize="words"
+                        autoComplete="name"
+                        autoCorrect={false}
+                        selectionColor={COLORS.primary}
+                    />
+                </View>
+            </View>
+        </TouchableWithoutFeedback>
+    );
+};
+
+const styles = StyleSheet.create({
+    container: {
+        marginBottom: 16,
+    },
+    labelContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    label: {
+        fontSize: 16,
+        fontWeight: '500',
+        marginRight: 8,
+    },
+    inputContainer: {
+        borderWidth: 2,
+        borderRadius: 15,
+        paddingHorizontal: 16,
+        paddingVertical: 4,
+        backgroundColor: COLORS.white,
+    },
+    input: {
+        fontSize: 18,
+        paddingVertical: 12,
+        fontWeight: '500',
+        padding: 0,
+    },
+});

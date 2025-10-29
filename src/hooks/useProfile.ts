@@ -3,6 +3,7 @@ import { UserProfile, FormattedUserProfile, Review, Listing, Booking, UserStats 
 import { profileApiService } from '@/services/api/profileApi';
 import { useAuth } from '@/hooks/useAuth';
 import { tokenService } from '@/services/tokenService';
+import {authApiService} from "@services/api/authApi";
 
 const formatFullUserProfile = (
     profile: UserProfile,
@@ -39,14 +40,29 @@ const formatFullUserProfile = (
 };
 
 export const useProfile = () => {
-    const { isAuthenticated, logout: authLogout } = useAuth();
+    const { isAuthenticated, logout: authLogout, isCheckingAuth } = useAuth();
     const [userProfile, setUserProfile] = useState<FormattedUserProfile | null>(null);
     const [loading, setLoading] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [localIsAuthenticated, setLocalIsAuthenticated] = useState(false);
 
-    const loadProfile = useCallback(async () => {
-        if (!isAuthenticated) {
+    const checkAuthStatus = useCallback(async (): Promise<boolean> => {
+        try {
+            const token = await tokenService.getToken();
+            if (!token || token.trim() === '') {
+                return false;
+            }
+
+            const profileResponse = await authApiService.getProfile();
+            return profileResponse.success && !!profileResponse.data;
+        } catch (error) {
+            return false;
+        }
+    }, []);
+
+    const loadProfile = useCallback(async (forceLoad = false) => {
+        if (!isAuthenticated && !forceLoad) {
             setUserProfile(null);
             setError(null);
             return;
@@ -81,20 +97,31 @@ export const useProfile = () => {
             );
 
             setUserProfile(formattedProfile);
+            setLocalIsAuthenticated(true);
 
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Ошибка загрузки данных';
             setError(errorMessage);
             setUserProfile(null);
+            setLocalIsAuthenticated(false);
+
+            if (err instanceof Error && (
+                err.message.includes('токен') ||
+                err.message.includes('authorization') ||
+                err.message.includes('401')
+            )) {
+                await tokenService.removeToken();
+                authLogout();
+            }
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, authLogout]);
 
     const handleRefresh = useCallback(() => {
         setRefreshing(true);
-        loadProfile();
+        loadProfile(true);
     }, [loadProfile]);
 
     const logout = useCallback(async () => {
@@ -106,21 +133,40 @@ export const useProfile = () => {
 
         setUserProfile(null);
         setError(null);
+        setLocalIsAuthenticated(false);
         authLogout();
     }, [authLogout]);
 
     useEffect(() => {
-        loadProfile();
-    }, [loadProfile]);
+        const initializeProfile = async () => {
+            const authStatus = await checkAuthStatus();
+            setLocalIsAuthenticated(authStatus);
+
+            if (authStatus) {
+                await loadProfile(true);
+            }
+        };
+
+        initializeProfile();
+    }, [checkAuthStatus, loadProfile]);
+
+    useEffect(() => {
+        if (isAuthenticated && !loading) {
+            loadProfile(true);
+        } else if (!isAuthenticated) {
+            setUserProfile(null);
+            setLocalIsAuthenticated(false);
+        }
+    }, [isAuthenticated, loadProfile, loading]);
 
     return {
-        isAuthenticated,
+        isAuthenticated: localIsAuthenticated || isAuthenticated,
         userProfile,
-        loading,
+        loading: loading || isCheckingAuth,
         refreshing,
         error,
         handleRefresh,
         logout,
-        loadProfile,
+        loadProfile: () => loadProfile(true),
     };
 };

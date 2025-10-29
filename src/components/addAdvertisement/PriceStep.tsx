@@ -6,6 +6,7 @@ import { formatPrice } from '@/shared/utils/priceFormatter';
 
 interface PriceStepProps {
     price: {
+        hourly?: string;
         daily?: string;
         weekly?: string;
         monthly?: string;
@@ -25,12 +26,13 @@ export const PriceStep: React.FC<PriceStepProps> = ({
                                                         onAvailabilityChange,
                                                     }) => {
     const [formattedPrice, setFormattedPrice] = useState('');
-    const [selectedPriceType, setSelectedPriceType] = useState<'daily' | 'weekly' | 'monthly' | null>(null);
+    const [selectedPriceType, setSelectedPriceType] = useState<'hourly' | 'daily' | 'weekly' | 'monthly' | null>(null);
     const [showCalendar, setShowCalendar] = useState(false);
     const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
     const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
 
     const priceTypes = [
+        { key: 'hourly', label: 'Цена в час', placeholder: 'руб./час' },
         { key: 'daily', label: 'Цена за день', placeholder: 'руб./день' },
         { key: 'weekly', label: 'Цена за неделю', placeholder: 'руб./неделя' },
         { key: 'monthly', label: 'Цена за месяц', placeholder: 'руб./месяц' },
@@ -48,12 +50,9 @@ export const PriceStep: React.FC<PriceStepProps> = ({
                 weeks: [] as Date[][]
             };
 
-            // Первый день месяца
             const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
-            // Последний день месяца
             const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0);
 
-            // Начало с понедельника
             const startDate = new Date(firstDay);
             startDate.setDate(startDate.getDate() - startDate.getDay() + (startDate.getDay() === 0 ? -6 : 1));
 
@@ -76,15 +75,21 @@ export const PriceStep: React.FC<PriceStepProps> = ({
         return months;
     };
 
-    const handlePriceTypeSelect = (priceType: 'daily' | 'weekly' | 'monthly') => {
+    const handlePriceTypeSelect = (priceType: 'hourly' | 'daily' | 'weekly' | 'monthly') => {
         setSelectedPriceType(priceType);
+        setFormattedPrice('');
     };
 
     const handlePriceInputChange = (value: string) => {
+        const cleanedValue = value.replace(/[^\d.]/g, '');
+
         if (selectedPriceType) {
-            const newPrice = { ...price, [selectedPriceType]: value };
+            const newPrice = {
+                ...price,
+                [selectedPriceType]: cleanedValue
+            };
             onPriceChange(newPrice);
-            setFormattedPrice(formatPrice(value));
+            setFormattedPrice(formatPrice(cleanedValue));
         }
     };
 
@@ -95,20 +100,16 @@ export const PriceStep: React.FC<PriceStepProps> = ({
         if (date < today) return;
 
         if (!selectedStartDate) {
-            // Первый клик - устанавливаем начало
             setSelectedStartDate(date);
             setSelectedEndDate(null);
         } else if (!selectedEndDate) {
-            // Второй клик - устанавливаем конец
             if (date > selectedStartDate) {
                 setSelectedEndDate(date);
             } else {
-                // Если выбрана дата раньше начала, меняем местами
                 setSelectedEndDate(selectedStartDate);
                 setSelectedStartDate(date);
             }
         } else {
-            // Сброс и новый выбор
             setSelectedStartDate(date);
             setSelectedEndDate(null);
         }
@@ -128,6 +129,7 @@ export const PriceStep: React.FC<PriceStepProps> = ({
     const clearSelection = () => {
         setSelectedStartDate(null);
         setSelectedEndDate(null);
+        onAvailabilityChange(undefined);
     };
 
     const isDateInRange = (date: Date) => {
@@ -159,6 +161,27 @@ export const PriceStep: React.FC<PriceStepProps> = ({
         return selectedPriceType ? price[selectedPriceType] || '' : '';
     };
 
+    // const renderCurrentPrices = () => {
+    //     const filledPrices = Object.entries(price).filter(([_, value]) => value && value !== '');
+    //
+    //     if (filledPrices.length === 0) return null;
+    //
+    //     return (
+    //         <View style={styles.currentPrices}>
+    //             <Text style={styles.currentPricesTitle}>Установленные цены:</Text>
+    //             {filledPrices.map(([key, value]) => {
+    //                 const priceLabel = priceTypes.find(type => type.key === key)?.label || key;
+    //                 return (
+    //                     <View key={key} style={styles.priceItem}>
+    //                         <Text style={styles.priceItemLabel}>{priceLabel}:</Text>
+    //                         <Text style={styles.priceItemValue}>{formatPrice(value)} руб.</Text>
+    //                     </View>
+    //                 );
+    //             })}
+    //         </View>
+    //     );
+    // };
+
     const calendarMonths = generateCalendar();
     const daysOfWeek = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
@@ -166,6 +189,8 @@ export const PriceStep: React.FC<PriceStepProps> = ({
         <ScrollView style={styles.container}>
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Установите цену и доступность</Text>
+
+                {/*{renderCurrentPrices()}*/}
 
                 <View style={styles.priceOptions}>
                     {priceTypes.map((priceType) => (
@@ -188,9 +213,12 @@ export const PriceStep: React.FC<PriceStepProps> = ({
                                         onChangeText={handlePriceInputChange}
                                         placeholder={priceType.placeholder}
                                         placeholderTextColor={COLORS.gray[400]}
-                                        keyboardType="numeric"
+                                        keyboardType="decimal-pad"
                                         autoFocus
                                     />
+                                    {formattedPrice ? (
+                                        <Text style={styles.formattedPrice}>{formattedPrice} руб.</Text>
+                                    ) : null}
                                 </View>
                             )}
                         </View>
@@ -201,7 +229,12 @@ export const PriceStep: React.FC<PriceStepProps> = ({
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Доступность</Text>
                 <Text style={styles.sectionText}>Период аренды</Text>
-                <Text style={styles.sectionSubtext}>Выберите начальную и конечную даты</Text>
+                <Text style={styles.sectionSubtext}>
+                    {selectedPriceType === 'hourly'
+                        ? 'Для почасовой аренды укажите период, когда объект доступен'
+                        : 'Выберите начальную и конечную даты'
+                    }
+                </Text>
 
                 <TouchableOpacity
                     style={styles.availabilityButton}
@@ -211,9 +244,11 @@ export const PriceStep: React.FC<PriceStepProps> = ({
                 </TouchableOpacity>
 
                 {formatDateRange() && (
-                    <Text style={styles.selectedAvailability}>
-                        Выбран период: {formatDateRange()}
-                    </Text>
+                    <View style={styles.availabilityInfo}>
+                        <Text style={styles.selectedAvailability}>
+                            Выбран период: {formatDateRange()}
+                        </Text>
+                    </View>
                 )}
             </View>
 
@@ -377,6 +412,7 @@ const styles = StyleSheet.create({
     },
     priceInputContainer: {
         marginLeft: 32,
+        gap: 8,
     },
     priceInput: {
         backgroundColor: COLORS.white,
@@ -387,6 +423,38 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: COLORS.text,
         width: '80%',
+    },
+    formattedPrice: {
+        fontSize: 14,
+        color: COLORS.gray[600],
+        fontStyle: 'italic',
+    },
+    currentPrices: {
+        backgroundColor: COLORS.gray[500],
+        padding: 12,
+        borderRadius: 8,
+        marginBottom: 16,
+    },
+    currentPricesTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: COLORS.text,
+        marginBottom: 8,
+    },
+    priceItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 4,
+    },
+    priceItemLabel: {
+        fontSize: 12,
+        color: COLORS.gray[600],
+    },
+    priceItemValue: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: COLORS.primary,
     },
     availabilityButton: {
         backgroundColor: COLORS.primaryLight,
@@ -402,14 +470,19 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
     },
-    selectedAvailability: {
+    availabilityInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
         marginTop: 12,
+        padding: 12,
+        borderRadius: 8,
+    },
+    selectedAvailability: {
         fontSize: 14,
         color: COLORS.gray[600],
         fontWeight: '500',
-        textAlign: 'center',
     },
-    // Стили для модального окна календаря
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',

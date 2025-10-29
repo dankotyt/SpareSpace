@@ -14,9 +14,11 @@ import {StackNavigationProp} from "@react-navigation/stack";
 import {RootStackParamList} from "@/navigation/types";
 import { useAdvertisement } from '@/services/AdvertisementContext';
 import { formatPrice } from '@/shared/utils/priceFormatter';
+import { useListing } from '@/hooks/useListing';
 
 export const AddAdvertisementScreen: React.FC = () => {
     const { addAdvertisement } = useAdvertisement();
+    const { createListing, isLoading: isCreating, error: createError } = useListing();
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const [currentStep, setCurrentStep] = useState<AdvertisementStep>(1);
     const [formData, setFormData] = useState<AdvertisementFormData>({
@@ -99,48 +101,33 @@ export const AddAdvertisementScreen: React.FC = () => {
 
     const publishAdvertisement = async () => {
         try {
-            console.log('Отправка данных на сервер...');
+            console.log('Данные для отправки:', JSON.stringify(formData, null, 2));
 
-            const advertisementData = {
-                type: formData.type,
-                address: formData.address,
-                area: formData.area,
-                features: formData.features,
-                description: formData.description,
-                photos: formData.photos,
-                price: formData.price,
-                availability: formData.availability,
-                createdAt: new Date().toISOString(),
-            };
+            const result = await createListing(formData);
 
-            console.log('Данные для отправки:', JSON.stringify(advertisementData, null, 2));
+            console.log('Объявление успешно опубликовано!', result);
 
-            //TODO: заменить на реальный URL бэкенда
-            const response = await fetch('https://your-backend-api.com/advertisements', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    // TODO: добавить авторизационный токен
-                    // 'Authorization': 'Bearer your-token'
-                },
-                body: JSON.stringify(advertisementData),
-            });
+            const mainScreenAd = createMainScreenAd(formData);
+            addAdvertisement(mainScreenAd);
 
-            if (response.ok) {
-                console.log('Объявление успешно опубликовано!');
-                const mainScreenAd = createMainScreenAd(formData);
-                addAdvertisement(mainScreenAd);
+            Alert.alert(
+                'Успех!',
+                'Ваше объявление успешно опубликовано',
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => {
+                            navigation.goBack();
+                        }
+                    }
+                ]
+            );
 
-                navigation.goBack();
-            } else {
-                console.error('Ошибка при публикации:', response.status);
-                // TODO: Показать ошибку пользователю
-                Alert.alert('Ошибка', 'Не удалось опубликовать объявление');
-            }
-        } catch (error) {
-            console.error('Ошибка при отправке данных:', error);
-            // TODO: Показать ошибку пользователю
-            Alert.alert('Ошибка', 'Не удалось отправить данные');
+        } catch (error: any) {
+            console.error('Ошибка при публикации:', error);
+
+            const errorMessage = error.message || 'Не удалось опубликовать объявление';
+            Alert.alert('Ошибка публикации', errorMessage);
         }
     };
 
@@ -184,6 +171,8 @@ export const AddAdvertisementScreen: React.FC = () => {
     };
 
     const isNextDisabled = () => {
+        if (isCreating) return true; // Блокируем кнопку во время загрузки
+
         switch (currentStep) {
             case 1:
                 return !formData.type;
@@ -193,6 +182,7 @@ export const AddAdvertisementScreen: React.FC = () => {
                 return !formData.description || formData.photos.length === 0;
             case 4:
                 const hasValidPrice =
+                    (formData.price.hourly && formData.price.hourly !== '') ||
                     (formData.price.daily && formData.price.daily !== '') ||
                     (formData.price.weekly && formData.price.weekly !== '') ||
                     (formData.price.monthly && formData.price.monthly !== '');
@@ -281,6 +271,11 @@ export const AddAdvertisementScreen: React.FC = () => {
             </View>
 
             <View style={styles.footer}>
+
+                {createError && (
+                    <Text style={styles.errorText}>{createError}</Text>
+                )}
+
                 <TouchableOpacity
                     style={[
                         styles.nextButton,
@@ -359,5 +354,11 @@ const styles = StyleSheet.create({
         color: COLORS.white,
         fontSize: 16,
         fontWeight: '600',
+    },
+    errorText: {
+        color: COLORS.red[50],
+        fontSize: 14,
+        textAlign: 'center',
+        marginBottom: 12,
     },
 });

@@ -1,5 +1,5 @@
-import { RegistrationData } from '@/hooks/useRegistration';
 import {tokenService} from "@services/tokenService";
+import { RegistrationData } from '@/types/auth';
 
 const getApiBaseUrl = () => {
     if (__DEV__) {
@@ -95,7 +95,6 @@ class AuthApiService {
         };
     }
 
-    // Вход по email и паролю
     async login(credentials: { email: string; password: string }): Promise<ApiResponse> {
         console.log('📤 Sending login data to backend:', credentials);
 
@@ -116,6 +115,71 @@ class AuthApiService {
             token: response.accessToken,
             accessToken: response.accessToken,
             refreshToken: response.refreshToken,
+        };
+    }
+
+    // async validateToken(): Promise<ApiResponse> {
+    //     const token = await tokenService.getToken();
+    //
+    //     if (!token) {
+    //         throw new Error('Токен не найден');
+    //     }
+    //
+    //     try {
+    //         const response = await fetch(`${API_BASE_URL}/users/profile/me`, {
+    //             method: 'GET',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //                 'Authorization': `Bearer ${token}`,
+    //             },
+    //         });
+    //
+    //         const responseData = await response.json();
+    //
+    //         if (!response.ok) {
+    //             throw new Error(responseData.message || `HTTP error! status: ${response.status}`);
+    //         }
+    //
+    //         return {
+    //             success: true,
+    //             data: responseData,
+    //         };
+    //     } catch (error) {
+    //         if (error instanceof Error && (
+    //             error.message.includes('401') ||
+    //             error.message.includes('токен') ||
+    //             error.message.includes('authorization')
+    //         )) {
+    //             await tokenService.removeToken();
+    //         }
+    //         throw error;
+    //     }
+    // }
+
+    async getProfile(): Promise<ApiResponse> {
+        const token = await tokenService.getToken();
+
+        if (!token) {
+            throw new Error('Токен не найден');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/users/profile/me`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            throw new Error(responseData.message || `HTTP error! status: ${response.status}`);
+        }
+
+        return {
+            success: true,
+            data: responseData,
         };
     }
 }

@@ -18,6 +18,9 @@ export const PublishStep: React.FC<PublishStepProps> = ({ formData }) => {
     };
 
     const getPriceText = () => {
+        if (formData.price?.hourly && formData.price.hourly !== '') {
+            return `${formatPrice(formData.price.daily)} ₽/час`;
+        }
         if (formData.price?.daily && formData.price.daily !== '') {
             return `${formatPrice(formData.price.daily)} ₽/день`;
         }

@@ -1,7 +1,8 @@
-import {useState, useCallback, useContext} from 'react';
-import { isCompletePhoneNumber } from '@/shared/utils/phoneFormatter';
-import { AuthContext } from '@/services/AuthContext';
-import { authApiService } from '@/services/api/authApi';
+import {useCallback, useContext, useEffect, useState} from 'react';
+import {isCompletePhoneNumber} from '@/shared/utils/phoneFormatter';
+import {AuthContext} from '@/services/AuthContext';
+import {authApiService} from '@/services/api/authApi';
+import {tokenService} from '@/services/tokenService';
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
@@ -21,6 +22,40 @@ export const useAuthLogic = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true); // Добавляем состояние проверки
+
+    const checkTokenValidity = useCallback(async (): Promise<boolean> => {
+        try {
+            const token = await tokenService.getToken();
+
+            if (!token || token.trim() === '') {
+                return false;
+            }
+
+            const profileResponse = await authApiService.getProfile();
+            return profileResponse.success && profileResponse.data;
+
+        } catch (error) {
+            await tokenService.removeToken();
+            return false;
+        }
+    }, []);
+
+    useEffect(() => {
+        const initializeAuth = async () => {
+            setIsCheckingAuth(true);
+            try {
+                const isValid = await checkTokenValidity();
+                setIsAuthenticated(isValid);
+            } catch (error) {
+                setIsAuthenticated(false);
+            } finally {
+                setIsCheckingAuth(false);
+            }
+        };
+
+        initializeAuth();
+    }, [checkTokenValidity]);
 
     const validatePhone = useCallback((phoneNumber: string): boolean => {
         return isCompletePhoneNumber(phoneNumber);
@@ -140,7 +175,13 @@ export const useAuthLogic = () => {
         }
     }, [email, password, validateEmail, validatePassword]);
 
-    const logout = useCallback(() => {
+    const logout = useCallback(async () => {
+        try {
+            await tokenService.removeToken();
+        } catch (error) {
+            console.error('Error removing token:', error);
+        }
+
         setIsAuthenticated(false);
         setPhone('+7');
         setEmail('');
@@ -152,6 +193,18 @@ export const useAuthLogic = () => {
         setError(null);
     }, []);
 
+    const refreshAuthStatus = useCallback(async (): Promise<boolean> => {
+        try {
+            const isValid = await checkTokenValidity();
+            setIsAuthenticated(isValid);
+            return isValid;
+        } catch (error) {
+            console.error('Error refreshing auth status:', error);
+            setIsAuthenticated(false);
+            return false;
+        }
+    }, [checkTokenValidity]);
+
     return {
         phone,
         email,
@@ -162,6 +215,7 @@ export const useAuthLogic = () => {
         isAuthenticated,
         isLoading,
         error,
+        isCheckingAuth,
 
         setPhone: handleSetPhone,
         setEmail: handleSetEmail,
@@ -175,5 +229,6 @@ export const useAuthLogic = () => {
         login,
         logout,
         clearError,
+        refreshAuthStatus,
     };
 };

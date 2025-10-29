@@ -139,7 +139,7 @@ export const ProfileScreen: React.FC = () => {
         );
     };
 
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !loading && !error) {
         return (
             <View style={[styles.container, { paddingTop: insets.top }]}>
                 <ScrollView
@@ -164,7 +164,7 @@ export const ProfileScreen: React.FC = () => {
         );
     }
 
-    if (loading && !userProfile) {
+    if (loading && !userProfile && !error) {
         return (
             <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
                 <ActivityIndicator size="large" color={COLORS.primary} />

@@ -1,24 +1,51 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { COLORS } from '@/shared/constants/colors';
-import {RootStackParamList} from "@/navigation/types";
+import { RootStackParamList } from "@/navigation/types";
+import { AuthRequiredPopup } from '@/components/auth/AuthRequiredPopup';
+import { useAuthCheck } from '@/hooks/useAuthCheck';
 
 export const Header: React.FC = () => {
-
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+    const { checkAuth, isChecking } = useAuthCheck();
+    const [showAuthPopup, setShowAuthPopup] = useState(false);
 
-    const handleAddAdvertisement = () => {
-        navigation.navigate('AddAdvertisement');
+    const handleAddAdvertisement = async () => {
+        const isAuthenticated = await checkAuth();
+
+        if (isAuthenticated) {
+            navigation.navigate('AddAdvertisement');
+        } else {
+            setShowAuthPopup(true);
+        }
     };
+
+    const handleNavigateToAuth = () => {
+        setShowAuthPopup(false);
+        navigation.navigate('PhoneAuth');
+    };
+
+    const handleClosePopup = () => {
+        setShowAuthPopup(false);
+    };
+
 
     return (
         <View style={styles.header}>
             <View style={styles.topRow}>
-                <TouchableOpacity onPress={handleAddAdvertisement}>
-                    <Text style={styles.addButtonText}>+ Добавить объявление</Text>
+                <TouchableOpacity
+                    onPress={handleAddAdvertisement}
+                    disabled={isChecking}
+                >
+                    <Text style={[
+                        styles.addButtonText,
+                        isChecking && styles.addButtonTextDisabled
+                    ]}>
+                        {isChecking ? 'Проверка...' : '+ Добавить объявление'}
+                    </Text>
                 </TouchableOpacity>
 
                 <View style={styles.iconsContainer}>
@@ -38,6 +65,12 @@ export const Header: React.FC = () => {
                     placeholderTextColor="#9CA3AF"
                 />
             </View>
+
+            <AuthRequiredPopup
+                visible={showAuthPopup}
+                onClose={handleClosePopup}
+                onNavigateToAuth={handleNavigateToAuth}
+            />
         </View>
     );
 };
@@ -64,6 +97,9 @@ const styles = StyleSheet.create({
         marginTop: 20,
         marginBottom: 15,
     },
+    addButtonTextDisabled: {
+        opacity: 0.5,
+    },
     searchContainer: {
         marginBottom: 12,
     },
@@ -81,9 +117,5 @@ const styles = StyleSheet.create({
     },
     iconButton: {
         padding: 8,
-    },
-    icon: {
-        fontSize: 20,
-        color: COLORS.primary,
     },
 });

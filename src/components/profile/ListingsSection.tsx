@@ -11,10 +11,10 @@ interface ListingsSectionProps {
 }
 
 export const ListingsSection: React.FC<ListingsSectionProps> = ({
-                                                                listings,
-                                                                onAllAdsPress,
-                                                                onAssetPress
-                                                            }) => {
+                                                                    listings,
+                                                                    onAllAdsPress,
+                                                                    onAssetPress
+                                                                }) => {
     const getAssetIcon = (type: string) => {
         switch (type) {
             case 'parking':
@@ -40,23 +40,36 @@ export const ListingsSection: React.FC<ListingsSectionProps> = ({
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
-                {listings.map((asset) => (
-                    <TouchableOpacity
-                        key={asset.id}
-                        style={styles.assetItem}
-                        onPress={() => onAssetPress(asset)}
-                    >
+                {listings.length === 0 ? (
+                    <View style={styles.emptyItem}>
                         <View style={styles.assetIcon}>
                             <Ionicons
-                                name={getAssetIcon(asset.type) as keyof typeof Ionicons.glyphMap}
+                                name="business-outline"
                                 size={20}
-                                color={COLORS.primary}
+                                color={COLORS.gray[400]}
                             />
                         </View>
-                        <Text style={styles.assetTitle}>{asset.title}</Text>
-                        <Text style={styles.assetAddress}>{asset.address}</Text>
-                    </TouchableOpacity>
-                ))}
+                        <Text style={styles.emptyTitle}>Нет объявлений</Text>
+                    </View>
+                ) : (
+                    listings.map((asset) => (
+                        <TouchableOpacity
+                            key={asset.id}
+                            style={styles.assetItem}
+                            onPress={() => onAssetPress(asset)}
+                        >
+                            <View style={styles.assetIcon}>
+                                <Ionicons
+                                    name={getAssetIcon(asset.type) as keyof typeof Ionicons.glyphMap}
+                                    size={20}
+                                    color={COLORS.primary}
+                                />
+                            </View>
+                            <Text style={styles.assetTitle}>{asset.title}</Text>
+                            <Text style={styles.assetAddress}>{asset.address}</Text>
+                        </TouchableOpacity>
+                    ))
+                )}
             </ScrollView>
         </View>
     );
@@ -109,5 +122,20 @@ const styles = StyleSheet.create({
     assetAddress: {
         fontSize: 12,
         color: COLORS.gray[500],
+    },
+    emptyItem: {
+        width: 140,
+        backgroundColor: COLORS.gray[100],
+        padding: 12,
+        borderRadius: 8,
+        marginRight: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    emptyTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: COLORS.gray[500],
+        textAlign: 'center',
     },
 });

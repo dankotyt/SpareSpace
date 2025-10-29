@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Booking, UserStats } from '@/types/profile';
 import { COLORS } from '@/shared/constants/colors';
 
@@ -36,44 +37,71 @@ export const BookingsSection: React.FC<BookingsSectionProps> = ({
         }
     };
 
+    const getBookingIcon = (status: string) => {
+        switch (status) {
+            case 'confirmed': return 'checkmark-circle';
+            case 'pending': return 'time';
+            case 'cancelled': return 'close-circle';
+            case 'completed': return 'checkmark-done';
+            default: return 'calendar';
+        }
+    };
+
     return (
         <View style={styles.container}>
             <TouchableOpacity style={styles.header} onPress={onAllBookingsPress}>
                 <Text style={styles.sectionTitle}>Мои бронирования</Text>
-                <View style={styles.headerRight}>
-                    <Text style={styles.count}>{stats.totalBookings}</Text>
-                    <Text style={styles.arrow}>›</Text>
-                </View>
+                <Ionicons name="chevron-forward" size={20} color={COLORS.gray[500]} />
             </TouchableOpacity>
 
-            {bookings.length === 0 ? (
-                <Text style={styles.emptyText}>Бронирований пока нет</Text>
-            ) : (
-                bookings.slice(0, 3).map(booking => (
-                    <TouchableOpacity
-                        key={booking.id}
-                        style={styles.bookingItem}
-                        onPress={() => onBookingPress(booking)}
-                    >
-                        <View style={styles.bookingInfo}>
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}
+            >
+                {bookings.length === 0 ? (
+                    <View style={styles.emptyItem}>
+                        <View style={styles.bookingIcon}>
+                            <Ionicons
+                                name="calendar-outline"
+                                size={20}
+                                color={COLORS.gray[400]}
+                            />
+                        </View>
+                        <Text style={styles.emptyTitle}>Нет бронирований</Text>
+                    </View>
+                ) : (
+                    bookings.map((booking) => (
+                        <TouchableOpacity
+                            key={booking.id}
+                            style={styles.bookingItem}
+                            onPress={() => onBookingPress(booking)}
+                        >
+                            <View style={styles.bookingIcon}>
+                                <Ionicons
+                                    name={getBookingIcon(booking.status) as keyof typeof Ionicons.glyphMap}
+                                    size={20}
+                                    color={getStatusColor(booking.status)}
+                                />
+                            </View>
                             <Text style={styles.bookingTitle}>
                                 Бронирование #{booking.id}
                             </Text>
                             <Text style={styles.bookingPrice}>
                                 {booking.total_price} ₽
                             </Text>
-                        </View>
-                        <View style={[
-                            styles.statusBadge,
-                            { backgroundColor: getStatusColor(booking.status) }
-                        ]}>
-                            <Text style={styles.statusText}>
-                                {getStatusText(booking.status)}
-                            </Text>
-                        </View>
-                    </TouchableOpacity>
-                ))
-            )}
+                            <View style={[
+                                styles.statusBadge,
+                                { backgroundColor: getStatusColor(booking.status) }
+                            ]}>
+                                <Text style={styles.statusText}>
+                                    {getStatusText(booking.status)}
+                                </Text>
+                            </View>
+                        </TouchableOpacity>
+                    ))
+                )}
+            </ScrollView>
         </View>
     );
 };
@@ -83,6 +111,8 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.white,
         padding: 16,
         marginTop: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.gray[200],
     },
     header: {
         flexDirection: 'row',
@@ -95,31 +125,24 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: COLORS.text,
     },
-    headerRight: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    count: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: COLORS.primary,
-        marginRight: 8,
-    },
-    arrow: {
-        fontSize: 18,
-        color: COLORS.gray[500],
+    scrollContent: {
+        gap: 12,
     },
     bookingItem: {
+        width: 140,
         backgroundColor: COLORS.gray[100],
         padding: 12,
         borderRadius: 8,
-        marginBottom: 8,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+        marginRight: 8,
     },
-    bookingInfo: {
-        flex: 1,
+    bookingIcon: {
+        width: 40,
+        height: 40,
+        borderRadius: 8,
+        backgroundColor: COLORS.primaryLight,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 8,
     },
     bookingTitle: {
         fontSize: 14,
@@ -131,22 +154,32 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         color: COLORS.green[500],
+        marginBottom: 6,
     },
     statusBadge: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 8,
+        alignSelf: 'flex-start',
     },
     statusText: {
-        fontSize: 12,
+        fontSize: 10,
         fontWeight: '600',
         color: COLORS.white,
     },
-    emptyText: {
+    emptyItem: {
+        width: 140,
+        backgroundColor: COLORS.gray[100],
+        padding: 12,
+        borderRadius: 8,
+        marginRight: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    emptyTitle: {
         fontSize: 14,
+        fontWeight: '600',
         color: COLORS.gray[500],
         textAlign: 'center',
-        fontStyle: 'italic',
-        paddingVertical: 20,
     },
 });

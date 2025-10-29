@@ -1,8 +1,15 @@
 import { COLORS } from '@/shared/constants/colors';
 
-export const getInputColors = (value: string, isFocused: boolean) => {
+export const getInputColors = (value: string, isFocused: boolean, error?: string) => {
     const safeValue = value || '';
     const hasText = safeValue.length > 2;
+
+    if (error) {
+        return {
+            textColor: COLORS.red[10],
+            hasText,
+        };
+    }
 
     const getBorderColor = () => {
         if (isFocused) {

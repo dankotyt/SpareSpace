@@ -15,6 +15,7 @@ interface ConfirmPasswordInputProps {
     value: string;
     password: string;
     isFocused: boolean;
+    error?: string;
     onChangeText: (text: string) => void;
     onFocus: () => void;
     onBlur: () => void;
@@ -24,6 +25,7 @@ export const ConfirmPasswordInput: React.FC<ConfirmPasswordInputProps> = ({
                                                                               value,
                                                                               password,
                                                                               isFocused,
+                                                                              error,
                                                                               onChangeText,
                                                                               onFocus,
                                                                               onBlur,
@@ -31,9 +33,10 @@ export const ConfirmPasswordInput: React.FC<ConfirmPasswordInputProps> = ({
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [hasBeenTouched, setHasBeenTouched] = useState(false);
 
-    const { borderColor, textColor, labelColor } = getInputColors(value, isFocused);
-    const isError = hasBeenTouched && value !== '' && value !== password;
-    const isValid = value !== '' && value === password;
+    const displayError = error || (hasBeenTouched && value !== '' && value !== password ? 'Пароли не совпадают' : undefined);
+    const { borderColor, textColor, labelColor } = getInputColors(value, isFocused, displayError);
+
+    const isValid = value !== '' && value === password && !error;
 
     const togglePasswordVisibility = () => {
         setIsPasswordVisible(!isPasswordVisible);
@@ -52,7 +55,7 @@ export const ConfirmPasswordInput: React.FC<ConfirmPasswordInputProps> = ({
     };
 
     const getEyeIconColor = () => {
-        if (isError) return COLORS.red[500];
+        if (displayError) return COLORS.red[500];
         if (isValid) return COLORS.green[500];
         return isPasswordVisible ? COLORS.primary : COLORS.borderEmpty;
     };
@@ -61,30 +64,18 @@ export const ConfirmPasswordInput: React.FC<ConfirmPasswordInputProps> = ({
         return isPasswordVisible ? 'eye-off-outline' : 'eye-outline';
     };
 
-    const getFinalBorderColor = () => {
-        if (isError) return COLORS.red[500];
-        if (isValid) return COLORS.green[500];
-        return borderColor;
-    };
-
-    const getFinalLabelColor = () => {
-        if (isError) return COLORS.red[500];
-        if (isValid) return COLORS.green[500];
-        return labelColor;
-    };
-
     return (
         <TouchableWithoutFeedback onPress={onFocus}>
             <View style={styles.container}>
                 <Text style={[
                     styles.label,
-                    { color: getFinalLabelColor() }
+                    { color: labelColor }
                 ]}>
                     Повторите пароль
                 </Text>
                 <View style={[
                     styles.inputContainer,
-                    { borderColor: getFinalBorderColor() }
+                    { borderColor }
                 ]}>
                     <TextInput
                         style={[
@@ -100,6 +91,7 @@ export const ConfirmPasswordInput: React.FC<ConfirmPasswordInputProps> = ({
                         autoCapitalize="none"
                         autoCorrect={false}
                         selectionColor={COLORS.primary}
+                        maxLength={50}
                     />
                     <TouchableOpacity
                         style={styles.eyeIcon}
@@ -112,12 +104,11 @@ export const ConfirmPasswordInput: React.FC<ConfirmPasswordInputProps> = ({
                         />
                     </TouchableOpacity>
                 </View>
-                {isError && (
-                    <Text style={styles.errorText}>Пароли не совпадают</Text>
-                )}
-                {isValid && (
+                {displayError ? (
+                    <Text style={styles.errorText}>{displayError}</Text>
+                ) : isValid ? (
                     <Text style={styles.successText}>Пароли совпадают</Text>
-                )}
+                ) : null}
             </View>
         </TouchableWithoutFeedback>
     );
@@ -153,15 +144,15 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
     errorText: {
-        color: COLORS.red[500],
-        fontSize: 14,
-        marginTop: 8,
+        color: COLORS.red[50],
+        fontSize: 12,
+        marginTop: 4,
         marginLeft: 4,
     },
     successText: {
         color: COLORS.green[500],
-        fontSize: 14,
-        marginTop: 8,
+        fontSize: 12,
+        marginTop: 4,
         marginLeft: 4,
     },
 });

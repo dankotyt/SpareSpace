@@ -14,6 +14,7 @@ import { getInputColors } from '@/shared/utils/inputColors';
 interface PasswordInputProps {
     value: string;
     isFocused: boolean;
+    error?: string;
     onChangeText: (text: string) => void;
     onFocus: () => void;
     onBlur: () => void;
@@ -22,19 +23,21 @@ interface PasswordInputProps {
 export const PasswordInput: React.FC<PasswordInputProps> = ({
                                                                 value,
                                                                 isFocused,
+                                                                error,
                                                                 onChangeText,
                                                                 onFocus,
                                                                 onBlur,
                                                             }) => {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
-    const { borderColor, textColor, labelColor } = getInputColors(value, isFocused);
+    const { borderColor, textColor, labelColor } = getInputColors(value, isFocused, error);
 
     const togglePasswordVisibility = () => {
         setIsPasswordVisible(!isPasswordVisible);
     };
 
     const getEyeIconColor = () => {
+        if (error) return COLORS.red[500];
         return isPasswordVisible ? COLORS.primary : COLORS.borderEmpty;
     };
 
@@ -68,6 +71,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
                         autoCapitalize="none"
                         autoCorrect={false}
                         selectionColor={COLORS.primary}
+                        maxLength={50}
                     />
                     <TouchableOpacity
                         style={styles.eyeIcon}
@@ -80,6 +84,9 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
                         />
                     </TouchableOpacity>
                 </View>
+                {error ? (
+                    <Text style={styles.errorText}>{error}</Text>
+                ) : null}
             </View>
         </TouchableWithoutFeedback>
     );
@@ -114,5 +121,11 @@ const styles = StyleSheet.create({
     eyeIcon: {
         padding: 4,
         marginLeft: 8,
+    },
+    errorText: {
+        color: COLORS.red[50],
+        fontSize: 12,
+        marginTop: 4,
+        marginLeft: 4,
     },
 });

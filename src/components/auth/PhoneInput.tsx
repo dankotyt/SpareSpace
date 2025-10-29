@@ -13,6 +13,7 @@ import { formatPhoneNumber } from '@/shared/utils/phoneFormatter';
 interface PhoneInputProps {
     value: string;
     isFocused: boolean;
+    error?: string;
     onChangeText: (text: string) => void;
     onFocus: () => void;
     onBlur: () => void;
@@ -21,6 +22,7 @@ interface PhoneInputProps {
 export const PhoneInput: React.FC<PhoneInputProps> = ({
                                                           value,
                                                           isFocused,
+                                                          error,
                                                           onChangeText,
                                                           onFocus,
                                                           onBlur,
@@ -30,7 +32,7 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
         onChangeText(formatted);
     };
 
-    const { borderColor, textColor, labelColor } = getInputColors(value, isFocused);
+    const { borderColor, textColor, labelColor } = getInputColors(value, isFocused, error);
 
     return (
         <TouchableWithoutFeedback onPress={onFocus}>
@@ -61,6 +63,9 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
                         selectionColor={COLORS.primary}
                     />
                 </View>
+                {error ? (
+                    <Text style={styles.errorText}>{error}</Text>
+                ) : null}
             </View>
         </TouchableWithoutFeedback>
     );
@@ -88,5 +93,11 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         fontWeight: '500',
         padding: 0,
+    },
+    errorText: {
+        color: COLORS.red[50],
+        fontSize: 12,
+        marginTop: 4,
+        marginLeft: 4,
     },
 });

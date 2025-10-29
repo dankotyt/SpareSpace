@@ -37,11 +37,11 @@ export const RegistrationScreen: React.FC = () => {
         registrationData,
         isFocused,
         currentField,
+        errors,
         updateField,
         setFocus,
         isValid,
         isLoading,
-        error,
         register,
         clearError,
     } = useRegistration();
@@ -53,7 +53,6 @@ export const RegistrationScreen: React.FC = () => {
             if (result.success) {
                 console.log('Registration successful');
 
-                // Показываем успешное сообщение
                 Alert.alert(
                     'Успешная регистрация!',
                     'Ваш аккаунт был успешно создан.',
@@ -61,7 +60,6 @@ export const RegistrationScreen: React.FC = () => {
                         {
                             text: 'OK',
                             onPress: () => {
-                                // Переходим на главный экран
                                 navigation.reset({
                                     index: 0,
                                     routes: [{ name: 'MainTabs' }],
@@ -71,13 +69,12 @@ export const RegistrationScreen: React.FC = () => {
                     ]
                 );
             } else {
-                Alert.alert('Ошибка', result.message || 'Произошла ошибка при регистрации');
+                if (!result.message?.includes('email') && !result.message?.includes('phone')) {
+                    Alert.alert('Ошибка', result.message || 'Произошла ошибка при регистрации');
+                }
             }
         } catch (err) {
             console.log('Registration error:', err);
-
-            const errorMessage = err instanceof Error ? err.message : 'Произошла неизвестная ошибка';
-            Alert.alert('Ошибка регистрации', errorMessage);
         }
     };
 
@@ -114,19 +111,10 @@ export const RegistrationScreen: React.FC = () => {
                             Заполните данные для создания аккаунта
                         </Text>
 
-                        {/* Показываем ошибку если есть */}
-                        {error && (
-                            <View style={styles.errorContainer}>
-                                <Text style={styles.errorText}>{error}</Text>
-                                <TouchableOpacity onPress={clearError}>
-                                    <Text style={styles.closeError}>✕</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-
                         <NameInput
                             value={registrationData.first_name}
                             isFocused={isFocused && currentField === 'first_name'}
+                            error={errors.first_name}
                             onChangeText={(text) => updateField('first_name', text)}
                             onFocus={() => setFocus(true, 'first_name')}
                             onBlur={() => setFocus(false)}
@@ -135,6 +123,7 @@ export const RegistrationScreen: React.FC = () => {
                         <SurnameInput
                             value={registrationData.last_name}
                             isFocused={isFocused && currentField === 'last_name'}
+                            error={errors.last_name}
                             onChangeText={(text) => updateField('last_name', text)}
                             onFocus={() => setFocus(true, 'last_name')}
                             onBlur={() => setFocus(false)}
@@ -143,6 +132,7 @@ export const RegistrationScreen: React.FC = () => {
                         <PatronymicInput
                             value={registrationData.patronymic || ''}
                             isFocused={isFocused && currentField === 'patronymic'}
+                            error={errors.patronymic}
                             onChangeText={(text) => updateField('patronymic', text)}
                             onFocus={() => setFocus(true, 'patronymic')}
                             onBlur={() => setFocus(false)}
@@ -151,6 +141,7 @@ export const RegistrationScreen: React.FC = () => {
                         <PhoneInput
                             value={registrationData.phone}
                             isFocused={isFocused && currentField === 'phone'}
+                            error={errors.phone}
                             onChangeText={(text) => updateField('phone', text)}
                             onFocus={() => setFocus(true, 'phone')}
                             onBlur={() => setFocus(false)}
@@ -159,6 +150,7 @@ export const RegistrationScreen: React.FC = () => {
                         <EmailInput
                             value={registrationData.email}
                             isFocused={isFocused && currentField === 'email'}
+                            error={errors.email}
                             onChangeText={(text) => updateField('email', text)}
                             onFocus={() => setFocus(true, 'email')}
                             onBlur={() => setFocus(false)}
@@ -167,6 +159,7 @@ export const RegistrationScreen: React.FC = () => {
                         <PasswordInput
                             value={registrationData.password}
                             isFocused={isFocused && currentField === 'password'}
+                            error={errors.password}
                             onChangeText={(text) => updateField('password', text)}
                             onFocus={() => setFocus(true, 'password')}
                             onBlur={() => setFocus(false)}
@@ -176,6 +169,7 @@ export const RegistrationScreen: React.FC = () => {
                             value={registrationData.confirmPassword}
                             password={registrationData.password}
                             isFocused={isFocused && currentField === 'confirmPassword'}
+                            error={errors.confirmPassword}
                             onChangeText={(text) => updateField('confirmPassword', text)}
                             onFocus={() => setFocus(true, 'confirmPassword')}
                             onBlur={() => setFocus(false)}
@@ -269,26 +263,10 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
         paddingTop: 10,
     },
-    errorContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: COLORS.red[10],
-        padding: 12,
-        borderRadius: 8,
-        marginBottom: 16,
-        borderLeftWidth: 4,
-        borderLeftColor: COLORS.red[10],
-    },
     errorText: {
         color: COLORS.red[600],
         fontSize: 14,
         flex: 1,
         marginRight: 8,
-    },
-    closeError: {
-        color: COLORS.red[600],
-        fontSize: 16,
-        fontWeight: 'bold',
     },
 });

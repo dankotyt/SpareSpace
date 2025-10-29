@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.white,
         borderBottomWidth: 1,
         borderBottomColor: COLORS.gray[200],
-        marginTop: 50,
+        marginTop: 0,
     },
     avatarContainer: {
         marginBottom: 16,
@@ -108,6 +108,7 @@ const styles = StyleSheet.create({
         color: COLORS.text,
         marginBottom: 4,
         textAlign: 'center',
+        paddingHorizontal: 8,
     },
     joinDate: {
         fontSize: 14,

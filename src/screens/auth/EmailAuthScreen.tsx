@@ -98,13 +98,9 @@ export const EmailAuthScreen: React.FC = () => {
 
                         <Text style={styles.title}>Вход или регистрация</Text>
 
-                        {/* Показываем ошибку если есть */}
                         {error && (
-                            <View style={styles.errorContainer}>
+                            <View >
                                 <Text style={styles.errorText}>{error}</Text>
-                                <TouchableOpacity onPress={clearError}>
-                                    <Text style={styles.closeError}>✕</Text>
-                                </TouchableOpacity>
                             </View>
                         )}
 
@@ -209,26 +205,12 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
         paddingTop: 10,
     },
-    errorContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: COLORS.red[10],
-        padding: 12,
-        borderRadius: 8,
-        marginBottom: 16,
-        borderLeftWidth: 4,
-        borderLeftColor: COLORS.red[10],
-    },
     errorText: {
-        color: COLORS.red[600],
+        color: COLORS.red[10],
         fontSize: 14,
         flex: 1,
         marginRight: 8,
-    },
-    closeError: {
-        color: COLORS.red[600],
-        fontSize: 16,
-        fontWeight: 'bold',
+        marginBottom: 10,
+        fontWeight: '500',
     },
 });

@@ -1,36 +1,12 @@
 import { useState, useCallback } from 'react';
-import { authApiService, ApiResponse } from '@/services/api/authApi';
-import { isCompletePhoneNumber } from '@/shared/utils/phoneFormatter';
+import { authApiService } from '@/services/api/authApi';
 
-export interface RegistrationData {
-    first_name: string;
-    last_name: string;
-    patronymic?: string;
-    phone: string;
-    email: string;
-    password: string;
-    confirmPassword: string;
-}
-
-interface UseRegistrationReturn {
-    registrationData: RegistrationData;
-    isFocused: boolean;
-    currentField: string | null;
-    isLoading: boolean;
-    error: string | null;
-    updateField: (field: keyof RegistrationData, value: string) => void;
-    setFocus: (focused: boolean, field?: string) => void;
-    isValid: boolean;
-    register: () => Promise<ApiResponse>;
-    clearError: () => void;
-}
-
-export const useRegistration = (): UseRegistrationReturn => {
-    const [registrationData, setRegistrationData] = useState<RegistrationData>({
+export const useRegistration = () => {
+    const [registrationData, setRegistrationData] = useState({
         first_name: '',
         last_name: '',
         patronymic: '',
-        phone: '+7',
+        phone: '',
         email: '',
         password: '',
         confirmPassword: '',
@@ -39,120 +15,171 @@ export const useRegistration = (): UseRegistrationReturn => {
     const [isFocused, setIsFocused] = useState(false);
     const [currentField, setCurrentField] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
-    const validateFirstName = useCallback((firstName: string): boolean => {
-        return firstName.trim().length > 0;
-    }, []);
+    const updateField = useCallback((field: string, value: string) => {
+        setRegistrationData(prev => ({ ...prev, [field]: value }));
 
-    const validateLastName = useCallback((lastName: string): boolean => {
-        return lastName.trim().length > 0;
-    }, []);
-
-    const validatePhone = useCallback((phone: string): boolean => {
-        return isCompletePhoneNumber(phone);
-    }, []);
-
-    const validateEmail = useCallback((email: string): boolean => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(email);
-    }, []);
-
-    const validatePassword = useCallback((password: string): boolean => {
-        return password.length >= 8;
-    }, []);
-
-    const validateConfirmPassword = useCallback((confirmPassword: string, password: string): boolean => {
-        return confirmPassword === password && confirmPassword.length > 0;
-    }, []);
-
-    const updateField = useCallback((field: keyof RegistrationData, value: string) => {
-        setRegistrationData(prev => ({
-            ...prev,
-            [field]: value,
-        }));
-        if (error) {
-            setError(null);
+        if (errors[field]) {
+            setErrors(prev => ({ ...prev, [field]: '' }));
         }
-    }, [error]);
+    }, [errors]);
 
     const setFocus = useCallback((focused: boolean, field?: string) => {
         setIsFocused(focused);
-        setCurrentField(field || null);
+        setCurrentField(focused ? field || null : null);
     }, []);
 
-    const clearError = useCallback(() => {
-        setError(null);
+    const clearError = useCallback((field?: string) => {
+        if (field) {
+            setErrors(prev => ({ ...prev, [field]: '' }));
+        } else {
+            setErrors({});
+        }
     }, []);
 
-    const isValid = useCallback((): boolean => {
-        const { first_name, last_name, phone, email, password, confirmPassword } = registrationData;
+    const validateField = useCallback((field: string, value: string): string => {
+        switch (field) {
+            case 'first_name':
+                if (!value.trim()) return 'Имя обязательно для заполнения';
+                if (value.length > 50) return 'Имя не должно превышать 50 символов';
+                return '';
 
-        return (
-            validateFirstName(first_name) &&
-            validateLastName(last_name) &&
-            validatePhone(phone) &&
-            validateEmail(email) &&
-            validatePassword(password) &&
-            validateConfirmPassword(confirmPassword, password)
-        );
-    }, [registrationData, validateFirstName, validateLastName, validatePhone, validateEmail, validatePassword, validateConfirmPassword]);
+            case 'last_name':
+                if (!value.trim()) return 'Фамилия обязательна для заполнения';
+                if (value.length > 50) return 'Фамилия не должна превышать 50 символов';
+                return '';
 
-    const register = useCallback(async (): Promise<ApiResponse> => {
-        if (!isValid()) {
-            const { first_name, last_name, phone, email, password, confirmPassword } = registrationData;
+            case 'patronymic':
+                if (value.length > 50) return 'Отчество не должно превышать 50 символов';
+                return '';
 
-            if (!validateFirstName(first_name)) {
-                throw new Error('Введите имя');
-            }
-            if (!validateLastName(last_name)) {
-                throw new Error('Введите фамилию');
-            }
-            if (!validatePhone(phone)) {
-                throw new Error('Введите корректный номер телефона');
-            }
-            if (!validateEmail(email)) {
-                throw new Error('Введите корректный email');
-            }
-            if (!validatePassword(password)) {
-                throw new Error('Пароль должен содержать минимум 8 символов');
-            }
-            if (!validateConfirmPassword(confirmPassword, password)) {
-                throw new Error('Пароли не совпадают');
-            }
+            case 'email':
+                if (!value.trim()) return 'Email обязателен для заполнения';
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Введите корректный email';
+                return '';
 
-            throw new Error('Не все поля заполнены корректно');
+            case 'phone':
+                if (!value.trim()) return 'Телефон обязателен для заполнения';
+                if (value.replace(/\D/g, '').length < 11) return 'Введите корректный номер телефона';
+                return '';
+
+            case 'password':
+                if (!value.trim()) return 'Пароль обязателен для заполнения';
+                if (value.length < 6) return 'Пароль должен содержать минимум 6 символов';
+                return '';
+
+            case 'confirmPassword':
+                if (value !== registrationData.password) return 'Пароли не совпадают';
+                return '';
+
+            default:
+                return '';
+        }
+    }, [registrationData.password]);
+
+    const isValid = useCallback(() => {
+        const requiredFields = ['first_name', 'last_name', 'phone', 'email', 'password', 'confirmPassword'];
+
+        for (const field of requiredFields) {
+            const error = validateField(field, registrationData[field as keyof typeof registrationData]);
+            if (error) return false;
+        }
+
+        return registrationData.password === registrationData.confirmPassword;
+    }, [registrationData, validateField]);
+
+    const register = useCallback(async () => {
+        setErrors({});
+
+        const newErrors: Record<string, string> = {};
+        Object.keys(registrationData).forEach(field => {
+            const error = validateField(field, registrationData[field as keyof typeof registrationData]);
+            if (error) {
+                newErrors[field] = error;
+            }
+        });
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return { success: false, message: 'Пожалуйста, исправьте ошибки в форме' };
         }
 
         setIsLoading(true);
-        setError(null);
 
         try {
-            const response = await authApiService.register(registrationData);
+            const result = await authApiService.register({
+                first_name: registrationData.first_name,
+                last_name: registrationData.last_name,
+                patronymic: registrationData.patronymic || undefined,
+                phone: registrationData.phone,
+                email: registrationData.email,
+                password: registrationData.password,
+            });
 
-            if (!response.success) {
-                throw new Error(response.message || 'Ошибка регистрации');
+            if (result.success) {
+                return { success: true, message: 'Регистрация успешна' };
+            } else {
+                let fieldErrors: Record<string, string> = {};
+
+                if (result.message?.includes('Email already exists')) {
+                    fieldErrors.email = 'Этот email уже используется';
+                } else if (result.message?.includes('Phone already exists')) {
+                    fieldErrors.phone = 'Этот номер телефона уже используется';
+                } else if (result.message?.includes('email')) {
+                    fieldErrors.email = result.message;
+                } else if (result.message?.includes('phone')) {
+                    fieldErrors.phone = result.message;
+                } else if (result.message?.includes('first_name') || result.message?.includes('name')) {
+                    fieldErrors.first_name = result.message;
+                } else if (result.message?.includes('last_name')) {
+                    fieldErrors.last_name = result.message;
+                }
+
+                if (Object.keys(fieldErrors).length > 0) {
+                    setErrors(fieldErrors);
+                }
+
+                return {
+                    success: false,
+                    message: result.message || 'Ошибка регистрации'
+                };
+            }
+        } catch (error: any) {
+            console.log('Registration error:', error);
+
+            let errorMessage = 'Произошла неизвестная ошибка';
+            let fieldErrors: Record<string, string> = {};
+
+            if (error.message?.includes('Email already exists')) {
+                fieldErrors.email = 'Этот email уже используется';
+                errorMessage = 'Этот email уже используется';
+            } else if (error.message?.includes('Phone already exists')) {
+                fieldErrors.phone = 'Этот номер телефона уже используется';
+                errorMessage = 'Этот номер телефона уже используется';
+            } else {
+                errorMessage = error.message || 'Ошибка сети';
             }
 
-            return response;
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Ошибка регистрации';
-            setError(errorMessage);
-            throw new Error(errorMessage);
+            if (Object.keys(fieldErrors).length > 0) {
+                setErrors(fieldErrors);
+            }
+
+            return { success: false, message: errorMessage };
         } finally {
             setIsLoading(false);
         }
-    }, [registrationData, isValid, validateFirstName, validateLastName, validatePhone, validateEmail, validatePassword, validateConfirmPassword]);
+    }, [registrationData, validateField]);
 
     return {
         registrationData,
         isFocused,
         currentField,
-        isLoading,
-        error,
+        errors,
         updateField,
         setFocus,
         isValid: isValid(),
+        isLoading,
         register,
         clearError,
     };

@@ -8,10 +8,10 @@ export const useMain = () => {
     const { ads, refreshAds } = useAdvertisement();
 
     const categories: CategoryItem[] = [
-        { id: '1', title: 'Парковочное место', type: 'parking' },
-        { id: '2', title: 'Гараж', type: 'garage' },
-        { id: '3', title: 'Кладовая', type: 'pantry' },
-        { id: '4', title: 'Кладовая', type: 'pantry' },
+        { id: '1', title: 'Парковочное место', type: 'PARKING' },
+        { id: '2', title: 'Гараж', type: 'GARAGE' },
+        { id: '3', title: 'Кладовая', type: 'STORAGE' },
+        { id: '4', title: 'Кладовая', type: 'STORAGE' },
     ];
 
     const handleCategorySelect = useCallback((categoryId: string) => {

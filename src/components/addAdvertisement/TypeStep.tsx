@@ -4,23 +4,23 @@ import { COLORS } from '@/shared/constants/colors';
 
 interface TypeStepProps {
     selectedType: string | null;
-    onTypeSelect: (type: 'parking' | 'pantry' | 'garage') => void;
+    onTypeSelect: (type: 'PARKING' | 'STORAGE' | 'GARAGE') => void;
 }
 
 export const TypeStep: React.FC<TypeStepProps> = ({ selectedType, onTypeSelect }) => {
     const types = [
         {
-            id: 'parking' as const,
+            id: 'PARKING' as const,
             title: 'Парковочное место',
             description: 'Подходит для автомобилей'
         },
         {
-            id: 'pantry' as const,
+            id: 'STORAGE' as const,
             title: 'Кладовка',
             description: 'Подходит для хранения вещей'
         },
         {
-            id: 'garage' as const,
+            id: 'GARAGE' as const,
             title: 'Гараж',
             description: 'Подходит для автомобилей или хранения вещей'
         }

@@ -22,21 +22,30 @@ export const useAuthLogic = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isCheckingAuth, setIsCheckingAuth] = useState(true); // Добавляем состояние проверки
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+    const [user, setUser] = useState<any>(null);
 
     const checkTokenValidity = useCallback(async (): Promise<boolean> => {
         try {
             const token = await tokenService.getToken();
 
             if (!token || token.trim() === '') {
+                setUser(null);
                 return false;
             }
 
             const profileResponse = await authApiService.getProfile();
-            return profileResponse.success && profileResponse.data;
+            if (profileResponse.success && profileResponse.data) {
+                setUser(profileResponse.data);
+                return true;
+            } else {
+                setUser(null);
+                return false;
+            }
 
         } catch (error) {
             await tokenService.removeToken();
+            setUser(null);
             return false;
         }
     }, []);
@@ -163,6 +172,10 @@ export const useAuthLogic = () => {
 
             if (response.accessToken) {
                 setIsAuthenticated(true);
+                const profileResponse = await authApiService.getProfile();
+                if (profileResponse.success && profileResponse.data) {
+                    setUser(profileResponse.data);
+                }
             }
 
             return response;
@@ -183,6 +196,7 @@ export const useAuthLogic = () => {
         }
 
         setIsAuthenticated(false);
+        setUser(null);
         setPhone('+7');
         setEmail('');
         setPassword('');
@@ -216,6 +230,7 @@ export const useAuthLogic = () => {
         isLoading,
         error,
         isCheckingAuth,
+        user,
 
         setPhone: handleSetPhone,
         setEmail: handleSetEmail,

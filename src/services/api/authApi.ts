@@ -1,14 +1,6 @@
 import {tokenService} from "@services/tokenService";
 import { RegistrationData } from '@/types/auth';
-
-const getApiBaseUrl = () => {
-    if (__DEV__) {
-        return 'http://192.168.0.198:3000';
-    }
-    return 'https://your-production-domain.com';
-};
-
-const API_BASE_URL = getApiBaseUrl();
+import { API_BASE_URL } from '@/config/env';
 
 console.log('🔗 Using API URL:', API_BASE_URL);
 
@@ -64,12 +56,12 @@ class AuthApiService {
     }
 
     async register(userData: RegistrationData): Promise<ApiResponse> {
-        const { confirmPassword, first_name, last_name, patronymic, ...restData } = userData;
+        const { confirmPassword, firstName, lastName, patronymic, ...restData } = userData;
 
         const apiData = {
             ...restData,
-            first_name: first_name.trim(),
-            last_name: last_name.trim(),
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
             patronymic: patronymic?.trim() || undefined,
         };
 
@@ -117,44 +109,6 @@ class AuthApiService {
             refreshToken: response.refreshToken,
         };
     }
-
-    // async validateToken(): Promise<ApiResponse> {
-    //     const token = await tokenService.getToken();
-    //
-    //     if (!token) {
-    //         throw new Error('Токен не найден');
-    //     }
-    //
-    //     try {
-    //         const response = await fetch(`${API_BASE_URL}/users/profile/me`, {
-    //             method: 'GET',
-    //             headers: {
-    //                 'Content-Type': 'application/json',
-    //                 'Authorization': `Bearer ${token}`,
-    //             },
-    //         });
-    //
-    //         const responseData = await response.json();
-    //
-    //         if (!response.ok) {
-    //             throw new Error(responseData.message || `HTTP error! status: ${response.status}`);
-    //         }
-    //
-    //         return {
-    //             success: true,
-    //             data: responseData,
-    //         };
-    //     } catch (error) {
-    //         if (error instanceof Error && (
-    //             error.message.includes('401') ||
-    //             error.message.includes('токен') ||
-    //             error.message.includes('authorization')
-    //         )) {
-    //             await tokenService.removeToken();
-    //         }
-    //         throw error;
-    //     }
-    // }
 
     async getProfile(): Promise<ApiResponse> {
         const token = await tokenService.getToken();

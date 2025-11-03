@@ -10,16 +10,16 @@ interface PublishStepProps {
 export const PublishStep: React.FC<PublishStepProps> = ({ formData }) => {
     const getTypeLabel = (type: string) => {
         switch (type) {
-            case 'parking': return 'Парковочное место';
-            case 'pantry': return 'Кладовка';
-            case 'garage': return 'Гараж';
+            case 'PARKING': return 'Парковочное место';
+            case 'STORAGE': return 'Кладовка';
+            case 'GARAGE': return 'Гараж';
             default: return '';
         }
     };
 
     const getPriceText = () => {
         if (formData.price?.hourly && formData.price.hourly !== '') {
-            return `${formatPrice(formData.price.daily)} ₽/час`;
+            return `${formatPrice(formData.price.hourly)} ₽/час`;
         }
         if (formData.price?.daily && formData.price.daily !== '') {
             return `${formatPrice(formData.price.daily)} ₽/день`;
@@ -34,10 +34,46 @@ export const PublishStep: React.FC<PublishStepProps> = ({ formData }) => {
     };
 
     const getAvailabilityText = () => {
-        if (formData.availability) {
-            const start = new Date(formData.availability.startDate);
-            const end = new Date(formData.availability.endDate);
-            return `Доступно с ${start.toLocaleDateString('ru')} по ${end.toLocaleDateString('ru')}`;
+        if (formData.availability && formData.availability.start && formData.availability.end) {
+            try {
+
+                const parseDate = (dateString: string) => {
+                    if (dateString.includes('T')) {
+                        return new Date(dateString);
+                    }
+                    if (dateString.includes(' ')) {
+                        return new Date(dateString.replace(' ', 'T') + 'Z');
+                    }
+                    return new Date(dateString);
+                };
+
+                const start = parseDate(formData.availability.start);
+                const end = parseDate(formData.availability.end);
+
+                if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                    return 'Неверный формат даты';
+                }
+
+                const startDate = start.toLocaleDateString('ru');
+                const startTime = start.toLocaleTimeString('ru', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                const endDate = end.toLocaleDateString('ru');
+                const endTime = end.toLocaleTimeString('ru', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                if (startDate === endDate) {
+                    return `Доступно ${startDate} с ${startTime} по ${endTime}`;
+                }
+
+                return `Доступно с ${startDate} ${startTime} по ${endDate} ${endTime}`;
+            } catch (error) {
+                console.error('❌ Error parsing dates:', error);
+                return 'Ошибка в датах';
+            }
         }
         return 'Не указан';
     };

@@ -17,21 +17,30 @@ export const ListingsSection: React.FC<ListingsSectionProps> = ({
                                                                 }) => {
     const getAssetIcon = (type: string) => {
         switch (type) {
-            case 'parking':
-                return 'car';
-            case 'garage':
-                return 'home';
-            case 'pantry':
-                return 'archive';
-            default:
-                return 'business';
+            case 'PARKING': return 'car';
+            case 'GARAGE': return 'home';
+            case 'STORAGE': return 'archive';
+            default: return 'business';
+        }
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'ACTIVE': return COLORS.green[500];
+            case 'DRAFT': return COLORS.orange[500];
+            default: return COLORS.gray[500];
         }
     };
 
     return (
         <View style={styles.container}>
             <TouchableOpacity style={styles.header} onPress={onAllAdsPress}>
-                <Text style={styles.sectionTitle}>Мои объявления</Text>
+                <View>
+                    <Text style={styles.sectionTitle}>Мои объявления</Text>
+                    <Text style={styles.subtitle}>
+                        {listings.length} объявлений
+                    </Text>
+                </View>
                 <Ionicons name="chevron-forward" size={20} color={COLORS.gray[500]} />
             </TouchableOpacity>
 
@@ -52,21 +61,38 @@ export const ListingsSection: React.FC<ListingsSectionProps> = ({
                         <Text style={styles.emptyTitle}>Нет объявлений</Text>
                     </View>
                 ) : (
-                    listings.map((asset) => (
+                    listings.map((listing) => (
                         <TouchableOpacity
-                            key={asset.id}
+                            key={listing.id}
                             style={styles.assetItem}
-                            onPress={() => onAssetPress(asset)}
+                            onPress={() => onAssetPress(listing)}
                         >
-                            <View style={styles.assetIcon}>
-                                <Ionicons
-                                    name={getAssetIcon(asset.type) as keyof typeof Ionicons.glyphMap}
-                                    size={20}
-                                    color={COLORS.primary}
-                                />
+                            <View style={styles.assetHeader}>
+                                <View style={styles.assetIcon}>
+                                    <Ionicons
+                                        name={getAssetIcon(listing.type) as any}
+                                        size={20}
+                                        color={COLORS.primary}
+                                    />
+                                </View>
+                                <View style={[
+                                    styles.statusBadge,
+                                    { backgroundColor: getStatusColor(listing.status) }
+                                ]}>
+                                    <Text style={styles.statusText}>
+                                        {listing.status === 'ACTIVE' ? 'Активно' : 'Черновик'}
+                                    </Text>
+                                </View>
                             </View>
-                            <Text style={styles.assetTitle}>{asset.title}</Text>
-                            <Text style={styles.assetAddress}>{asset.address}</Text>
+                            <Text style={styles.assetTitle}>{listing.title}</Text>
+                            <Text style={styles.assetPrice}>
+                                {listing.price} ₽
+                                {listing.pricePeriod === 'HOUR' && '/час'}
+                                {listing.pricePeriod === 'DAY' && '/день'}
+                                {listing.pricePeriod === 'WEEK' && '/неделя'}
+                                {listing.pricePeriod === 'MONTH' && '/месяц'}
+                            </Text>
+                            <Text style={styles.assetAddress}>{listing.address}</Text>
                         </TouchableOpacity>
                     ))
                 )}
@@ -94,15 +120,26 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: COLORS.text,
     },
+    subtitle: {
+        fontSize: 14,
+        color: COLORS.gray[500],
+        marginTop: 2,
+    },
     scrollContent: {
         gap: 12,
     },
     assetItem: {
-        width: 140,
+        width: 160,
         backgroundColor: COLORS.gray[100],
         padding: 12,
         borderRadius: 8,
         marginRight: 8,
+    },
+    assetHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        marginBottom: 8,
     },
     assetIcon: {
         width: 40,
@@ -111,7 +148,16 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.primaryLight,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 8,
+    },
+    statusBadge: {
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
+    statusText: {
+        fontSize: 10,
+        color: COLORS.white,
+        fontWeight: '600',
     },
     assetTitle: {
         fontSize: 14,
@@ -119,12 +165,18 @@ const styles = StyleSheet.create({
         color: COLORS.text,
         marginBottom: 4,
     },
+    assetPrice: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: COLORS.primary,
+        marginBottom: 4,
+    },
     assetAddress: {
         fontSize: 12,
         color: COLORS.gray[500],
     },
     emptyItem: {
-        width: 140,
+        width: 160,
         backgroundColor: COLORS.gray[100],
         padding: 12,
         borderRadius: 8,

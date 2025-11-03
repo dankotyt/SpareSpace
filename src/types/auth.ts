@@ -21,8 +21,8 @@ export interface AuthActions {
 }
 
 export interface RegistrationData {
-    first_name: string;
-    last_name: string;
+    firstName: string;
+    lastName: string;
     patronymic?: string;
     phone: string;
     email: string;

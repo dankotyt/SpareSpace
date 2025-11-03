@@ -19,30 +19,30 @@ export const BookingsSection: React.FC<BookingsSectionProps> = ({
                                                                 }) => {
     const getStatusColor = (status: string) => {
         switch (status) {
-            case 'confirmed': return COLORS.green[500];
-            case 'pending': return COLORS.orange[500];
-            case 'cancelled': return COLORS.red[500];
-            case 'completed': return COLORS.gray[500];
+            case 'CONFIRMED': return COLORS.green[500];
+            case 'PENDING': return COLORS.orange[500];
+            case 'CANCELLED': return COLORS.red[500];
+            case 'COMPLETED': return COLORS.gray[500];
             default: return COLORS.gray[500];
         }
     };
 
     const getStatusText = (status: string) => {
         switch (status) {
-            case 'confirmed': return 'Подтверждено';
-            case 'pending': return 'Ожидание';
-            case 'cancelled': return 'Отменено';
-            case 'completed': return 'Завершено';
+            case 'CONFIRMED': return 'Подтверждено';
+            case 'PENDING': return 'Ожидание';
+            case 'CANCELLED': return 'Отменено';
+            case 'COMPLETED': return 'Завершено';
             default: return status;
         }
     };
 
     const getBookingIcon = (status: string) => {
         switch (status) {
-            case 'confirmed': return 'checkmark-circle';
-            case 'pending': return 'time';
-            case 'cancelled': return 'close-circle';
-            case 'completed': return 'checkmark-done';
+            case 'CONFIRMED': return 'checkmark-circle';
+            case 'PENDING': return 'time';
+            case 'CANCELLED': return 'close-circle';
+            case 'COMPLETED': return 'checkmark-done';
             default: return 'calendar';
         }
     };
@@ -88,7 +88,7 @@ export const BookingsSection: React.FC<BookingsSectionProps> = ({
                                 Бронирование #{booking.id}
                             </Text>
                             <Text style={styles.bookingPrice}>
-                                {booking.total_price} ₽
+                                {booking.totalPrice} ₽
                             </Text>
                             <View style={[
                                 styles.statusBadge,

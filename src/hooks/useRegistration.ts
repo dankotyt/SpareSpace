@@ -3,8 +3,8 @@ import { authApiService } from '@/services/api/authApi';
 
 export const useRegistration = () => {
     const [registrationData, setRegistrationData] = useState({
-        first_name: '',
-        last_name: '',
+        firstName: '',
+        lastName: '',
         patronymic: '',
         phone: '',
         email: '',
@@ -40,12 +40,12 @@ export const useRegistration = () => {
 
     const validateField = useCallback((field: string, value: string): string => {
         switch (field) {
-            case 'first_name':
+            case 'firstName':
                 if (!value.trim()) return 'Имя обязательно для заполнения';
                 if (value.length > 50) return 'Имя не должно превышать 50 символов';
                 return '';
 
-            case 'last_name':
+            case 'lastName':
                 if (!value.trim()) return 'Фамилия обязательна для заполнения';
                 if (value.length > 50) return 'Фамилия не должна превышать 50 символов';
                 return '';
@@ -79,7 +79,7 @@ export const useRegistration = () => {
     }, [registrationData.password]);
 
     const isValid = useCallback(() => {
-        const requiredFields = ['first_name', 'last_name', 'phone', 'email', 'password', 'confirmPassword'];
+        const requiredFields = ['firstName', 'lastName', 'phone', 'email', 'password', 'confirmPassword'];
 
         for (const field of requiredFields) {
             const error = validateField(field, registrationData[field as keyof typeof registrationData]);
@@ -108,11 +108,12 @@ export const useRegistration = () => {
         setIsLoading(true);
 
         try {
+            const cleanedPhone = registrationData.phone.replace(/[\s\-\(\)]/g, '');
             const result = await authApiService.register({
-                first_name: registrationData.first_name,
-                last_name: registrationData.last_name,
+                firstName: registrationData.firstName,
+                lastName: registrationData.lastName,
                 patronymic: registrationData.patronymic || undefined,
-                phone: registrationData.phone,
+                phone: cleanedPhone,
                 email: registrationData.email,
                 password: registrationData.password,
             });
@@ -130,10 +131,10 @@ export const useRegistration = () => {
                     fieldErrors.email = result.message;
                 } else if (result.message?.includes('phone')) {
                     fieldErrors.phone = result.message;
-                } else if (result.message?.includes('first_name') || result.message?.includes('name')) {
-                    fieldErrors.first_name = result.message;
-                } else if (result.message?.includes('last_name')) {
-                    fieldErrors.last_name = result.message;
+                } else if (result.message?.includes('firstName') || result.message?.includes('name')) {
+                    fieldErrors.firstName = result.message;
+                } else if (result.message?.includes('lastName')) {
+                    fieldErrors.lastName = result.message;
                 }
 
                 if (Object.keys(fieldErrors).length > 0) {

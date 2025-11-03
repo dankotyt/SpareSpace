@@ -1,19 +1,18 @@
 import { tokenService } from '@/services/tokenService';
-
-const API_BASE_URL = 'http://192.168.0.198:3000';
+import { API_BASE_URL } from '@/config/env';
 
 export interface CreateListingRequest {
-    type: 'parking' | 'pantry' | 'garage';
+    type: 'PARKING' | 'STORAGE' | 'GARAGE';
     title: string;
     description?: string;
     price: number;
-    price_period: 'hour' | 'day' | 'week' | 'month';
+    pricePeriod: 'HOUR' | 'DAY' | 'WEEK' | 'MONTH';
     currency: 'RUB';
     latitude?: number;
     longitude?: number;
     address: string;
     size?: number;
-    photos_json?: string[];
+    photosJson?: string[];
     amenities?: any;
     availability?: Array<{
         start: string;
@@ -27,20 +26,20 @@ export interface ListingResponse {
     title: string;
     description: string;
     price: number;
-    price_period: string;
+    pricePeriod: string;
     currency: string;
     address: string;
     size?: number;
-    photos_json: string[];
+    photosJson: string[];
     amenities: any;
     availability: Array<{
         start: string;
         end: string;
     }>;
-    user_id: number;
+    userId: number;
     status: string;
-    created_at: string;
-    updated_at: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 class ListingApiService {

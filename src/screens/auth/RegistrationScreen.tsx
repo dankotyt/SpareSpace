@@ -112,20 +112,20 @@ export const RegistrationScreen: React.FC = () => {
                         </Text>
 
                         <NameInput
-                            value={registrationData.first_name}
-                            isFocused={isFocused && currentField === 'first_name'}
-                            error={errors.first_name}
-                            onChangeText={(text) => updateField('first_name', text)}
-                            onFocus={() => setFocus(true, 'first_name')}
+                            value={registrationData.firstName}
+                            isFocused={isFocused && currentField === 'firstName'}
+                            error={errors.firstName}
+                            onChangeText={(text) => updateField('firstName', text)}
+                            onFocus={() => setFocus(true, 'firstName')}
                             onBlur={() => setFocus(false)}
                         />
 
                         <SurnameInput
-                            value={registrationData.last_name}
-                            isFocused={isFocused && currentField === 'last_name'}
-                            error={errors.last_name}
-                            onChangeText={(text) => updateField('last_name', text)}
-                            onFocus={() => setFocus(true, 'last_name')}
+                            value={registrationData.lastName}
+                            isFocused={isFocused && currentField === 'lastName'}
+                            error={errors.lastName}
+                            onChangeText={(text) => updateField('lastName', text)}
+                            onFocus={() => setFocus(true, 'lastName')}
                             onBlur={() => setFocus(false)}
                         />
 

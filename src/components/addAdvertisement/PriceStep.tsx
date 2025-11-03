@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Modal } from 'react-native';
 import { COLORS } from '@/shared/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,11 +13,11 @@ interface PriceStepProps {
         monthly?: string;
     };
     availability?: {
-        startDate: string;
-        endDate: string;
+        start: string;
+        end: string;
     };
     onPriceChange: (price: any) => void;
-    onAvailabilityChange: (availability: { startDate: string; endDate: string } | undefined) => void;
+    onAvailabilityChange: (availability: { start: string; end: string } | undefined) => void;
 }
 
 export const PriceStep: React.FC<PriceStepProps> = ({
@@ -30,6 +31,25 @@ export const PriceStep: React.FC<PriceStepProps> = ({
     const [showCalendar, setShowCalendar] = useState(false);
     const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
     const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
+    const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+    const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+    const [startTime, setStartTime] = useState<Date>(() => {
+        if (availability?.start) {
+            return new Date(availability.start);
+        }
+        const defaultTime = new Date();
+        defaultTime.setHours(12, 0, 0, 0);
+        return defaultTime;
+    });
+
+    const [endTime, setEndTime] = useState<Date>(() => {
+        if (availability?.end) {
+            return new Date(availability.end);
+        }
+        const defaultTime = new Date();
+        defaultTime.setHours(15, 0, 0, 0);
+        return defaultTime;
+    });
 
     const priceTypes = [
         { key: 'hourly', label: 'Цена в час', placeholder: 'руб./час' },
@@ -105,9 +125,12 @@ export const PriceStep: React.FC<PriceStepProps> = ({
         } else if (!selectedEndDate) {
             if (date > selectedStartDate) {
                 setSelectedEndDate(date);
-            } else {
+            } else if (date < selectedStartDate) {
                 setSelectedEndDate(selectedStartDate);
                 setSelectedStartDate(date);
+            } else {
+                setSelectedStartDate(null);
+                setSelectedEndDate(null);
             }
         } else {
             setSelectedStartDate(date);
@@ -117,13 +140,78 @@ export const PriceStep: React.FC<PriceStepProps> = ({
 
     const handleSaveAvailability = () => {
         if (selectedStartDate && selectedEndDate) {
+            const startDate = selectedStartDate < selectedEndDate ? selectedStartDate : selectedEndDate;
+            const endDate = selectedStartDate < selectedEndDate ? selectedEndDate : selectedStartDate;
+
+            const startDateTime = new Date(startDate);
+            startDateTime.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0);
+
+            const endDateTime = new Date(endDate);
+            endDateTime.setHours(endTime.getHours(), endTime.getMinutes(), 0, 0);
+
+            if (endDateTime <= startDateTime) {
+                alert('Время окончания должно быть после времени начала');
+                return;
+            }
+
+            if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+                alert('Ошибка: неверный формат даты');
+                return;
+            }
+
             const availabilityData = {
-                startDate: selectedStartDate.toISOString().split('T')[0],
-                endDate: selectedEndDate.toISOString().split('T')[0]
+                start: startDateTime.toISOString(),
+                end: endDateTime.toISOString()
             };
+
+            console.log('Saving availability to parent:', availabilityData);
             onAvailabilityChange(availabilityData);
             setShowCalendar(false);
         }
+    };
+
+    const handleStartTimeChange = (event: any, selectedDate?: Date) => {
+        setShowStartTimePicker(false);
+        if (selectedDate) {
+            setStartTime(selectedDate);
+        }
+    };
+
+    const handleEndTimeChange = (event: any, selectedDate?: Date) => {
+        setShowEndTimePicker(false);
+        if (selectedDate) {
+            setEndTime(selectedDate);
+        }
+    };
+
+    const formatDateTimeRange = () => {
+        if (availability && availability.start && availability.end) {
+            try {
+                const start = new Date(availability.start);
+                const end = new Date(availability.end);
+
+                if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                    return null;
+                }
+
+                const startDate = start.toLocaleDateString('ru');
+                const startTime = start.toLocaleTimeString('ru', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                const endDate = end.toLocaleDateString('ru');
+                const endTime = end.toLocaleTimeString('ru', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                return `${startDate} ${startTime} - ${endDate} ${endTime}`;
+            } catch (error) {
+                console.error('Error formatting date range:', error);
+                return null;
+            }
+        }
+        return null;
     };
 
     const clearSelection = () => {
@@ -150,8 +238,8 @@ export const PriceStep: React.FC<PriceStepProps> = ({
 
     const formatDateRange = () => {
         if (availability) {
-            const start = new Date(availability.startDate);
-            const end = new Date(availability.endDate);
+            const start = new Date(availability.start);
+            const end = new Date(availability.end);
             return `${start.toLocaleDateString('ru')} - ${end.toLocaleDateString('ru')}`;
         }
         return null;
@@ -242,17 +330,8 @@ export const PriceStep: React.FC<PriceStepProps> = ({
                 >
                     <Text style={styles.availabilityButtonText}>Выбрать даты</Text>
                 </TouchableOpacity>
-
-                {formatDateRange() && (
-                    <View style={styles.availabilityInfo}>
-                        <Text style={styles.selectedAvailability}>
-                            Выбран период: {formatDateRange()}
-                        </Text>
-                    </View>
-                )}
             </View>
 
-            {/* Модальное окно календаря */}
             <Modal
                 visible={showCalendar}
                 animationType="slide"
@@ -265,6 +344,34 @@ export const PriceStep: React.FC<PriceStepProps> = ({
                             <TouchableOpacity onPress={() => setShowCalendar(false)}>
                                 <Ionicons name="close" size={24} color={COLORS.text} />
                             </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.timeSelection}>
+                            <Text style={styles.timeSectionTitle}>Время аренды</Text>
+
+                            <View style={styles.timeRow}>
+                                <Text style={styles.timeLabel}>Время начала</Text>
+                                <DateTimePicker
+                                    value={startTime}
+                                    mode="time"
+                                    display="default"
+                                    onChange={handleStartTimeChange}
+                                    style={styles.timePicker}
+                                />
+                            </View>
+
+                            <View style={styles.timeSpacer} />
+
+                            <View style={styles.timeRow}>
+                                <Text style={styles.timeLabel}>Время окончания</Text>
+                                <DateTimePicker
+                                    value={endTime}
+                                    mode="time"
+                                    display="default"
+                                    onChange={handleEndTimeChange}
+                                    style={styles.timePicker}
+                                />
+                            </View>
                         </View>
 
                         <View style={styles.calendarInstructions}>
@@ -350,6 +457,13 @@ export const PriceStep: React.FC<PriceStepProps> = ({
                     </View>
                 </View>
             </Modal>
+            {formatDateTimeRange() && (
+                <View style={styles.availabilityInfo}>
+                    <Text style={styles.selectedAvailability}>
+                        Выбран период: {formatDateTimeRange()}
+                    </Text>
+                </View>
+            )}
         </ScrollView>
     );
 };
@@ -474,7 +588,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 12,
+        marginTop: 0,
         padding: 12,
         borderRadius: 8,
     },
@@ -617,5 +731,54 @@ const styles = StyleSheet.create({
         color: COLORS.white,
         fontSize: 14,
         fontWeight: '600',
+    },
+    timeSelection: {
+        marginBottom: 16,
+    },
+    timeSectionTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: COLORS.text,
+        marginBottom: 12,
+    },
+    timeButton: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: COLORS.primaryLight,
+        borderWidth: 1,
+        borderColor: COLORS.primary,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 8,
+    },
+    timeButtonLabel: {
+        fontSize: 14,
+        color: COLORS.text,
+        fontWeight: '500',
+    },
+    timeButtonValue: {
+        fontSize: 16,
+        color: COLORS.primary,
+        fontWeight: '600',
+    },
+    timeSpacer: {
+        height: 8,
+    },
+    timePicker: {
+        flex: 1,
+        marginLeft: 0,
+        height: 40,
+    },
+    timeRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+
+    },
+    timeLabel: {
+        fontSize: 16,
+        color: COLORS.text,
+        fontWeight: '500',
     },
 });

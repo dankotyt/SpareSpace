@@ -23,11 +23,11 @@ export const CategoryList: React.FC<CategoryListProps> = ({
 
     const getCategoryIcon = (type: string) => {
         switch (type) {
-            case 'parking':
+            case 'PARKING':
                 return <MaterialIcons name="local-parking" size={24} color={COLORS.primary} />;
-            case 'garage':
+            case 'GARAGE':
                 return <MaterialIcons name="garage" size={24} color={COLORS.primary} />;
-            case 'pantry':
+            case 'STORAGE':
                 return <MaterialIcons name="inventory-2" size={24} color={COLORS.primary} />;
             default:
                 return <MaterialIcons name="search" size={24} color={COLORS.primary} />;

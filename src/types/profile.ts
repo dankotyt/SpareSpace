@@ -2,25 +2,25 @@ export interface UserProfile {
     id: number;
     email: string;
     phone: string;
-    first_name: string;
-    last_name: string;
+    firstName: string;
+    lastName: string;
     patronymic?: string;
     rating: number;
-    two_fa_enabled: boolean;
+    twoFaEnabled: boolean;
     verified: boolean;
-    created_at: string;
-    updated_at: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface Review {
     id: number;
     rating: number;
     comment: string;
-    author_id: number;
-    author_name: string;
-    target_user_id: number;
-    created_at: string;
-    updated_at: string;
+    authorId: number;
+    authorName: string;
+    targetUserId: number;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface Listing {
@@ -29,24 +29,25 @@ export interface Listing {
     description: string;
     address: string;
     price: number;
-    type: 'parking' | 'garage' | 'pantry' | 'other';
-    status: 'active' | 'inactive' | 'pending' | 'rented';
-    user_id: number;
-    created_at: string;
-    updated_at: string;
+    pricePeriod: 'HOUR' | 'DAY' | 'WEEK' | 'MONTH';
+    type: 'PARKING' | 'GARAGE' | 'STORAGE' | 'OTHER';
+    status: 'ACTIVE' | 'INACTIVE' | 'PENDING_APPROVAL' | 'REJECTED' | 'RENTED' | 'DRAFT';
+    userId: number;
+    createdAt: string;
+    updatedAt: string;
     images?: string[];
 }
 
 export interface Booking {
     id: number;
-    listing_id: number;
-    user_id: number;
-    start_date: string;
-    end_date: string;
-    total_price: number;
-    status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-    created_at: string;
-    updated_at: string;
+    listingId: number;
+    userId: number;
+    startDate: string;
+    endDate: string;
+    totalPrice: number;
+    status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+    createdAt: string;
+    updatedAt: string;
     listing?: Listing;
 }
 
@@ -63,14 +64,14 @@ export interface FormattedUserProfile {
     id: number;
     email: string;
     phone: string;
-    first_name: string;
-    last_name: string;
+    firstName: string;
+    lastName: string;
     patronymic?: string;
     rating: number;
-    two_fa_enabled: boolean;
+    twoFaEnabled: boolean;
     verified: boolean;
-    created_at: string;
-    updated_at: string;
+    createdAt: string;
+    updatedAt: string;
 
     fullName: string;
     joinYear: string;
@@ -84,7 +85,7 @@ export interface FormattedUserProfile {
 }
 
 export const getFullName = (profile: UserProfile): string => {
-    return `${profile.first_name} ${profile.last_name} ${profile.patronymic || ''}`.trim();
+    return `${profile.firstName} ${profile.lastName} ${profile.patronymic || ''}`.trim();
 };
 
 export const getJoinYear = (createdAt: string): string => {

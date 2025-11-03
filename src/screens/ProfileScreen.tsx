@@ -91,17 +91,77 @@ export const ProfileScreen: React.FC = () => {
     const safeBookings = Array.isArray(userProfile?.bookings) ? userProfile.bookings : [];
     const safeBalance = userProfile?.balance || 0;
 
-    const safeProfile = userProfile ? { ...userProfile } : null;
-
     const renderContent = () => {
-        if (!safeProfile) {
-            return null;
+        if (!isAuthenticated) {
+            return (
+                <ScrollView
+                    style={styles.scrollView}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={handleRefresh}
+                            colors={[COLORS.primary]}
+                            tintColor={COLORS.primary}
+                        />
+                    }
+                    showsVerticalScrollIndicator={false}
+                >
+                    <UnauthorizedProfile onLoginPress={handleLoginPress} />
+                </ScrollView>
+            );
+        }
+
+        if (loading && !userProfile) {
+            return (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color={COLORS.primary} />
+                    <Text style={styles.loadingText}>Загрузка профиля...</Text>
+                </View>
+            );
+        }
+
+        if (error && !userProfile) {
+            return (
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorTitle}>Ошибка загрузки</Text>
+                    <Text style={styles.errorText}>{error}</Text>
+                    <Text style={styles.retryText} onPress={handleRefresh}>
+                        Попробовать снова
+                    </Text>
+                    <Text style={styles.retryAuth} onPress={handleRefresh}>
+                        Повторная авторизация
+                    </Text>
+                </View>
+            );
+        }
+
+        if (!userProfile) {
+            return (
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorTitle}>Профиль не найден</Text>
+                    <Text style={styles.errorText}>Не удалось загрузить данные профиля</Text>
+                    <Text style={styles.retryText} onPress={handleRefresh}>
+                        Попробовать снова
+                    </Text>
+                </View>
+            );
         }
 
         return (
-            <>
+            <ScrollView
+                style={styles.scrollView}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        colors={[COLORS.primary]}
+                        tintColor={COLORS.primary}
+                    />
+                }
+                showsVerticalScrollIndicator={false}
+            >
                 <ProfileHeader
-                    profile={safeProfile}
+                    profile={userProfile}
                     onReviewsPress={handleReviewsPress}
                 />
 
@@ -135,84 +195,13 @@ export const ProfileScreen: React.FC = () => {
                     onMenuItemPress={handleMenuItemPress}
                     onLogout={logout}
                 />
-            </>
+            </ScrollView>
         );
     };
 
-    if (!isAuthenticated && !loading && !error) {
-        return (
-            <View style={[styles.container, { paddingTop: insets.top }]}>
-                <ScrollView
-                    style={styles.scrollView}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={handleRefresh}
-                            colors={[COLORS.primary]}
-                            tintColor={COLORS.primary}
-                        />
-                    }
-                    showsVerticalScrollIndicator={false}
-                >
-                    <UnauthorizedProfile onLoginPress={handleLoginPress} />
-                </ScrollView>
-
-                <View style={styles.bottomToolbarWrapper}>
-                    <BottomToolbar />
-                </View>
-            </View>
-        );
-    }
-
-    if (loading && !userProfile && !error) {
-        return (
-            <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
-                <Text style={styles.loadingText}>Загрузка профиля...</Text>
-            </View>
-        );
-    }
-
-    if (error && !userProfile) {
-        return (
-            <View style={[styles.errorContainer, { paddingTop: insets.top }]}>
-                <Text style={styles.errorTitle}>Ошибка загрузки</Text>
-                <Text style={styles.errorText}>{error}</Text>
-                <Text style={styles.retryText} onPress={handleRefresh}>
-                    Попробовать снова
-                </Text>
-            </View>
-        );
-    }
-
-    if (!userProfile) {
-        return (
-            <View style={[styles.errorContainer, { paddingTop: insets.top }]}>
-                <Text style={styles.errorTitle}>Профиль не найден</Text>
-                <Text style={styles.errorText}>Не удалось загрузить данные профиля</Text>
-                <Text style={styles.retryText} onPress={handleRefresh}>
-                    Попробовать снова
-                </Text>
-            </View>
-        );
-    }
-
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
-            <ScrollView
-                style={styles.scrollView}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={handleRefresh}
-                        colors={[COLORS.primary]}
-                        tintColor={COLORS.primary}
-                    />
-                }
-                showsVerticalScrollIndicator={false}
-            >
-                {renderContent()}
-            </ScrollView>
+            {renderContent()}
 
             <View style={styles.bottomToolbarWrapper}>
                 <BottomToolbar />
@@ -244,7 +233,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: COLORS.background,
+        backgroundColor: COLORS.white,
         paddingHorizontal: 20,
     },
     errorTitle: {
@@ -266,6 +255,14 @@ const styles = StyleSheet.create({
         color: COLORS.primary,
         fontWeight: '600',
         textAlign: 'center',
+    },
+    retryAuth: {
+        fontSize: 16,
+        color: COLORS.white,
+        fontWeight: '600',
+        textAlign: 'center',
+        borderColor: COLORS.primary,
+        paddingHorizontal: 8,
     },
     bottomToolbarWrapper: {
         position: 'absolute',

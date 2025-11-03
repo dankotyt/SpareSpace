@@ -8,20 +8,20 @@ export const useListing = () => {
 
     const transformFormDataToApi = useCallback((formData: AdvertisementFormData): CreateListingRequest => {
         let mainPrice = 0;
-        let pricePeriod: 'hour' | 'day' | 'week' | 'month' = 'month';
+        let pricePeriod: 'HOUR' | 'DAY' | 'WEEK' | 'MONTH' = 'MONTH';
 
         if (formData.price.monthly && formData.price.monthly !== '') {
             mainPrice = parseFloat(formData.price.monthly);
-            pricePeriod = 'month';
+            pricePeriod = 'MONTH';
         } else if (formData.price.weekly && formData.price.weekly !== '') {
             mainPrice = parseFloat(formData.price.weekly);
-            pricePeriod = 'week';
+            pricePeriod = 'WEEK';
         } else if (formData.price.daily && formData.price.daily !== '') {
             mainPrice = parseFloat(formData.price.daily);
-            pricePeriod = 'day';
+            pricePeriod = 'DAY';
         } else if (formData.price.hourly && formData.price.hourly !== '') {
             mainPrice = parseFloat(formData.price.hourly);
-            pricePeriod = 'hour';
+            pricePeriod = 'HOUR';
         }
 
         const amenities = formData.features.reduce((acc, feature) => {
@@ -30,21 +30,21 @@ export const useListing = () => {
         }, {} as any);
 
         const availability = formData.availability ? [{
-            start: formData.availability.startDate,
-            end: formData.availability.endDate,
+            start: formData.availability.start,
+            end: formData.availability.end,
         }] : [];
 
         return {
             type: formData.type!,
-            title: `${formData.type === 'parking' ? 'Парковочное место' :
-                formData.type === 'pantry' ? 'Кладовка' : 'Гараж'} - ${formData.address}`,
+            title: `${formData.type === 'PARKING' ? 'Парковочное место' :
+                formData.type === 'STORAGE' ? 'Кладовка' : 'Гараж'} - ${formData.address}`,
             description: formData.description,
             price: mainPrice,
-            price_period: pricePeriod,
+            pricePeriod: pricePeriod,
             currency: 'RUB' as const,
             address: formData.address,
             size: formData.area ? parseFloat(formData.area) : undefined,
-            photos_json: formData.photos,
+            photosJson: formData.photos,
             amenities,
             availability,
         };

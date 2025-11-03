@@ -1,5 +1,5 @@
-export type ListingType = 'parking' | 'pantry' | 'garage';
-export type PricePeriodType = 'hour' | 'day' | 'week' | 'month';
+export type ListingType = 'PARKING' | 'STORAGE' | 'GARAGE';
+export type PricePeriodType = 'HOUR' | 'DAY' | 'WEEK' | 'MONTH';
 export type CurrencyType = 'RUB';
 
 export interface AvailabilityPeriod {
@@ -28,8 +28,8 @@ export interface AdvertisementFormData {
         monthly?: string;
     };
     availability?: {
-        startDate: string; // дата в формате YYYY-MM-DD
-        endDate: string;
+        start: string; // дата в формате YYYY-MM-DD
+        end: string;
     };
 
     // Шаг 5: Контакты
@@ -45,13 +45,13 @@ export interface CreateListingRequest {
     title: string;
     description: string;
     price: number;
-    price_period: PricePeriodType;
+    pricePeriod: PricePeriodType;
     currency: CurrencyType;
     latitude?: number;
     longitude?: number;
     address: string;
     size?: number;
-    photos_json: string[];
+    photosJson: string[];
     amenities: Record<string, boolean>;
     availability: AvailabilityPeriod[];
 }
@@ -62,17 +62,17 @@ export interface ListingResponse {
     title: string;
     description: string;
     price: number;
-    price_period: PricePeriodType;
+    pricePeriod: PricePeriodType;
     currency: CurrencyType;
     address: string;
     size?: number;
-    photos_json: string[];
+    photosJson: string[];
     amenities: Record<string, boolean>;
     availability: AvailabilityPeriod[];
-    user_id: number;
-    status: 'active' | 'inactive' | 'pending';
-    created_at: string;
-    updated_at: string;
+    userId: number;
+    status: 'ACTIVE' | 'INACTIVE' | 'PENDING_APPROVAL' | 'DRAFT' | 'REJECTED' | 'RENTED';
+    createdAt: string;
+    updatedAt: string;
 }
 
 export type AdvertisementStep = 1 | 2 | 3 | 4 | 5;
@@ -83,28 +83,28 @@ export const transformFormDataToApi = (formData: AdvertisementFormData): CreateL
     }
 
     let mainPrice = 0;
-    let pricePeriod: PricePeriodType = 'month';
+    let pricePeriod: PricePeriodType = 'MONTH';
 
     if (formData.price.monthly && formData.price.monthly !== '') {
         mainPrice = parseFloat(formData.price.monthly);
-        pricePeriod = 'month';
+        pricePeriod = 'MONTH';
     } else if (formData.price.weekly && formData.price.weekly !== '') {
         mainPrice = parseFloat(formData.price.weekly);
-        pricePeriod = 'week';
+        pricePeriod = 'WEEK';
     } else if (formData.price.daily && formData.price.daily !== '') {
         mainPrice = parseFloat(formData.price.daily);
-        pricePeriod = 'day';
+        pricePeriod = 'DAY';
     } else if (formData.price.hourly && formData.price.hourly !== '') {
         mainPrice = parseFloat(formData.price.hourly);
-        pricePeriod = 'hour';
+        pricePeriod = 'HOUR';
     } else {
         throw new Error('Не указана цена аренды');
     }
 
     const typeTitles = {
-        parking: 'Парковочное место',
-        pantry: 'Кладовое помещение',
-        garage: 'Гараж'
+        PARKING: 'Парковочное место',
+        STORAGE: 'Кладовое помещение',
+        GARAGE: 'Гараж'
     };
 
     const title = `${typeTitles[formData.type]} - ${formData.address}`;
@@ -115,8 +115,8 @@ export const transformFormDataToApi = (formData: AdvertisementFormData): CreateL
     }, {} as Record<string, boolean>);
 
     const availability = formData.availability ? [{
-        start: `${formData.availability.startDate}T00:00:00.000Z`,
-        end: `${formData.availability.endDate}T23:59:59.999Z`
+        start: `${formData.availability.start}T00:00:00.000Z`,
+        end: `${formData.availability.end}T23:59:59.999Z`
     }] : [];
 
     const size = formData.area ? parseFloat(formData.area) : undefined;
@@ -126,11 +126,11 @@ export const transformFormDataToApi = (formData: AdvertisementFormData): CreateL
         title,
         description: formData.description,
         price: mainPrice,
-        price_period: pricePeriod,
+        pricePeriod: pricePeriod,
         currency: 'RUB',
         address: formData.address,
         size,
-        photos_json: formData.photos,
+        photosJson: formData.photos,
         amenities,
         availability,
     };
@@ -139,19 +139,19 @@ export const transformFormDataToApi = (formData: AdvertisementFormData): CreateL
 export const createMainScreenAdFromResponse = (listing: ListingResponse) => {
     const getTypeLabel = (type: ListingType) => {
         switch (type) {
-            case 'parking': return 'Парковочное место';
-            case 'pantry': return 'Кладовое помещение';
-            case 'garage': return 'Гараж';
+            case 'PARKING': return 'Парковочное место';
+            case 'STORAGE': return 'Кладовое помещение';
+            case 'GARAGE': return 'Гараж';
             default: return 'Помещение';
         }
     };
 
     const getPriceText = (price: number, period: PricePeriodType) => {
         const periodLabels = {
-            hour: 'час',
-            day: 'сутки',
-            week: 'неделя',
-            month: 'месяц'
+            HOUR: 'час',
+            DAY: 'сутки',
+            WEEK: 'неделя',
+            MONTH: 'месяц'
         };
 
         return `${price} ₽/${periodLabels[period]}`;
@@ -159,10 +159,10 @@ export const createMainScreenAdFromResponse = (listing: ListingResponse) => {
 
     return {
         id: listing.id,
-        price: getPriceText(listing.price, listing.price_period),
+        price: getPriceText(listing.price, listing.pricePeriod),
         type: getTypeLabel(listing.type),
         location: listing.address,
-        image: listing.photos_json?.[0] || undefined,
+        image: listing.photosJson?.[0] || undefined,
         description: listing.description,
     };
 };

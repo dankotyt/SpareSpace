@@ -15,10 +15,12 @@ import {RootStackParamList} from "@/navigation/types";
 import { useAdvertisement } from '@/services/AdvertisementContext';
 import { formatPrice } from '@/shared/utils/priceFormatter';
 import { useListing } from '@/hooks/useListing';
+import {useProfile} from "@hooks/useProfile";
 
 export const AddAdvertisementScreen: React.FC = () => {
     const { addAdvertisement } = useAdvertisement();
     const { createListing, isLoading: isCreating, error: createError } = useListing();
+    const { loadProfile } = useProfile();
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const [currentStep, setCurrentStep] = useState<AdvertisementStep>(1);
     const [formData, setFormData] = useState<AdvertisementFormData>({
@@ -31,7 +33,7 @@ export const AddAdvertisementScreen: React.FC = () => {
         price: {},
     });
 
-    const handleTypeSelect = (type: 'parking' | 'pantry' | 'garage') => {
+    const handleTypeSelect = (type: 'PARKING' | 'STORAGE' | 'GARAGE') => {
         setFormData(prev => ({ ...prev, type }));
     };
 
@@ -59,8 +61,13 @@ export const AddAdvertisementScreen: React.FC = () => {
         setFormData(prev => ({ ...prev, price }));
     };
 
-    const handleAvailabilityChange = (availability: { startDate: string; endDate: string } | undefined) => {
-        setFormData(prev => ({ ...prev, availability }));
+    const handleAvailabilityChange = (availability: { start: string; end: string } | undefined) => {
+        console.log('Received availability from child:', availability);
+
+        setFormData(prev => ({
+            ...prev,
+            availability: availability
+        }));
     };
 
     const handleNext = () => {
@@ -81,7 +88,7 @@ export const AddAdvertisementScreen: React.FC = () => {
             case 4:
                 console.log(`- Цены:`, formData.price);
                 if (formData.availability) {
-                    console.log(`- Период аренды: ${formData.availability.startDate} - ${formData.availability.endDate}`);
+                    console.log(`- Период аренды: ${formData.availability.start} - ${formData.availability.end}`);
                 } else {
                     console.log(`- Период аренды: не выбран`);
                 }
@@ -106,6 +113,8 @@ export const AddAdvertisementScreen: React.FC = () => {
             const result = await createListing(formData);
 
             console.log('Объявление успешно опубликовано!', result);
+
+            await loadProfile();
 
             const mainScreenAd = createMainScreenAd(formData);
             addAdvertisement(mainScreenAd);
@@ -134,14 +143,17 @@ export const AddAdvertisementScreen: React.FC = () => {
     const createMainScreenAd = (formData: AdvertisementFormData) => {
         const getTypeLabel = (type: string) => {
             switch (type) {
-                case 'parking': return 'Парковочное место';
-                case 'pantry': return 'Кладовое помещение';
-                case 'garage': return 'Гараж';
+                case 'PARKING': return 'Парковочное место';
+                case 'STORAGE': return 'Кладовое помещение';
+                case 'GARAGE': return 'Гараж';
                 default: return 'Помещение';
             }
         };
 
         const getPriceText = () => {
+            if (formData.price?.hourly && formData.price.hourly !== '') {
+                return `${formatPrice(formData.price.hourly)} ₽/час`;
+            }
             if (formData.price?.daily && formData.price.daily !== '') {
                 return `${formatPrice(formData.price.daily)} ₽/сут.`;
             }

@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
-import { UserProfile, FormattedUserProfile, Review, Listing, Booking, UserStats } from '@/types/profile';
+import { UserProfile, FormattedUserProfile, UserStats } from '@/types/profile';
 import { profileApiService } from '@/services/api/profileApi';
 import { useAuth } from '@/hooks/useAuth';
 import { tokenService } from '@/services/tokenService';
-import {authApiService} from "@services/api/authApi";
+import { authApiService } from "@services/api/authApi";
 
 const formatFullUserProfile = (
     profile: UserProfile,
@@ -12,7 +12,6 @@ const formatFullUserProfile = (
     bookings: any,
     stats: UserStats
 ): FormattedUserProfile => {
-
     const safeReviews = Array.isArray(reviews) ? reviews : [];
     const safeListings = Array.isArray(listings) ? listings : [];
     const safeBookings = Array.isArray(bookings) ? bookings : [];
@@ -28,8 +27,8 @@ const formatFullUserProfile = (
 
     return {
         ...profile,
-        fullName: `${profile.first_name} ${profile.last_name} ${profile.patronymic || ''}`.trim(),
-        joinYear: new Date(profile.created_at).getFullYear().toString(),
+        fullName: `${profile.firstName} ${profile.lastName} ${profile.patronymic || ''}`.trim(),
+        joinYear: new Date(profile.createdAt).getFullYear().toString(),
         reviewsCount: safeReviews.length,
         balance: 0,
         reviews: safeReviews,
@@ -40,12 +39,11 @@ const formatFullUserProfile = (
 };
 
 export const useProfile = () => {
-    const { isAuthenticated, logout: authLogout, isCheckingAuth } = useAuth();
+    const { isAuthenticated, logout: authLogout, isCheckingAuth, user: currentUser } = useAuth();
     const [userProfile, setUserProfile] = useState<FormattedUserProfile | null>(null);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [localIsAuthenticated, setLocalIsAuthenticated] = useState(false);
 
     const checkAuthStatus = useCallback(async (): Promise<boolean> => {
         try {
@@ -57,6 +55,7 @@ export const useProfile = () => {
             const profileResponse = await authApiService.getProfile();
             return profileResponse.success && !!profileResponse.data;
         } catch (error) {
+            console.log('Auth check failed:', error);
             return false;
         }
     }, []);
@@ -65,6 +64,7 @@ export const useProfile = () => {
         if (!isAuthenticated && !forceLoad) {
             setUserProfile(null);
             setError(null);
+            setLoading(false);
             return;
         }
 
@@ -72,11 +72,6 @@ export const useProfile = () => {
         setError(null);
 
         try {
-            const token = await tokenService.getToken();
-            if (!token) {
-                throw new Error('Токен авторизации не найден');
-            }
-
             const profileResponse = await profileApiService.getProfile();
 
             if (!profileResponse.success || !profileResponse.data) {
@@ -86,7 +81,9 @@ export const useProfile = () => {
             const basicProfile = profileResponse.data;
             const userId = basicProfile.id;
 
-            const fullData = await profileApiService.getFullUserData(userId);
+            const currentUserId = currentUser?.id;
+
+            const fullData = await profileApiService.getFullUserData(userId, currentUserId);
 
             const formattedProfile = formatFullUserProfile(
                 basicProfile,
@@ -97,28 +94,17 @@ export const useProfile = () => {
             );
 
             setUserProfile(formattedProfile);
-            setLocalIsAuthenticated(true);
 
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Ошибка загрузки данных';
+            console.error('❌ Profile loading error:', err);
             setError(errorMessage);
             setUserProfile(null);
-            setLocalIsAuthenticated(false);
-
-            if (err instanceof Error && (
-                err.message.includes('токен') ||
-                err.message.includes('authorization') ||
-                err.message.includes('401')
-            )) {
-                await tokenService.removeToken();
-                authLogout();
-            }
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [isAuthenticated, authLogout]);
-
+    }, [isAuthenticated, currentUser]);
     const handleRefresh = useCallback(() => {
         setRefreshing(true);
         loadProfile(true);
@@ -133,34 +119,31 @@ export const useProfile = () => {
 
         setUserProfile(null);
         setError(null);
-        setLocalIsAuthenticated(false);
         authLogout();
     }, [authLogout]);
 
     useEffect(() => {
-        const initializeProfile = async () => {
-            const authStatus = await checkAuthStatus();
-            setLocalIsAuthenticated(authStatus);
-
-            if (authStatus) {
+        const initialize = async () => {
+            if (isAuthenticated) {
                 await loadProfile(true);
+            } else {
+                setLoading(false);
             }
         };
 
-        initializeProfile();
-    }, [checkAuthStatus, loadProfile]);
+        initialize();
+    }, [isAuthenticated]);
 
     useEffect(() => {
-        if (isAuthenticated && !loading) {
-            loadProfile(true);
-        } else if (!isAuthenticated) {
+        if (!isAuthenticated) {
             setUserProfile(null);
-            setLocalIsAuthenticated(false);
+            setError(null);
+            setLoading(false);
         }
-    }, [isAuthenticated, loadProfile, loading]);
+    }, [isAuthenticated]);
 
     return {
-        isAuthenticated: localIsAuthenticated || isAuthenticated,
+        isAuthenticated,
         userProfile,
         loading: loading || isCheckingAuth,
         refreshing,

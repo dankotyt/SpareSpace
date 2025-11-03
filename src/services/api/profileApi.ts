@@ -1,7 +1,6 @@
 import {UserProfile, Booking, UserStats, Listing, Review} from '@/types/profile';
 import {tokenService} from "@services/tokenService";
-
-const API_BASE_URL = 'http://192.168.0.198:3000';
+import { API_BASE_URL } from '@/config/env';
 
 export interface ProfileResponse {
     success: boolean;
@@ -78,13 +77,24 @@ class ProfileApiService {
         };
     }
 
-    async getUserListings(userId: number): Promise<ListingsResponse> {
-        const response = await this.request<any>(`/listings?userId=${userId}`);
-        const listings = response.listings || response || [];
-        return {
-            success: true,
-            data: listings,
-        };
+    async getUserListings(userId: number, currentUserId?: number): Promise<ListingsResponse> {
+        try {
+            const response = await this.request<any>(`/listings/user/${userId}`);
+            const listings = response.listings || response || [];
+
+            return {
+                success: true,
+                data: listings,
+            };
+
+        } catch (error) {
+            console.error('❌ Error fetching user listings:', error);
+            return {
+                success: false,
+                data: [],
+                message: 'Не удалось загрузить объявления'
+            };
+        }
     }
 
     async getUserBookings(): Promise<BookingsResponse> {
@@ -110,9 +120,9 @@ class ProfileApiService {
 
             const stats: UserStats = {
                 totalListings: listings.length,
-                activeListings: listings.filter(l => l.status === 'active').length,
+                activeListings: listings.filter(l => l.status === 'ACTIVE').length,
                 totalBookings: bookings.length,
-                pendingBookings: bookings.filter(b => b.status === 'pending').length,
+                pendingBookings: bookings.filter(b => b.status === 'PENDING').length,
                 totalReviews: reviews.length,
                 averageRating: reviews.length > 0
                     ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
@@ -138,7 +148,7 @@ class ProfileApiService {
         }
     }
 
-    async getFullUserData(userId: number) {
+    async getFullUserData(userId: number, currentUserId?: number) {
         const [
             profileResponse,
             reviewsResponse,
@@ -148,7 +158,7 @@ class ProfileApiService {
         ] = await Promise.all([
             this.getProfile(),
             this.getUserReviews(userId),
-            this.getUserListings(userId),
+            this.getUserListings(userId, currentUserId),
             this.getUserBookings(),
             this.getUserStats(userId)
         ]);

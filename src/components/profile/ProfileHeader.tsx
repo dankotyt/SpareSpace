@@ -27,7 +27,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile, onReviews
             <View style={styles.avatarContainer}>
                 <View style={styles.avatar}>
                     <Text style={styles.avatarText}>
-                        {getInitials(profile.first_name, profile.last_name, profile.patronymic)}
+                        {getInitials(profile.firstName, profile.lastName, profile.patronymic)}
                     </Text>
                 </View>
                 {profile.verified && (
@@ -38,11 +38,11 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile, onReviews
             </View>
 
             <Text style={styles.name}>
-                {profile.first_name} {profile.last_name} {profile.patronymic || ''}
+                {profile.firstName} {profile.lastName} {profile.patronymic || ''}
             </Text>
 
             <Text style={styles.joinDate}>
-                Присоединился {formatJoinDate(profile.created_at)}
+                Присоединился {formatJoinDate(profile.createdAt)}
             </Text>
 
             <Text style={styles.email}>{profile.email}</Text>
@@ -50,8 +50,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile, onReviews
 
             <TouchableOpacity onPress={onReviewsPress}>
                 <View style={styles.ratingContainer}>
-                    <Text style={styles.rating}>{profile.rating.toFixed(1)}</Text>
-                    <Text style={styles.reviews}>({Math.floor(profile.rating * 10)} отзывов)</Text>
+                    <Text style={styles.rating}>{(profile.rating || 0).toFixed(1)}</Text>
+                    <Text style={styles.reviews}>({Math.floor((profile.rating || 0) * 10)} отзывов)</Text>
                 </View>
             </TouchableOpacity>
         </View>

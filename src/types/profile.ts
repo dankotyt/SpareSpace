@@ -35,7 +35,15 @@ export interface Listing {
     userId: number;
     createdAt: string;
     updatedAt: string;
-    images?: string[];
+    photosJson?: string[];
+    currency?: 'RUB' | string;
+    size?: number;
+    amenities?: any;
+    availability?: Array<{
+        start: string;
+        end: string;
+    }>;
+    location?: string;
 }
 
 export interface Booking {

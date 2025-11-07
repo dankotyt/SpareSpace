@@ -12,7 +12,6 @@ export const BottomToolbar: React.FC = () => {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute();
 
-    // Получаем текущий активный таб из route.name
     const activeTab = route.name as keyof BottomTabParamList;
 
     const tabs = [

@@ -1,3 +1,5 @@
+import { ListingResponse } from '@/services/api/listingApi';
+
 export type ListingType = 'PARKING' | 'STORAGE' | 'GARAGE';
 export type PricePeriodType = 'HOUR' | 'DAY' | 'WEEK' | 'MONTH';
 export type CurrencyType = 'RUB';
@@ -15,6 +17,10 @@ export interface AdvertisementFormData {
     address: string;
     area: string;
     features: string[];
+    location?: {
+        latitude: number;
+        longitude: number;
+    };
 
     // Шаг 3: Фотографии и описание
     description: string;
@@ -40,104 +46,16 @@ export interface AdvertisementFormData {
     };
 }
 
-export interface CreateListingRequest {
-    type: ListingType;
-    title: string;
-    description: string;
-    price: number;
-    pricePeriod: PricePeriodType;
-    currency: CurrencyType;
-    latitude?: number;
-    longitude?: number;
+export interface LocationData {
+    latitude: number;
+    longitude: number;
     address: string;
-    size?: number;
-    photosJson: string[];
-    amenities: Record<string, boolean>;
-    availability: AvailabilityPeriod[];
-}
-
-export interface ListingResponse {
-    id: number;
-    type: ListingType;
-    title: string;
-    description: string;
-    price: number;
-    pricePeriod: PricePeriodType;
-    currency: CurrencyType;
-    address: string;
-    size?: number;
-    photosJson: string[];
-    amenities: Record<string, boolean>;
-    availability: AvailabilityPeriod[];
-    userId: number;
-    status: 'ACTIVE' | 'INACTIVE' | 'PENDING_APPROVAL' | 'DRAFT' | 'REJECTED' | 'RENTED';
-    createdAt: string;
-    updatedAt: string;
 }
 
 export type AdvertisementStep = 1 | 2 | 3 | 4 | 5;
 
-export const transformFormDataToApi = (formData: AdvertisementFormData): CreateListingRequest => {
-    if (!formData.type) {
-        throw new Error('Тип объявления не выбран');
-    }
-
-    let mainPrice = 0;
-    let pricePeriod: PricePeriodType = 'MONTH';
-
-    if (formData.price.monthly && formData.price.monthly !== '') {
-        mainPrice = parseFloat(formData.price.monthly);
-        pricePeriod = 'MONTH';
-    } else if (formData.price.weekly && formData.price.weekly !== '') {
-        mainPrice = parseFloat(formData.price.weekly);
-        pricePeriod = 'WEEK';
-    } else if (formData.price.daily && formData.price.daily !== '') {
-        mainPrice = parseFloat(formData.price.daily);
-        pricePeriod = 'DAY';
-    } else if (formData.price.hourly && formData.price.hourly !== '') {
-        mainPrice = parseFloat(formData.price.hourly);
-        pricePeriod = 'HOUR';
-    } else {
-        throw new Error('Не указана цена аренды');
-    }
-
-    const typeTitles = {
-        PARKING: 'Парковочное место',
-        STORAGE: 'Кладовое помещение',
-        GARAGE: 'Гараж'
-    };
-
-    const title = `${typeTitles[formData.type]} - ${formData.address}`;
-
-    const amenities = formData.features.reduce((acc, feature) => {
-        acc[feature] = true;
-        return acc;
-    }, {} as Record<string, boolean>);
-
-    const availability = formData.availability ? [{
-        start: `${formData.availability.start}T00:00:00.000Z`,
-        end: `${formData.availability.end}T23:59:59.999Z`
-    }] : [];
-
-    const size = formData.area ? parseFloat(formData.area) : undefined;
-
-    return {
-        type: formData.type,
-        title,
-        description: formData.description,
-        price: mainPrice,
-        pricePeriod: pricePeriod,
-        currency: 'RUB',
-        address: formData.address,
-        size,
-        photosJson: formData.photos,
-        amenities,
-        availability,
-    };
-};
-
 export const createMainScreenAdFromResponse = (listing: ListingResponse) => {
-    const getTypeLabel = (type: ListingType) => {
+    const getTypeLabel = (type: string) => {
         switch (type) {
             case 'PARKING': return 'Парковочное место';
             case 'STORAGE': return 'Кладовое помещение';
@@ -146,7 +64,7 @@ export const createMainScreenAdFromResponse = (listing: ListingResponse) => {
         }
     };
 
-    const getPriceText = (price: number, period: PricePeriodType) => {
+    const getPriceText = (price: number, period: string) => {
         const periodLabels = {
             HOUR: 'час',
             DAY: 'сутки',
@@ -154,7 +72,8 @@ export const createMainScreenAdFromResponse = (listing: ListingResponse) => {
             MONTH: 'месяц'
         };
 
-        return `${price} ₽/${periodLabels[period]}`;
+        const validPeriod = period as PricePeriodType;
+        return `${price} ₽/${periodLabels[validPeriod] || 'период'}`;
     };
 
     return {

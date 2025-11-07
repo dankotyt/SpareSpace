@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {View, StyleSheet, TouchableOpacity, Text, Alert} from 'react-native';
 import { TypeStep } from '@/components/addAdvertisement/TypeStep';
 import { BasicInfoStep } from '@/components/addAdvertisement/BasicInfoStep';
@@ -9,7 +9,7 @@ import { BackButton } from '@/components/ui/BackButton';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { AdvertisementFormData, AdvertisementStep } from '@/types/advertisement';
 import { COLORS } from '@/shared/constants/colors';
-import {useNavigation} from "@react-navigation/native";
+import {useNavigation, useRoute} from "@react-navigation/native";
 import {StackNavigationProp} from "@react-navigation/stack";
 import {RootStackParamList} from "@/navigation/types";
 import { useAdvertisement } from '@/services/AdvertisementContext';
@@ -21,17 +21,40 @@ export const AddAdvertisementScreen: React.FC = () => {
     const { addAdvertisement } = useAdvertisement();
     const { createListing, isLoading: isCreating, error: createError } = useListing();
     const { loadProfile } = useProfile();
+    const route = useRoute();
+    const params = route.params as any;
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-    const [currentStep, setCurrentStep] = useState<AdvertisementStep>(1);
+    const [currentStep, setCurrentStep] = useState<AdvertisementStep>(params?.currentStep || 1);
     const [formData, setFormData] = useState<AdvertisementFormData>({
         type: null,
         address: '',
         area: '',
         features: [],
+        location: undefined,
         description: '',
         photos: [],
         price: {},
     });
+
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('focus', () => {
+            const params = route.params as any;
+            if (params?.selectedLocation) {
+                const { selectedLocation } = params;
+                setFormData(prev => ({
+                    ...prev,
+                    location: {
+                        latitude: selectedLocation.latitude,
+                        longitude: selectedLocation.longitude
+                    },
+                    address: selectedLocation.address
+                }));
+                navigation.setParams({ selectedLocation: undefined });
+            }
+        });
+
+        return unsubscribe;
+    }, [navigation, route.params]);
 
     const handleTypeSelect = (type: 'PARKING' | 'STORAGE' | 'GARAGE') => {
         setFormData(prev => ({ ...prev, type }));
@@ -59,6 +82,21 @@ export const AddAdvertisementScreen: React.FC = () => {
 
     const handlePriceChange = (price: any) => {
         setFormData(prev => ({ ...prev, price }));
+    };
+
+    const handleLocationSelect = (locationData: {
+        latitude: number;
+        longitude: number;
+        address: string;
+    }) => {
+        setFormData(prev => ({
+            ...prev,
+            location: {
+                latitude: locationData.latitude,
+                longitude: locationData.longitude
+            },
+            address: locationData.address
+        }));
     };
 
     const handleAvailabilityChange = (availability: { start: string; end: string } | undefined) => {
@@ -221,9 +259,13 @@ export const AddAdvertisementScreen: React.FC = () => {
                         address={formData.address}
                         area={formData.area}
                         features={formData.features}
-                        onAddressChange={handleAddressChange}
-                        onAreaChange={handleAreaChange}
-                        onFeaturesChange={handleFeaturesChange}
+                        location={formData.location}
+                        formData={formData}
+                        onAddressChange={(address) => setFormData(prev => ({ ...prev, address }))}
+                        onAreaChange={(area) => setFormData(prev => ({ ...prev, area }))}
+                        onFeaturesChange={(features) => setFormData(prev => ({ ...prev, features }))}
+                        onLocationSelect={handleLocationSelect}
+                        navigation={navigation}
                     />
                 );
             case 3:

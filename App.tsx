@@ -1,17 +1,19 @@
 import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { StatusBar } from 'expo-status-bar';
 import { AppNavigator } from '@/navigation/AppNavigator';
 import { AuthProvider } from '@/services/AuthProvider';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { AdvertisementProvider } from '@services/AdvertisementContext';
+import { AdvertisementProvider } from '@/services/AdvertisementContext';
 
 export default function App() {
     return (
-        <AdvertisementProvider>
-            <SafeAreaProvider>
-                <AuthProvider>
+        <AuthProvider>
+            <AdvertisementProvider>
+                <NavigationContainer>
+                    <StatusBar style="auto" />
                     <AppNavigator />
-                </AuthProvider>
-            </SafeAreaProvider>
-        </AdvertisementProvider>
+                </NavigationContainer>
+            </AdvertisementProvider>
+        </AuthProvider>
     );
 }

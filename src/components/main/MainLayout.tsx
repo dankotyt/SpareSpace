@@ -51,7 +51,6 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 
     const maxTranslateY = categoriesHeight + 15;
 
-    // Обработчики измерения размеров
     const onHeaderLayout = useCallback((event: LayoutChangeEvent) => {
         setHeaderHeight(event.nativeEvent.layout.height);
     }, []);

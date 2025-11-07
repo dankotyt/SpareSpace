@@ -6,7 +6,7 @@ import {
     StyleSheet,
     Alert,
     ActivityIndicator,
-    Text,
+    Text, TouchableOpacity,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -131,6 +131,10 @@ export const ProfileScreen: React.FC = () => {
                     <Text style={styles.retryAuth} onPress={handleRefresh}>
                         Повторная авторизация
                     </Text>
+                    {/* Добавляем кнопку выхода */}
+                    <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+                        <Text style={styles.logoutButtonText}>Выйти из профиля</Text>
+                    </TouchableOpacity>
                 </View>
             );
         }
@@ -270,5 +274,17 @@ const styles = StyleSheet.create({
         right: 0,
         bottom: 0,
         zIndex: 20,
+    },
+    logoutButton: {
+        backgroundColor: COLORS.red[500],
+        padding: 16,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginTop: 16,
+    },
+    logoutButtonText: {
+        color: COLORS.white,
+        fontSize: 16,
+        fontWeight: '600',
     },
 });

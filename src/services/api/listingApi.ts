@@ -1,5 +1,7 @@
 import { tokenService } from '@/services/tokenService';
 import { API_BASE_URL } from '@/config/env';
+import {Listing} from "@/types/profile";
+import {authApiService} from "@services/api/authApi";
 
 export interface CreateListingRequest {
     type: 'PARKING' | 'STORAGE' | 'GARAGE';
@@ -20,27 +22,7 @@ export interface CreateListingRequest {
     }>;
 }
 
-export interface ListingResponse {
-    id: number;
-    type: string;
-    title: string;
-    description: string;
-    price: number;
-    pricePeriod: string;
-    currency: string;
-    address: string;
-    size?: number;
-    photosJson: string[];
-    amenities: any;
-    availability: Array<{
-        start: string;
-        end: string;
-    }>;
-    userId: number;
-    status: string;
-    createdAt: string;
-    updatedAt: string;
-}
+export type ListingResponse = Listing;
 
 class ListingApiService {
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -71,10 +53,13 @@ class ListingApiService {
     }
 
     async createListing(listingData: CreateListingRequest): Promise<ListingResponse> {
-        return this.request<ListingResponse>('/listings', {
+        console.log('📤 Sending to server:', listingData);
+        const result = await this.request<ListingResponse>('/listings', {
             method: 'POST',
             body: JSON.stringify(listingData),
         });
+        console.log('📥 Received from server:', result);
+        return result;
     }
 
     async getListings(): Promise<ListingResponse[]> {
@@ -82,9 +67,19 @@ class ListingApiService {
         return response.listings || [];
     }
 
-    async getUserListings(): Promise<ListingResponse[]> {
-        const response = await this.request<{ listings: ListingResponse[] }>('/listings?my=true');
-        return response.listings || [];
+    async getMyListings(): Promise<ListingResponse[]> {
+        try {
+            const profileResponse = await authApiService.getProfile();
+            if (profileResponse.success && profileResponse.data) {
+                const userId = profileResponse.data.id;
+                const response = await this.request<{ listings: ListingResponse[] }>(`/listings/user/${userId}`);
+                return response.listings || [];
+            }
+            return [];
+        } catch (error) {
+            console.error('Error getting my listings:', error);
+            return [];
+        }
     }
 
     async getListingById(id: number): Promise<ListingResponse> {

@@ -1,16 +1,27 @@
+import {AdvertisementFormData, LocationData} from "@/types/advertisement";
+
 export type RootStackParamList = {
     MainTabs: undefined;
     PhoneAuth: undefined;
     EmailAuth: undefined;
     Registration: undefined;
     Profile: undefined;
-    AddAdvertisement: undefined;
-};
-
-export type NavigationProps = {
-    navigate: (screen: keyof RootStackParamList) => void;
-    goBack: () => void;
-    replace: (screen: keyof RootStackParamList) => void;
+    MapScreen: undefined;
+    AddAdvertisement: {
+        selectedLocation?: {
+            latitude: number;
+            longitude: number;
+            address: string;
+        };
+        currentStep?: number;
+    };
+    SelectLocationScreen: {
+        initialLocation?: {
+            latitude: number;
+            longitude: number;
+        };
+        onLocationSelected?: (locationData: LocationData) => void;
+    };
 };
 
 export type BottomTabParamList = {
@@ -19,6 +30,7 @@ export type BottomTabParamList = {
     Search: undefined;
     Messages: undefined;
     Profile: undefined;
+    MapScreen: undefined;
 };
 
 export type ProfileStackParamList = {

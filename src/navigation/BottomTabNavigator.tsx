@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { BottomTabParamList } from './types';
 import { MainScreen } from '@/screens/MainScreen';
 import { ProfileScreen } from '@/screens/ProfileScreen';
+import { MapScreen } from "@screens/MapScreen";
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
@@ -17,7 +18,7 @@ export const BottomTabNavigator: React.FC = () => {
             <Tab.Screen name="MainScreen" component={MainScreen} />
             <Tab.Screen name="Profile" component={ProfileScreen} />
             <Tab.Screen name="Favorites" component={MainScreen} />
-            <Tab.Screen name="Search" component={MainScreen} />
+            <Tab.Screen name="Search" component={MapScreen} />
             <Tab.Screen name="Messages" component={MainScreen} />
         </Tab.Navigator>
     );

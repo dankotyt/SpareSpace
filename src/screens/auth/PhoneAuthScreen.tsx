@@ -40,7 +40,6 @@ export const PhoneAuthScreen: React.FC = () => {
 
             if (result.exists) {
                 Alert.alert('Успешно', result.message);
-                // Здесь можно перейти на экран ввода SMS кода
                 // navigation.navigate('SmsVerification', { phone });
             } else {
                 Alert.alert(

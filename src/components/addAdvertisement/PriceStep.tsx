@@ -15,9 +15,9 @@ interface PriceStepProps {
     availability?: {
         start: string;
         end: string;
-    };
+    }[];
     onPriceChange: (price: any) => void;
-    onAvailabilityChange: (availability: { start: string; end: string } | undefined) => void;
+    onAvailabilityChange: (availability: { start: string; end: string }[] | undefined) => void;
 }
 
 export const PriceStep: React.FC<PriceStepProps> = ({
@@ -34,8 +34,8 @@ export const PriceStep: React.FC<PriceStepProps> = ({
     const [showStartTimePicker, setShowStartTimePicker] = useState(false);
     const [showEndTimePicker, setShowEndTimePicker] = useState(false);
     const [startTime, setStartTime] = useState<Date>(() => {
-        if (availability?.start) {
-            return new Date(availability.start);
+        if (availability && availability.length > 0 && availability[0]?.start) {
+            return new Date(availability[0].start);
         }
         const defaultTime = new Date();
         defaultTime.setHours(12, 0, 0, 0);
@@ -43,8 +43,8 @@ export const PriceStep: React.FC<PriceStepProps> = ({
     });
 
     const [endTime, setEndTime] = useState<Date>(() => {
-        if (availability?.end) {
-            return new Date(availability.end);
+        if (availability && availability.length > 0 && availability[0]?.end) {
+            return new Date(availability[0].end);
         }
         const defaultTime = new Date();
         defaultTime.setHours(15, 0, 0, 0);
@@ -143,11 +143,9 @@ export const PriceStep: React.FC<PriceStepProps> = ({
             const startDate = selectedStartDate < selectedEndDate ? selectedStartDate : selectedEndDate;
             const endDate = selectedStartDate < selectedEndDate ? selectedEndDate : selectedStartDate;
 
-            const startDateTime = new Date(startDate);
-            startDateTime.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0);
+            const startDateTime = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), startTime.getHours(), startTime.getMinutes(), 0, 0);
 
-            const endDateTime = new Date(endDate);
-            endDateTime.setHours(endTime.getHours(), endTime.getMinutes(), 0, 0);
+            const endDateTime = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), endTime.getHours(), endTime.getMinutes(), 0, 0);
 
             if (endDateTime <= startDateTime) {
                 alert('Время окончания должно быть после времени начала');
@@ -155,16 +153,17 @@ export const PriceStep: React.FC<PriceStepProps> = ({
             }
 
             if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+                console.error('Invalid dates:', { startDateTime, endDateTime });
                 alert('Ошибка: неверный формат даты');
                 return;
             }
 
-            const availabilityData = {
+            const availabilityData = [{
                 start: startDateTime.toISOString(),
                 end: endDateTime.toISOString()
-            };
+            }];
 
-            console.log('Saving availability to parent:', availabilityData);
+            console.log('✅ Saving valid availability:', availabilityData);
             onAvailabilityChange(availabilityData);
             setShowCalendar(false);
         }
@@ -185,10 +184,11 @@ export const PriceStep: React.FC<PriceStepProps> = ({
     };
 
     const formatDateTimeRange = () => {
-        if (availability && availability.start && availability.end) {
+        if (availability && Array.isArray(availability) && availability.length > 0) {
+            const firstAvailability = availability[0];
             try {
-                const start = new Date(availability.start);
-                const end = new Date(availability.end);
+                const start = new Date(firstAvailability.start);
+                const end = new Date(firstAvailability.end);
 
                 if (isNaN(start.getTime()) || isNaN(end.getTime())) {
                     return null;
@@ -234,15 +234,6 @@ export const PriceStep: React.FC<PriceStepProps> = ({
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return date < today;
-    };
-
-    const formatDateRange = () => {
-        if (availability) {
-            const start = new Date(availability.start);
-            const end = new Date(availability.end);
-            return `${start.toLocaleDateString('ru')} - ${end.toLocaleDateString('ru')}`;
-        }
-        return null;
     };
 
     const getCurrentPriceValue = () => {

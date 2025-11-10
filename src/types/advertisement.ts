@@ -5,8 +5,8 @@ export type PricePeriodType = 'HOUR' | 'DAY' | 'WEEK' | 'MONTH';
 export type CurrencyType = 'RUB';
 
 export interface AvailabilityPeriod {
-    start: string; // ISO string format
-    end: string;
+    start: Date; // ISO string format
+    end: Date;
 }
 
 export interface AdvertisementFormData {
@@ -36,7 +36,7 @@ export interface AdvertisementFormData {
     availability?: {
         start: string; // дата в формате YYYY-MM-DD
         end: string;
-    };
+    }[];
 
     // Шаг 5: Контакты
     contacts?: {

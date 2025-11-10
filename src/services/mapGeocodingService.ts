@@ -1,4 +1,4 @@
-import { YANDEX_MAP_CONFIG } from '@/config/mapConfig';
+import {YANDEX_MAP_GEOCODER_CONFIG} from '@/config/mapConfig';
 
 export interface GeocodingResult {
     address: string;
@@ -12,7 +12,7 @@ class GeocodingService {
     async reverseGeocode(location: { latitude: number; longitude: number }): Promise<string> {
         try {
             const response = await fetch(
-                `${this.baseUrl}/?apikey=${YANDEX_MAP_CONFIG.apiKey}&geocode=${location.longitude},${location.latitude}&format=json`
+                `${this.baseUrl}/?apikey=${YANDEX_MAP_GEOCODER_CONFIG.apiKey}&geocode=${location.longitude},${location.latitude}&format=json`
             );
 
             if (!response.ok) {
@@ -36,7 +36,7 @@ class GeocodingService {
     async geocode(address: string): Promise<GeocodingResult | null> {
         try {
             const response = await fetch(
-                `${this.baseUrl}/?apikey=${YANDEX_MAP_CONFIG.apiKey}&geocode=${encodeURIComponent(address)}&format=json`
+                `${this.baseUrl}/?apikey=${YANDEX_MAP_GEOCODER_CONFIG.apiKey}&geocode=${encodeURIComponent(address)}&format=json`
             );
 
             if (!response.ok) {

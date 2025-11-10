@@ -2,6 +2,11 @@
   "expo": {
     "name": "SpareSpaceExpo",
     "slug": "SpareSpaceExpo",
+    "extra": {
+      "eas": {
+        "projectId": "4c21cb46-a8de-43b9-b346-f257b4459209"
+      }
+    },
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

@@ -7,3 +7,7 @@ export const YANDEX_MAP_CONFIG = {
     locale: 'ru_RU',
     theme: 'light'
 } as const;
+
+export const YANDEX_MAP_GEOCODER_CONFIG = {
+    apiKey: extra?.yandexMapGeocoderApiKey,
+}

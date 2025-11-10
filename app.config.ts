@@ -1,6 +1,7 @@
 import { ExpoConfig } from '@expo/config';
 
 const config: ExpoConfig = {
+    owner: "dankotyt",
     name: "SpareSpaceExpo",
     slug: "sparespace-expo",
     version: "1.0.0",
@@ -27,6 +28,9 @@ const config: ExpoConfig = {
         apiUrl: process.env.API_BASE_URL,
         environment: process.env.NODE_ENV || "development",
         yandexMapGeocoderApiKey: process.env.YANDEX_MAP_GEOCODER_API_KEY,
+        eas: {
+            projectId: "4c21cb46-a8de-43b9-b346-f257b4459209"
+        }
     },
 };
 

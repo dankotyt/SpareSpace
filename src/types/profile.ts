@@ -23,6 +23,11 @@ export interface Review {
     updatedAt: string;
 }
 
+interface GeoJSONPoint {
+    type: 'Point';
+    coordinates: [number, number]; // [longitude, latitude]
+}
+
 export interface Listing {
     id: number;
     title: string;
@@ -43,7 +48,7 @@ export interface Listing {
         start: string;
         end: string;
     }>;
-    location?: string;
+    location?: string | GeoJSONPoint;
 }
 
 export interface Booking {
@@ -83,7 +88,6 @@ export interface FormattedUserProfile {
 
     fullName: string;
     joinYear: string;
-    reviewsCount: number;
     balance: number;
 
     reviews: Review[];

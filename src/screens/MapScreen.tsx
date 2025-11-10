@@ -1,26 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-    View,
-    StyleSheet,
-    Dimensions,
-    Text,
-    TouchableOpacity,
-    Modal,
-    ScrollView,
-    ActivityIndicator
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import MapView, { Marker, PROVIDER_DEFAULT, Region } from 'react-native-maps';
-import { Ionicons } from '@expo/vector-icons';
-import { BackButton } from '@/components/ui/BackButton';
-import { COLORS } from '@/shared/constants/colors';
-import { ListingResponse } from '@/services/api/listingApi'
-import { listingApiService } from '@/services/api/listingApi';
+import React, {useEffect, useRef, useState} from 'react';
+import {ActivityIndicator, Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
+import MapView, {Marker, PROVIDER_DEFAULT, Region} from 'react-native-maps';
+import {Ionicons} from '@expo/vector-icons';
+import {BackButton} from '@/components/ui/BackButton';
+import {COLORS} from '@/shared/constants/colors';
+import {listingApiService, ListingResponse} from '@/services/api/listingApi'
 import {StackNavigationProp} from "@react-navigation/stack";
 import {RootStackParamList} from "@navigation/types";
+import {useAuth} from '@/hooks/useAuth';
+import {useAdvertisement} from '@/services/AdvertisementContext';
 
 export const MapScreen: React.FC = () => {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+    const { isAuthenticated } = useAuth();
+    const { userAds } = useAdvertisement();
+
     const [region, setRegion] = useState<Region>({
         latitude: 55.7558,
         longitude: 37.6173,
@@ -38,119 +33,113 @@ export const MapScreen: React.FC = () => {
         loadListings();
     }, []);
 
-    // Функция для парсинга WKT строки в координаты
+    useEffect(() => {
+        if (isAuthenticated && userAds.length > 0) {
+            const allListings = [...listings];
+            userAds.forEach(userAd => {
+                const existingIndex = allListings.findIndex(ad => ad.id === userAd.id);
+                if (existingIndex === -1) {
+                    allListings.push(userAd);
+                }
+            });
+            setListings(allListings);
+        }
+    }, [userAds, isAuthenticated]);
+
     const parseLocation = (location: string): { latitude: number; longitude: number } | null => {
-        if (!location) return null;
+        if (!location || typeof location !== 'string') {
+            return null;
+        }
 
         try {
+            console.log('🔍 Attempting to parse location as WKT:', location);
+
             // Формат: "POINT(longitude latitude)"
             const match = location.match(/POINT\(([^ ]+) ([^)]+)\)/);
-            if (match) {
+            if (match && match[1] && match[2]) {
                 const longitude = parseFloat(match[1]);
                 const latitude = parseFloat(match[2]);
-                return { latitude, longitude };
+
+                if (!isNaN(latitude) && !isNaN(longitude) &&
+                    latitude >= -90 && latitude <= 90 &&
+                    longitude >= -180 && longitude <= 180) {
+
+                    console.log('✅ Successfully parsed WKT coordinates:', { latitude, longitude });
+                    return { latitude, longitude };
+                }
             }
+
+            console.log('❌ Location is not in WKT format or coordinates are invalid');
+            return null;
         } catch (error) {
-            console.error('Error parsing location:', error);
+            console.error('❌ Error parsing location:', error);
+            return null;
         }
-        return null;
     };
 
     const loadListings = async () => {
         try {
             setIsLoading(true);
+
             const listingsData = await listingApiService.getListings();
 
-            // Фильтруем активные объявления с координатами
             const activeListings = listingsData.filter(listing => {
-                if (listing.status !== 'ACTIVE') return false;
 
-                // Проверяем наличие координат через location поле
-                if (listing.location) {
-                    const coords = parseLocation(listing.location);
-                    return coords !== null;
+                if (listing.status !== 'ACTIVE') {
+                    return false;
                 }
 
+                const coords = getListingCoordinates(listing);
+
+                return coords !== null;
             });
 
             setListings(activeListings);
-        } catch (error) {
-            console.error('Error loading listings:', error);
-            loadDemoListings();
+
+        } catch (error: any) {
+
+            if (error.message.includes('Токен авторизации не найден')) {
+            }
+
+            setListings([]);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const loadDemoListings = () => {
-        const demoListings: ListingResponse[] = [
-            {
-                id: 1,
-                type: 'GARAGE',
-                title: 'Теплый гараж в центре',
-                description: 'Отапливаемый гараж с охраной, видеонаблюдение',
-                price: 3000,
-                pricePeriod: 'MONTH',
-                currency: 'RUB',
-                address: 'Москва, ул. Тверская, 15',
-                location: 'POINT(37.6184 55.7604)', // WKT формат
-                size: 20,
-                photosJson: [],
-                amenities: { heating: true, security: true },
-                availability: [],
-                userId: 1,
-                status: 'ACTIVE',
-                createdAt: '2024-01-01T00:00:00.000Z',
-                updatedAt: '2024-01-01T00:00:00.000Z'
-            },
-            {
-                id: 2,
-                type: 'GARAGE',
-                title: 'Гараж в спальном районе',
-                description: 'Удобный подъезд, видеонаблюдение, электричество',
-                price: 2000,
-                pricePeriod: 'MONTH',
-                currency: 'RUB',
-                address: 'Москва, ул. Ленинский проспект, 120',
-                location: 'POINT(37.5544 55.6904)', // WKT формат
-                size: 18,
-                photosJson: [],
-                amenities: { electricity: true, security: true },
-                availability: [],
-                userId: 1,
-                status: 'ACTIVE',
-                createdAt: '2024-01-01T00:00:00.000Z',
-                updatedAt: '2024-01-01T00:00:00.000Z'
-            },
-            {
-                id: 3,
-                type: 'PARKING',
-                title: 'Подземный паркинг',
-                description: 'Охраняемая территория, лифт, отопление',
-                price: 5000,
-                pricePeriod: 'MONTH',
-                currency: 'RUB',
-                address: 'Москва, Пресненская наб., 12',
-                location: 'POINT(37.5424 55.7494)', // WKT формат
-                size: 12,
-                photosJson: [],
-                amenities: { heating: true, security: true, elevator: true },
-                availability: [],
-                userId: 1,
-                status: 'ACTIVE',
-                createdAt: '2024-01-01T00:00:00.000Z',
-                updatedAt: '2024-01-01T00:00:00.000Z'
-            }
-        ];
-        setListings(demoListings);
-    };
-
     const getListingCoordinates = (listing: ListingResponse): { latitude: number; longitude: number } | null => {
-        if (listing.location) {
-            const coords = parseLocation(listing.location);
-            if (coords) return coords;
+        if (!listing.location) {
+            return null;
         }
 
+        if (typeof listing.location === 'object') {
+            if (listing.location.type === 'Point') {
+                const coords = listing.location.coordinates;
+                if (Array.isArray(coords) && coords.length >= 2) {
+                    const longitude = coords[0];
+                    const latitude = coords[1];
+                    if (typeof latitude === 'number' && typeof longitude === 'number' &&
+                        !isNaN(latitude) && !isNaN(longitude) &&
+                        latitude >= -90 && latitude <= 90 &&
+                        longitude >= -180 && longitude <= 180) {
+
+                        return { latitude, longitude };
+                    } else {
+                    }
+                } else {
+                }
+                return null;
+            }
+        }
+
+        // Если это WKT строка
+        if (typeof listing.location === 'string') {
+            const coords = parseLocation(listing.location);
+            if (coords) {
+                return coords;
+            } else {
+            }
+        }
         return null;
     };
 
@@ -168,6 +157,10 @@ export const MapScreen: React.FC = () => {
 
     const onMapReady = () => {
         setMapLoaded(true);
+    };
+
+    const handleRefresh = async () => {
+        await loadListings();
     };
 
     const getTypeLabel = (type: string): string => {
@@ -215,10 +208,19 @@ export const MapScreen: React.FC = () => {
         return amenityLabels[key] || key;
     };
 
+    // Проверяем, является ли объявление собственным (для авторизованных пользователей)
+    const isOwnListing = (listing: ListingResponse): boolean => {
+        if (!isAuthenticated) return false;
+        return userAds.some(userAd => userAd.id === listing.id);
+    };
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <BackButton onPress={handleBack} />
+                <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+                    <Ionicons name="refresh" size={24} color={COLORS.primary} />
+                </TouchableOpacity>
             </View>
 
             <MapView
@@ -237,6 +239,8 @@ export const MapScreen: React.FC = () => {
                     const coordinates = getListingCoordinates(listing);
                     if (!coordinates) return null;
 
+                    const isOwn = isOwnListing(listing);
+
                     return (
                         <Marker
                             key={listing.id}
@@ -244,13 +248,23 @@ export const MapScreen: React.FC = () => {
                             onPress={() => handleMarkerPress(listing)}
                         >
                             <View style={styles.marker}>
-                                <View style={[styles.markerInner, { backgroundColor: getMarkerColor(listing.type) }]}>
+                                <View style={[
+                                    styles.markerInner,
+                                    {
+                                        backgroundColor: getMarkerColor(listing.type),
+                                        borderColor: isOwn ? COLORS.primary : 'transparent',
+                                        borderWidth: isOwn ? 2 : 0
+                                    }
+                                ]}>
                                     <Text style={styles.markerPrice}>
                                         {getPriceText(listing.price, listing.pricePeriod)}
                                     </Text>
                                     <Text style={styles.markerType}>
                                         {getTypeLabel(listing.type)}
                                     </Text>
+                                    {isOwn && (
+                                        <Text style={styles.ownLabel}>Ваше</Text>
+                                    )}
                                 </View>
                                 <View style={[styles.markerArrow, { borderTopColor: getMarkerColor(listing.type) }]} />
                             </View>
@@ -263,6 +277,17 @@ export const MapScreen: React.FC = () => {
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={COLORS.primary} />
                     <Text style={styles.loadingText}>Загрузка объявлений...</Text>
+                </View>
+            )}
+
+            {!isLoading && listings.length === 0 && (
+                <View style={styles.emptyContainer}>
+                    <View style={styles.emptyContent}>
+                        <Text style={styles.emptyText}>Нет доступных объявлений</Text>
+                        <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
+                            <Text style={styles.retryButtonText}>Попробовать снова</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             )}
 
@@ -282,6 +307,9 @@ export const MapScreen: React.FC = () => {
                                             {getTypeLabel(selectedListing.type)}
                                         </Text>
                                         <Text style={styles.modalTitle}>{selectedListing.title}</Text>
+                                        {isOwnListing(selectedListing) && (
+                                            <Text style={styles.ownBadge}>Ваше объявление</Text>
+                                        )}
                                     </View>
                                     <TouchableOpacity onPress={handleCloseModal} style={styles.closeButton}>
                                         <Ionicons name="close" size={24} color={COLORS.gray[500]} />
@@ -335,7 +363,6 @@ export const MapScreen: React.FC = () => {
     );
 };
 
-// Стили остаются без изменений
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -344,7 +371,21 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 50,
         left: 20,
+        right: 20,
         zIndex: 1000,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    refreshButton: {
+        backgroundColor: COLORS.white,
+        padding: 8,
+        borderRadius: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
     },
     map: {
         width: Dimensions.get('window').width,
@@ -370,6 +411,45 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: COLORS.gray[500],
     },
+    emptyContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'transparent', // прозрачный фон для всего контейнера
+    },
+    emptyContent: {
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 10,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+        minWidth: 200, // минимальная ширина
+        maxWidth: '80%', // максимальная ширина 80% экрана
+    },
+    emptyText: {
+        fontSize: 16,
+        color: COLORS.gray[500],
+        marginBottom: 10,
+    },
+    retryButton: {
+        backgroundColor: COLORS.primary,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 8,
+    },
+    retryButtonText: {
+        color: COLORS.white,
+        fontSize: 14,
+        fontWeight: '600',
+    },
     marker: {
         alignItems: 'center',
     },
@@ -380,6 +460,7 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         minWidth: 100,
         alignItems: 'center',
+        borderWidth: 2,
     },
     markerPrice: {
         color: COLORS.white,
@@ -391,6 +472,12 @@ const styles = StyleSheet.create({
         color: COLORS.white,
         fontSize: 10,
         textAlign: 'center',
+        marginTop: 2,
+    },
+    ownLabel: {
+        color: COLORS.primary,
+        fontSize: 8,
+        fontWeight: 'bold',
         marginTop: 2,
     },
     markerArrow: {
@@ -438,6 +525,12 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
         color: COLORS.text,
+    },
+    ownBadge: {
+        fontSize: 12,
+        color: COLORS.primary,
+        fontWeight: '600',
+        marginTop: 4,
     },
     closeButton: {
         padding: 4,

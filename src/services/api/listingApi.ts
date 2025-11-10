@@ -17,8 +17,8 @@ export interface CreateListingRequest {
     photosJson?: string[];
     amenities?: any;
     availability?: Array<{
-        start: string;
-        end: string;
+        start: Date;
+        end: Date;
     }>;
 }
 
@@ -63,8 +63,27 @@ class ListingApiService {
     }
 
     async getListings(): Promise<ListingResponse[]> {
-        const response = await this.request<{ listings: ListingResponse[] }>('/listings');
-        return response.listings || [];
+        try {
+            const url = `${API_BASE_URL}/listings`;
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.listings || [];
+
+        } catch (error) {
+            const response = await this.request<{ listings: ListingResponse[] }>('/listings');
+            return response.listings || [];
+        }
     }
 
     async getMyListings(): Promise<ListingResponse[]> {

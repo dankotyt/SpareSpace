@@ -34,9 +34,9 @@ export const PublishStep: React.FC<PublishStepProps> = ({ formData }) => {
     };
 
     const getAvailabilityText = () => {
-        if (formData.availability && formData.availability.start && formData.availability.end) {
+        if (formData.availability && Array.isArray(formData.availability) && formData.availability.length > 0) {
+            const firstAvailability = formData.availability[0];
             try {
-
                 const parseDate = (dateString: string) => {
                     if (dateString.includes('T')) {
                         return new Date(dateString);
@@ -47,8 +47,8 @@ export const PublishStep: React.FC<PublishStepProps> = ({ formData }) => {
                     return new Date(dateString);
                 };
 
-                const start = parseDate(formData.availability.start);
-                const end = parseDate(formData.availability.end);
+                const start = parseDate(firstAvailability.start);
+                const end = parseDate(firstAvailability.end);
 
                 if (isNaN(start.getTime()) || isNaN(end.getTime())) {
                     return 'Неверный формат даты';

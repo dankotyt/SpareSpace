@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { UserProfile } from '@/types/profile';
+import {FormattedUserProfile, UserProfile} from '@/types/profile';
 import { COLORS } from '@/shared/constants/colors';
 
 interface ProfileHeaderProps {
-    profile: UserProfile;
+    profile: FormattedUserProfile;
     onReviewsPress: () => void;
 }
 
@@ -22,6 +22,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile, onReviews
         return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
     };
 
+    const safeRating = typeof profile.rating === 'number' ? profile.rating : 0;
+    const safeReviewsCount = profile.stats?.totalReviews || 0;
+
     return (
         <View style={styles.container}>
             <View style={styles.avatarContainer}>
@@ -38,7 +41,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile, onReviews
             </View>
 
             <Text style={styles.name}>
-                {profile.firstName} {profile.lastName} {profile.patronymic || ''}
+                {profile.fullName}
             </Text>
 
             <Text style={styles.joinDate}>
@@ -50,8 +53,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile, onReviews
 
             <TouchableOpacity onPress={onReviewsPress}>
                 <View style={styles.ratingContainer}>
-                    <Text style={styles.rating}>{(profile.rating || 0).toFixed(1)}</Text>
-                    <Text style={styles.reviews}>({Math.floor((profile.rating || 0) * 10)} отзывов)</Text>
+                    <Text style={styles.rating}>{safeRating.toFixed(1)}</Text>
+                    <Text style={styles.reviews}>({safeReviewsCount} отзывов)</Text>
                 </View>
             </TouchableOpacity>
         </View>

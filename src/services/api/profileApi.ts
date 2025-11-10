@@ -69,12 +69,35 @@ class ProfileApiService {
     }
 
     async getUserReviews(userId: number): Promise<ReviewsResponse> {
-        const response = await this.request<any>(`/reviews?targetUserId=${userId}`);
-        const reviews = response.reviews || response || [];
-        return {
-            success: true,
-            data: reviews,
-        };
+        try {
+            // Пробуем получить отзывы через общий endpoint
+            const response = await this.request<any>('/reviews');
+            const allReviews = response.reviews || response || [];
+
+            // Фильтруем отзывы, которые относятся к данному пользователю
+            const userReviews = allReviews.filter((review: any) =>
+                review.toUser && review.toUser.id === userId
+            );
+
+            return {
+                success: true,
+                data: userReviews,
+            };
+        } catch (error: any) {
+            if (error.message?.includes('not found') || error.message?.includes('Not found')) {
+                return {
+                    success: true,
+                    data: [],
+                };
+            }
+
+            console.error('Error fetching user reviews:', error);
+            return {
+                success: false,
+                data: [],
+                message: 'Не удалось загрузить отзывы'
+            };
+        }
     }
 
     async getUserListings(userId: number, currentUserId?: number): Promise<ListingsResponse> {

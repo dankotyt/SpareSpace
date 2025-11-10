@@ -34,6 +34,7 @@ export const AddAdvertisementScreen: React.FC = () => {
         description: '',
         photos: [],
         price: {},
+
     });
 
     useEffect(() => {
@@ -99,7 +100,7 @@ export const AddAdvertisementScreen: React.FC = () => {
         }));
     };
 
-    const handleAvailabilityChange = (availability: { start: string; end: string } | undefined) => {
+    const handleAvailabilityChange = (availability: { start: string; end: string }[] | undefined) => {
         console.log('Received availability from child:', availability);
 
         setFormData(prev => ({
@@ -125,8 +126,9 @@ export const AddAdvertisementScreen: React.FC = () => {
                 break;
             case 4:
                 console.log(`- Цены:`, formData.price);
-                if (formData.availability) {
-                    console.log(`- Период аренды: ${formData.availability.start} - ${formData.availability.end}`);
+                if (formData.availability && formData.availability.length > 0) {
+                    const firstAvailability = formData.availability[0];
+                    console.log(`- Период аренды: ${firstAvailability.start} - ${firstAvailability.end}`);
                 } else {
                     console.log(`- Период аренды: не выбран`);
                 }
@@ -148,7 +150,17 @@ export const AddAdvertisementScreen: React.FC = () => {
         try {
             console.log('Данные для отправки:', JSON.stringify(formData, null, 2));
 
-            const result = await createListing(formData);
+            const listingData = {
+                ...formData,
+                availability: formData.availability && formData.availability.length > 0
+                    ? formData.availability.map(avail => ({
+                        start: new Date(avail.start),
+                        end: new Date(avail.end)
+                    }))
+                    : undefined
+            };
+
+            const result = await createListing(listingData);
 
             console.log('Объявление успешно опубликовано!', result);
 

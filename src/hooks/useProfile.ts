@@ -29,7 +29,6 @@ const formatFullUserProfile = (
         ...profile,
         fullName: `${profile.firstName} ${profile.lastName} ${profile.patronymic || ''}`.trim(),
         joinYear: new Date(profile.createdAt).getFullYear().toString(),
-        reviewsCount: safeReviews.length,
         balance: 0,
         reviews: safeReviews,
         listings: safeListings,

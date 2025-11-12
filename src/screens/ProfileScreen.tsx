@@ -131,7 +131,6 @@ export const ProfileScreen: React.FC = () => {
                     <Text style={styles.retryAuth} onPress={handleRefresh}>
                         Повторная авторизация
                     </Text>
-                    {/* Добавляем кнопку выхода */}
                     <TouchableOpacity style={styles.logoutButton} onPress={logout}>
                         <Text style={styles.logoutButtonText}>Выйти из профиля</Text>
                     </TouchableOpacity>

@@ -4,10 +4,11 @@ export interface AdItem {
     type: string;
     location: string;
     image?: string;
+    originalData?: any;
 }
 
 export interface CategoryItem {
     id: string;
     title: string;
-    type: 'PARKING' | 'GARAGE' | 'STORAGE' | 'OTHER';
+    type: 'PARKING' | 'GARAGE' | 'STORAGE' | 'OTHER' | 'ALL';
 }

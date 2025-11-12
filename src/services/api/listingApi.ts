@@ -1,7 +1,8 @@
-import { tokenService } from '@/services/tokenService';
-import { API_BASE_URL } from '@/config/env';
+import {tokenService} from '@/services/tokenService';
+import {API_BASE_URL} from '@/config/env';
 import {Listing} from "@/types/profile";
 import {authApiService} from "@services/api/authApi";
+import {formatListingForDisplay} from '@/shared/utils/priceFormatter';
 
 export interface CreateListingRequest {
     type: 'PARKING' | 'STORAGE' | 'GARAGE';
@@ -53,13 +54,11 @@ class ListingApiService {
     }
 
     async createListing(listingData: CreateListingRequest): Promise<ListingResponse> {
-        console.log('📤 Sending to server:', listingData);
         const result = await this.request<ListingResponse>('/listings', {
             method: 'POST',
             body: JSON.stringify(listingData),
         });
-        console.log('📥 Received from server:', result);
-        return result;
+        return formatListingForDisplay(result);
     }
 
     async getListings(): Promise<ListingResponse[]> {
@@ -78,11 +77,13 @@ class ListingApiService {
             }
 
             const data = await response.json();
-            return data.listings || [];
+            const listings = data.listings || [];
+            return listings.map(formatListingForDisplay);
 
         } catch (error) {
             const response = await this.request<{ listings: ListingResponse[] }>('/listings');
-            return response.listings || [];
+            const listings = response.listings || [];
+            return listings.map(formatListingForDisplay);
         }
     }
 
@@ -91,9 +92,13 @@ class ListingApiService {
             const profileResponse = await authApiService.getProfile();
             if (profileResponse.success && profileResponse.data) {
                 const userId = profileResponse.data.id;
+
                 const response = await this.request<{ listings: ListingResponse[] }>(`/listings/user/${userId}`);
-                return response.listings || [];
+                const listings = response.listings || [];
+
+                return listings.map(formatListingForDisplay);
             }
+            console.log('❌ No profile data');
             return [];
         } catch (error) {
             console.error('Error getting my listings:', error);
@@ -102,14 +107,18 @@ class ListingApiService {
     }
 
     async getListingById(id: number): Promise<ListingResponse> {
-        return this.request<ListingResponse>(`/listings/${id}`);
+        const listing = await this.request<ListingResponse>(`/listings/${id}`);
+
+        return formatListingForDisplay(listing);
     }
 
     async updateListing(id: number, listingData: Partial<CreateListingRequest>): Promise<ListingResponse> {
-        return this.request<ListingResponse>(`/listings/${id}`, {
+        const listing = await this.request<ListingResponse>(`/listings/${id}`, {
             method: 'PATCH',
             body: JSON.stringify(listingData),
         });
+
+        return formatListingForDisplay(listing);
     }
 
     async deleteListing(id: number): Promise<void> {

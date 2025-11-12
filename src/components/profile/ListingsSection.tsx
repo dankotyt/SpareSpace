@@ -1,13 +1,13 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Listing } from '@/types/profile';
+import { FormattedListing } from '@/types/profile';
 import { COLORS } from '@/shared/constants/colors';
 
 interface ListingsSectionProps {
-    listings: Listing[];
+    listings: FormattedListing[];
     onAllAdsPress: () => void;
-    onAssetPress: (asset: Listing) => void;
+    onAssetPress: (asset: FormattedListing) => void;
 }
 
 export const ListingsSection: React.FC<ListingsSectionProps> = ({
@@ -86,11 +86,13 @@ export const ListingsSection: React.FC<ListingsSectionProps> = ({
                             </View>
                             <Text style={styles.assetTitle}>{listing.title}</Text>
                             <Text style={styles.assetPrice}>
-                                {listing.price} ₽
-                                {listing.pricePeriod === 'HOUR' && '/час'}
-                                {listing.pricePeriod === 'DAY' && '/день'}
-                                {listing.pricePeriod === 'WEEK' && '/неделя'}
-                                {listing.pricePeriod === 'MONTH' && '/месяц'}
+                                {(listing as any).displayPrice ||
+                                    `${Math.round(listing.price)} ₽${
+                                        listing.pricePeriod === 'HOUR' ? '/час' :
+                                            listing.pricePeriod === 'DAY' ? '/день' :
+                                                listing.pricePeriod === 'WEEK' ? '/неделя' :
+                                                    listing.pricePeriod === 'MONTH' ? '/месяц' : ''
+                                    }`}
                             </Text>
                             <Text style={styles.assetAddress}>{listing.address}</Text>
                         </TouchableOpacity>

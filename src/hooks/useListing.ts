@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react';
-import { listingApiService, CreateListingRequest } from '@/services/api/listingApi';
+import {useCallback, useState} from 'react';
+import {CreateListingRequest, listingApiService} from '@/services/api/listingApi';
 import {AdvertisementFormData, PricePeriodType} from '@/types/advertisement';
 
 export const useListing = () => {
@@ -148,45 +148,8 @@ export const useListing = () => {
         setError(null);
 
         try {
-            // ДЕТАЛЬНАЯ ОТЛАДКА AVAILABILITY
-            console.log('📋 Raw formData.availability:', formData.availability);
-
-            if (formData.availability && Array.isArray(formData.availability) && formData.availability.length > 0) {
-                const firstAvailability = formData.availability[0];
-                console.log('🔍 First availability item:', firstAvailability);
-
-                // Проверяем структуру данных
-                if (firstAvailability.start && firstAvailability.end) {
-                    console.log('🔍 Availability start:', firstAvailability.start, 'type:', typeof firstAvailability.start);
-                    console.log('🔍 Availability end:', firstAvailability.end, 'type:', typeof firstAvailability.end);
-
-                    // Пробуем парсить сразу для диагностики
-                    try {
-                        const testStart = new Date(firstAvailability.start);
-                        const testEnd = new Date(firstAvailability.end);
-                        console.log('🧪 Test parsing - start:', testStart, 'valid:', !isNaN(testStart.getTime()));
-                        console.log('🧪 Test parsing - end:', testEnd, 'valid:', !isNaN(testEnd.getTime()));
-                    } catch (testError) {
-                        console.error('🧪 Test parsing error:', testError);
-                    }
-                }
-            }
-
             const apiData = transformFormDataToApi(formData);
-            console.log('📤 Final API data:', apiData);
-
-            // Проверяем финальные данные
-            if (apiData.availability && apiData.availability.length > 0) {
-                const av = apiData.availability[0];
-                console.log('✅ Final availability check:');
-                console.log('   - start:', av.start, 'valid:', !isNaN(av.start.getTime()));
-                console.log('   - end:', av.end, 'valid:', !isNaN(av.end.getTime()));
-            }
-
-            const result = await listingApiService.createListing(apiData);
-            console.log('✅ Объявление успешно создано:', result);
-
-            return result;
+            return await listingApiService.createListing(apiData);
         } catch (err: any) {
             console.error('❌ Ошибка при создании объявления:', err);
             const errorMessage = err.message || 'Произошла ошибка при создании объявления';

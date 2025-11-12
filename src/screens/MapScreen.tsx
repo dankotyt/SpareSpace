@@ -197,18 +197,15 @@ export const MapScreen: React.FC = () => {
             heating: 'Отопление',
             security: 'Охрана',
             electricity: 'Электричество',
-            elevator: 'Лифт',
             ventilation: 'Вентиляция',
             lighting: 'Освещение',
             water: 'Водоснабжение',
-            wifi: 'Wi-Fi',
             camera: 'Видеонаблюдение',
         };
 
         return amenityLabels[key] || key;
     };
 
-    // Проверяем, является ли объявление собственным (для авторизованных пользователей)
     const isOwnListing = (listing: ListingResponse): boolean => {
         if (!isAuthenticated) return false;
         return userAds.some(userAd => userAd.id === listing.id);

@@ -1,6 +1,7 @@
-import {UserProfile, Booking, UserStats, Listing, Review} from '@/types/profile';
+import {UserProfile, Booking, UserStats, Listing, Review, FormattedListing} from '@/types/profile';
 import {tokenService} from "@services/tokenService";
 import { API_BASE_URL } from '@/config/env';
+import {listingApiService} from "@services/api/listingApi";
 
 export interface ProfileResponse {
     success: boolean;
@@ -70,11 +71,9 @@ class ProfileApiService {
 
     async getUserReviews(userId: number): Promise<ReviewsResponse> {
         try {
-            // Пробуем получить отзывы через общий endpoint
             const response = await this.request<any>('/reviews');
             const allReviews = response.reviews || response || [];
 
-            // Фильтруем отзывы, которые относятся к данному пользователю
             const userReviews = allReviews.filter((review: any) =>
                 review.toUser && review.toUser.id === userId
             );
@@ -102,21 +101,73 @@ class ProfileApiService {
 
     async getUserListings(userId: number, currentUserId?: number): Promise<ListingsResponse> {
         try {
-            const response = await this.request<any>(`/listings/user/${userId}`);
-            const listings = response.listings || response || [];
+            const listings = await listingApiService.getMyListings();
+
+            const userListings = listings.filter(listing => {
+                return listing.userId === userId;
+            });
+
+            const formattedListings: FormattedListing[] = userListings.map(listing => {
+                if ((listing as any).displayPrice) {
+                    return listing as FormattedListing;
+                }
+
+                const formattedPrice = `${Math.round(listing.price).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ₽${
+                    listing.pricePeriod === 'HOUR' ? '/час' :
+                        listing.pricePeriod === 'DAY' ? '/день' :
+                            listing.pricePeriod === 'WEEK' ? '/неделя' :
+                                listing.pricePeriod === 'MONTH' ? '/месяц' : ''
+                }`;
+
+                const formattedType = listing.type === 'PARKING' ? 'Парковочное место' :
+                    listing.type === 'GARAGE' ? 'Гараж' :
+                        listing.type === 'STORAGE' ? 'Кладовая' : 'Другое';
+
+                return {
+                    ...listing,
+                    displayPrice: formattedPrice,
+                    displayType: formattedType,
+                    displayPriceShort: `${Math.round(listing.price).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ₽`
+                } as FormattedListing;
+            });
 
             return {
                 success: true,
-                data: listings,
+                data: formattedListings,
             };
 
         } catch (error) {
             console.error('❌ Error fetching user listings:', error);
-            return {
-                success: false,
-                data: [],
-                message: 'Не удалось загрузить объявления'
-            };
+
+            try {
+                const response = await this.request<any>(`/listings/user/${userId}`);
+                const listings = response.listings || response || [];
+
+                const formattedListings: FormattedListing[] = listings.map((listing: any) => ({
+                    ...listing,
+                    displayPrice: `${Math.round(listing.price).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ₽${
+                        listing.pricePeriod === 'HOUR' ? '/час' :
+                            listing.pricePeriod === 'DAY' ? '/день' :
+                                listing.pricePeriod === 'WEEK' ? '/неделя' :
+                                    listing.pricePeriod === 'MONTH' ? '/месяц' : ''
+                    }`,
+                    displayType: listing.type === 'PARKING' ? 'Парковочное место' :
+                        listing.type === 'GARAGE' ? 'Гараж' :
+                            listing.type === 'STORAGE' ? 'Кладовая' : 'Другое',
+                    displayPriceShort: `${Math.round(listing.price).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ₽`
+                }));
+
+                return {
+                    success: true,
+                    data: formattedListings,
+                };
+            } catch (fallbackError) {
+                return {
+                    success: false,
+                    data: [],
+                    message: 'Не удалось загрузить объявления'
+                };
+            }
         }
     }
 

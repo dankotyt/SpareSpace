@@ -201,6 +201,7 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     swipeableContainer: {
+        width: '100%',
         marginTop: 15,
         position: 'absolute',
         backgroundColor: '#FFFFFF',

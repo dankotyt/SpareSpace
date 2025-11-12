@@ -51,6 +51,12 @@ export interface Listing {
     location?: string | GeoJSONPoint;
 }
 
+export interface FormattedListing extends Listing {
+    displayPrice: string;
+    displayType: string;
+    displayPriceShort: string;
+}
+
 export interface Booking {
     id: number;
     listingId: number;

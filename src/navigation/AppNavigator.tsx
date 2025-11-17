@@ -9,6 +9,7 @@ import { RootStackParamList } from './types';
 import { AddAdvertisementScreen } from "@/screens/addAdvertisement/AddAdvertisementScreen";
 import { RegistrationScreen } from '@/screens/auth/RegistrationScreen';
 import SelectLocationScreen from "@screens/addAdvertisement/SelectLocationScreen";
+import {AdvertisementScreen} from "@screens/AdvertisementScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -32,6 +33,8 @@ export const AppNavigator: React.FC = () => {
                     headerShown: false,
                     presentation: 'modal',
                 }}
+            />
+            <Stack.Screen name="Advertisement" component={AdvertisementScreen} options={{ headerShown: false }}
             />
         </Stack.Navigator>
     );

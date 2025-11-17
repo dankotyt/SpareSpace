@@ -1,4 +1,5 @@
 import {AdvertisementFormData, LocationData} from "@/types/advertisement";
+import {Listing} from "@/types/profile";
 
 export type RootStackParamList = {
     MainTabs: undefined;
@@ -6,7 +7,7 @@ export type RootStackParamList = {
     EmailAuth: undefined;
     Registration: undefined;
     Profile: undefined;
-    MapScreen: undefined;
+    MapScreen: { listing?: Listing };
     AddAdvertisement: {
         selectedLocation?: {
             latitude: number;
@@ -22,6 +23,7 @@ export type RootStackParamList = {
         };
         onLocationSelected?: (locationData: LocationData) => void;
     };
+    Advertisement: { listing: Listing };
 };
 
 export type BottomTabParamList = {

@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {ActivityIndicator, Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {RouteProp, useNavigation, useRoute} from '@react-navigation/native';
 import MapView, {Marker, PROVIDER_DEFAULT, Region} from 'react-native-maps';
 import {Ionicons} from '@expo/vector-icons';
 import {BackButton} from '@/components/ui/BackButton';
@@ -11,10 +11,13 @@ import {RootStackParamList} from "@navigation/types";
 import {useAuth} from '@/hooks/useAuth';
 import {useAdvertisement} from '@/services/AdvertisementContext';
 
+type MapScreenRouteProp = RouteProp<RootStackParamList, 'MapScreen'>;
+
 export const MapScreen: React.FC = () => {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+    const route = useRoute<MapScreenRouteProp>();
     const { isAuthenticated } = useAuth();
-    const { userAds } = useAdvertisement();
+    const { userAds, refreshAds } = useAdvertisement();
 
     const [region, setRegion] = useState<Region>({
         latitude: 55.7558,
@@ -31,7 +34,21 @@ export const MapScreen: React.FC = () => {
 
     useEffect(() => {
         loadListings();
-    }, []);
+    }, [userAds.length]);
+
+    useEffect(() => {
+        if (route.params?.listing) {
+            const coordinates = getListingCoordinates(route.params.listing);
+            if (coordinates) {
+                setRegion({
+                    ...coordinates,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                });
+                setSelectedListing(route.params.listing);
+            }
+        }
+    }, [route.params]);
 
     useEffect(() => {
         if (isAuthenticated && userAds.length > 0) {
@@ -80,67 +97,106 @@ export const MapScreen: React.FC = () => {
     const loadListings = async () => {
         try {
             setIsLoading(true);
+            console.log('🔄 MapScreen: Загрузка объявлений...');
 
             const listingsData = await listingApiService.getListings();
+            console.log('📋 MapScreen: Получено объявлений:', listingsData.length);
 
             const activeListings = listingsData.filter(listing => {
+                const isActive = listing.status === 'ACTIVE';
+                const hasCoords = getListingCoordinates(listing) !== null;
 
-                if (listing.status !== 'ACTIVE') {
-                    return false;
-                }
+                console.log(`📍 Listing ${listing.id}: active=${isActive}, hasCoords=${hasCoords}`);
 
-                const coords = getListingCoordinates(listing);
-
-                return coords !== null;
+                return isActive && hasCoords;
             });
 
+            console.log('✅ MapScreen: Активных объявлений с координатами:', activeListings.length);
             setListings(activeListings);
 
-        } catch (error: any) {
-
-            if (error.message.includes('Токен авторизации не найден')) {
-            }
-
+        } catch (error) {
+            console.error('❌ MapScreen: Ошибка загрузки:', error);
             setListings([]);
         } finally {
             setIsLoading(false);
         }
     };
 
+    // MapScreen.tsx
     const getListingCoordinates = (listing: ListingResponse): { latitude: number; longitude: number } | null => {
+        console.log('🔍 getListingCoordinates для listing:', {
+            id: listing.id,
+            location: listing.location,
+            locationType: typeof listing.location
+        });
+
         if (!listing.location) {
+            console.log('❌ Нет location в listing');
             return null;
         }
 
-        if (typeof listing.location === 'object') {
-            if (listing.location.type === 'Point') {
-                const coords = listing.location.coordinates;
-                if (Array.isArray(coords) && coords.length >= 2) {
-                    const longitude = coords[0];
-                    const latitude = coords[1];
-                    if (typeof latitude === 'number' && typeof longitude === 'number' &&
-                        !isNaN(latitude) && !isNaN(longitude) &&
-                        latitude >= -90 && latitude <= 90 &&
-                        longitude >= -180 && longitude <= 180) {
+        // Если location - GeoJSONPoint объект
+        if (typeof listing.location === 'object' && listing.location.type === 'Point') {
+            console.log('📍 Location is GeoJSON Point:', listing.location);
 
-                        return { latitude, longitude };
-                    } else {
-                    }
+            const coordinates = listing.location.coordinates;
+
+            if (coordinates && Array.isArray(coordinates) && coordinates.length >= 2) {
+                // В GeoJSON порядок: [longitude, latitude]
+                const [longitude, latitude] = coordinates;
+
+                console.log('📌 GeoJSON coordinates:', { longitude, latitude });
+
+                if (isValidCoordinate(latitude, longitude)) {
+                    console.log('✅ Valid coordinates from GeoJSON');
+                    return { latitude, longitude };
                 } else {
+                    console.log('❌ Invalid coordinate values in GeoJSON');
                 }
-                return null;
+            } else {
+                console.log('❌ Invalid coordinates array in GeoJSON');
             }
         }
 
-        // Если это WKT строка
+        // Если location - строка (WKT формат)
         if (typeof listing.location === 'string') {
+            console.log('📍 Location is string:', listing.location);
             const coords = parseLocation(listing.location);
             if (coords) {
+                console.log('✅ Valid coordinates from WKT string');
                 return coords;
-            } else {
             }
         }
+
+        // Если location - объект с прямыми координатами (старый формат)
+        if (typeof listing.location === 'object') {
+            console.log('📍 Location is plain object:', listing.location);
+
+            // Проверяем прямой доступ к координатам
+            const anyLocation = listing.location as any;
+            if (anyLocation.longitude !== undefined && anyLocation.latitude !== undefined) {
+                const { longitude, latitude } = anyLocation;
+                console.log('📌 Direct coordinates:', { longitude, latitude });
+
+                if (isValidCoordinate(latitude, longitude)) {
+                    console.log('✅ Valid coordinates from direct access');
+                    return { latitude, longitude };
+                }
+            }
+        }
+
+        console.log('❌ No valid coordinates found');
         return null;
+    };
+
+    const isValidCoordinate = (lat: number, lng: number): boolean => {
+        const valid =
+            !isNaN(lat) && !isNaN(lng) &&
+            lat >= -90 && lat <= 90 &&
+            lng >= -180 && lng <= 180;
+
+        console.log(`📏 Coordinate validation: lat=${lat}, lng=${lng}, valid=${valid}`);
+        return valid;
     };
 
     const handleBack = () => {
@@ -214,7 +270,7 @@ export const MapScreen: React.FC = () => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <BackButton onPress={handleBack} />
+                <BackButton onPress={handleBack} filled={true}/>
                 <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
                     <Ionicons name="refresh" size={24} color={COLORS.primary} />
                 </TouchableOpacity>

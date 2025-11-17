@@ -93,7 +93,7 @@ export const EmailAuthScreen: React.FC = () => {
                         keyboardShouldPersistTaps="handled"
                     >
                         <View style={styles.headerTop}>
-                            <BackButton onPress={handleBack} />
+                            <BackButton onPress={handleBack} color={COLORS.primary} backgroundColor={COLORS.transparent}/>
                         </View>
 
                         <Text style={styles.title}>Вход или регистрация</Text>

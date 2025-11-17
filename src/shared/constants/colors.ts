@@ -19,6 +19,7 @@ export const COLORS = {
     // Фоны
     white: '#FFFFFF',
     background: '#E9E5FF', // Пастельно фиолетовый
+    transparent: 'transparent',
 
     // Границы поля для ввода
     borderEmpty: '#9CA3AF',

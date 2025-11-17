@@ -106,7 +106,7 @@ export const SelectLocationScreen: React.FC = () => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <BackButton onPress={handleBack} />
+                <BackButton onPress={handleBack} backgroundColor={COLORS.white}/>
                 <Text style={styles.title}>Выберите местоположение</Text>
             </View>
 

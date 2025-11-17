@@ -103,7 +103,7 @@ export const RegistrationScreen: React.FC = () => {
                         showsVerticalScrollIndicator={false}
                     >
                         <View style={styles.headerTop}>
-                            <BackButton onPress={handleBack} />
+                            <BackButton onPress={handleBack} color={COLORS.primary} backgroundColor={COLORS.transparent}/>
                         </View>
 
                         <Text style={styles.title}>Регистрация</Text>

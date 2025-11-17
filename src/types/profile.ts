@@ -49,6 +49,14 @@ export interface Listing {
         end: string;
     }>;
     location?: string | GeoJSONPoint;
+    views?: {
+        total: number;
+        daily: number;
+    };
+    contact?: {
+        name: string;
+        phone: string;
+    };
 }
 
 export interface FormattedListing extends Listing {

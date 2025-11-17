@@ -1,11 +1,14 @@
-import React from 'react';
+import React, {useCallback} from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { FormattedListing } from '@/types/profile';
+import {FormattedListing, Listing} from '@/types/profile';
 import { COLORS } from '@/shared/constants/colors';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '@/navigation/types';
 
 interface ListingsSectionProps {
-    listings: FormattedListing[];
+    listings: Listing[];
     onAllAdsPress: () => void;
     onAssetPress: (asset: FormattedListing) => void;
 }
@@ -15,6 +18,12 @@ export const ListingsSection: React.FC<ListingsSectionProps> = ({
                                                                     onAllAdsPress,
                                                                     onAssetPress
                                                                 }) => {
+    const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+
+    const handleAssetPress = useCallback((asset: Listing) => {
+        navigation.navigate('Advertisement', { listing: asset });
+    }, [navigation]);
+
     const getAssetIcon = (type: string) => {
         switch (type) {
             case 'PARKING': return 'car';
@@ -65,7 +74,7 @@ export const ListingsSection: React.FC<ListingsSectionProps> = ({
                         <TouchableOpacity
                             key={listing.id}
                             style={styles.assetItem}
-                            onPress={() => onAssetPress(listing)}
+                            onPress={() => handleAssetPress(listing)}
                         >
                             <View style={styles.assetHeader}>
                                 <View style={styles.assetIcon}>

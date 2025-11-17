@@ -5,21 +5,23 @@ import {authApiService} from "@services/api/authApi";
 import {formatListingForDisplay} from '@/shared/utils/priceFormatter';
 
 export interface CreateListingRequest {
-    type: 'PARKING' | 'STORAGE' | 'GARAGE';
+    type: string;
     title: string;
-    description?: string;
+    description: string;
     price: number;
-    pricePeriod: 'HOUR' | 'DAY' | 'WEEK' | 'MONTH';
-    currency: 'RUB';
-    latitude?: number;
-    longitude?: number;
+    pricePeriod: string;
+    currency: string;
+    location?: {
+        longitude: number;
+        latitude: number;
+    };
     address: string;
     size?: number;
-    photosJson?: string[];
-    amenities?: any;
-    availability?: Array<{
-        start: Date;
-        end: Date;
+    photoUrls?: string[];
+    amenities?: Record<string, string>;
+    availability: Array<{
+        start: string;
+        end: string;
     }>;
 }
 

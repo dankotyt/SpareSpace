@@ -9,19 +9,15 @@ import {
     Animated,
     LayoutChangeEvent,
     RefreshControl,
-    Image,
+    Image, TouchableOpacity,
 } from 'react-native';
 import { Header } from '@/components/main/Header';
 import { CategoryHints } from '@/components/main/CategoryHints';
 import { BottomToolbar } from '@/components/ui/BottomToolbar';
-
-interface AdItem {
-    id: string;
-    price: string;
-    type: string;
-    location: string;
-    image?: string;
-}
+import {StackNavigationProp} from "@react-navigation/stack";
+import {RootStackParamList} from "@navigation/types";
+import {useNavigation} from "@react-navigation/native";
+import {AdItem} from "@/types/main";
 
 interface MainLayoutProps {
     categories: any[];
@@ -40,6 +36,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                                                           onRefresh,
                                                           isRefreshing,
                                                       }) => {
+    const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const [headerHeight, setHeaderHeight] = useState(0);
     const [categoriesHeight, setCategoriesHeight] = useState(0);
     const [bottomToolbarHeight, setBottomToolbarHeight] = useState(0);
@@ -96,8 +93,17 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         </View>
     );
 
+    const handleAdPress = useCallback((item: AdItem) => {
+        navigation.navigate('Advertisement', {
+            listing: item.originalData
+        });
+    }, [navigation]);
+
     const renderAdItem: ListRenderItem<AdItem> = ({ item }) => (
-        <View style={styles.adItem}>
+        <TouchableOpacity
+            style={styles.adItem}
+            onPress={() => handleAdPress(item)}
+        >
             {item.image ? (
                 <Image
                     source={{ uri: item.image }}
@@ -112,7 +118,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             <Text style={styles.price}>{item.price}</Text>
             <Text style={styles.type}>{item.type}</Text>
             <Text style={styles.location}>{item.location}</Text>
-        </View>
+        </TouchableOpacity>
     );
     const swipeableContainerHeight = screenHeight - headerHeight - bottomToolbarHeight;
 

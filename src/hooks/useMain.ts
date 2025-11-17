@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { CategoryItem } from '@/types/main';
 import { mainApiService } from '@/services/api/mainApi';
-import { formatListingForDisplay } from '@/shared/utils/priceFormatter';
 
 const transformListingToAdItem = (listing: any) => {
     return {

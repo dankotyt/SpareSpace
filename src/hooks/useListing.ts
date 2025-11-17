@@ -38,14 +38,16 @@ export const useListing = () => {
 
         const title = `${typeTitles[formData.type]} - ${formData.address}`;
 
-        const amenities = formData.features.reduce((acc, feature) => {
-            acc[feature] = true;
-            return acc;
-        }, {} as Record<string, boolean>);
+        const amenities: Record<string, string> = {};
+        if (formData.features && Array.isArray(formData.features)) {
+            formData.features.forEach(feature => {
+                amenities[feature] = 'true';
+            });
+        }
 
         const availability: Array<{
-            start: Date;
-            end: Date;
+            start: string;
+            end: string;
         }> = [];
 
         if (formData.availability && Array.isArray(formData.availability) && formData.availability.length > 0) {
@@ -58,7 +60,6 @@ export const useListing = () => {
                 const end = parseDateSafely(firstAvailability.end);
 
                 console.log('✅ Parsed dates - start:', start, 'end:', end);
-                console.log('✅ Date validity - start:', !isNaN(start.getTime()), 'end:', !isNaN(end.getTime()));
 
                 if (!start || !end || isNaN(start.getTime()) || isNaN(end.getTime())) {
                     throw new Error('Неверные даты доступности');
@@ -69,8 +70,8 @@ export const useListing = () => {
                 }
 
                 availability.push({
-                    start: start,
-                    end: end,
+                    start: start.toISOString(),
+                    end: end.toISOString(),
                 });
 
             } catch (error) {
@@ -80,23 +81,27 @@ export const useListing = () => {
         }
 
         const size = formData.area ? parseFloat(formData.area) : undefined;
-        const latitude = formData.location?.latitude;
-        const longitude = formData.location?.longitude;
+
+        const location = formData.location ? {
+            longitude: formData.location.longitude,
+            latitude: formData.location.latitude
+        } : undefined;
+
+        const photoUrls = formData.photos;
 
         return {
             type: formData.type,
             title,
-            description: formData.description,
+            description: formData.description || '',
             price: mainPrice,
             pricePeriod: pricePeriod,
             currency: 'RUB',
-            latitude: latitude,
-            longitude: longitude,
+            location: location,
             address: formData.address,
             size,
-            photosJson: formData.photos,
-            amenities,
-            availability,
+            photoUrls: photoUrls,
+            amenities: Object.keys(amenities).length > 0 ? amenities : undefined,
+            availability: availability,
         };
     };
 
@@ -148,7 +153,9 @@ export const useListing = () => {
         setError(null);
 
         try {
+            console.log('📤 Исходные данные формы:', formData);
             const apiData = transformFormDataToApi(formData);
+            console.log('📦 Данные для отправки в API:', JSON.stringify(apiData, null, 2));
             return await listingApiService.createListing(apiData);
         } catch (err: any) {
             console.error('❌ Ошибка при создании объявления:', err);

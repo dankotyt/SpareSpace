@@ -18,7 +18,7 @@ import { useListing } from '@/hooks/useListing';
 import {useProfile} from "@hooks/useProfile";
 
 export const AddAdvertisementScreen: React.FC = () => {
-    const { addAdvertisement } = useAdvertisement();
+    const { refreshAds, refreshUserAds } = useAdvertisement();
     const { createListing, isLoading: isCreating, error: createError } = useListing();
     const { loadProfile } = useProfile();
     const route = useRoute();
@@ -110,7 +110,6 @@ export const AddAdvertisementScreen: React.FC = () => {
     };
 
     const handleNext = () => {
-
         switch (currentStep) {
             case 1:
                 console.log(`- Тип: ${formData.type}`);
@@ -164,10 +163,11 @@ export const AddAdvertisementScreen: React.FC = () => {
 
             console.log('Объявление успешно опубликовано!', result);
 
-            await loadProfile();
-
-            const mainScreenAd = createMainScreenAd(formData);
-            addAdvertisement(mainScreenAd);
+            await Promise.all([
+                loadProfile(),
+                refreshAds(),
+                refreshUserAds()
+            ]);
 
             Alert.alert(
                 'Успех!',
@@ -190,40 +190,6 @@ export const AddAdvertisementScreen: React.FC = () => {
         }
     };
 
-    const createMainScreenAd = (formData: AdvertisementFormData) => {
-        const getTypeLabel = (type: string) => {
-            switch (type) {
-                case 'PARKING': return 'Парковочное место';
-                case 'STORAGE': return 'Кладовое помещение';
-                case 'GARAGE': return 'Гараж';
-                default: return 'Помещение';
-            }
-        };
-
-        const getPriceText = () => {
-            if (formData.price?.hourly && formData.price.hourly !== '') {
-                return `${formatPrice(formData.price.hourly)} ₽/час`;
-            }
-            if (formData.price?.daily && formData.price.daily !== '') {
-                return `${formatPrice(formData.price.daily)} ₽/сут.`;
-            }
-            if (formData.price?.weekly && formData.price.weekly !== '') {
-                return `${formatPrice(formData.price.weekly)} ₽/нед.`;
-            }
-            if (formData.price?.monthly && formData.price.monthly !== '') {
-                return `${formatPrice(formData.price.monthly)} ₽/мес.`;
-            }
-            return 'Цена не указана';
-        };
-
-        return {
-            price: getPriceText(),
-            type: getTypeLabel(formData.type || ''),
-            location: formData.address,
-            image: formData.photos?.[0] || undefined,
-        };
-    };
-
     const handleBack = () => {
         if (currentStep === 1) {
             navigation.goBack();
@@ -233,7 +199,7 @@ export const AddAdvertisementScreen: React.FC = () => {
     };
 
     const isNextDisabled = () => {
-        if (isCreating) return true; // Блокируем кнопку во время загрузки
+        if (isCreating) return true;
 
         switch (currentStep) {
             case 1:
@@ -322,7 +288,7 @@ export const AddAdvertisementScreen: React.FC = () => {
         <View style={styles.container}>
             <View style={styles.header}>
                 <View style={styles.headerTop}>
-                    <BackButton onPress={handleBack} />
+                    <BackButton onPress={handleBack} backgroundColor={COLORS.transparent} />
                     <Text style={styles.stepTitle}>{getStepTitle(currentStep)}</Text>
                     <View style={styles.placeholder} />
                 </View>
@@ -337,7 +303,6 @@ export const AddAdvertisementScreen: React.FC = () => {
             </View>
 
             <View style={styles.footer}>
-
                 {createError && (
                     <Text style={styles.errorText}>{createError}</Text>
                 )}

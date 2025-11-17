@@ -1,10 +1,12 @@
+import {Listing} from "@/types/profile";
+
 export interface AdItem {
     id: string;
     price: string;
     type: string;
     location: string;
     image?: string;
-    originalData?: any;
+    originalData: Listing;
 }
 
 export interface CategoryItem {

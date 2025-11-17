@@ -4,11 +4,6 @@ export type ListingType = 'PARKING' | 'STORAGE' | 'GARAGE';
 export type PricePeriodType = 'HOUR' | 'DAY' | 'WEEK' | 'MONTH';
 export type CurrencyType = 'RUB';
 
-export interface AvailabilityPeriod {
-    start: Date; // ISO string format
-    end: Date;
-}
-
 export interface AdvertisementFormData {
     // Шаг 1: Тип объявления
     type: ListingType | null;

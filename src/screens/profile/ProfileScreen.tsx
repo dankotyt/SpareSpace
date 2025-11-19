@@ -10,18 +10,18 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { useProfile } from '@/hooks/useProfile';
-import { ProfileHeader } from '@/components/profile/ProfileHeader';
-import { ProfileMenu } from '@/components/profile/ProfileMenu';
+import { useProfile } from '@hooks/useProfile';
+import { ProfileHeader } from '@components/profile/ProfileHeader';
+import { ProfileMenu } from '@components/profile/ProfileMenu';
 import { ListingsSection } from '@components/profile/ListingsSection';
-import { BalanceSection } from '@/components/profile/BalanceSection';
-import { BookingsSection } from '@/components/profile/BookingsSection';
-import { StatsSection } from '@/components/profile/StatsSection';
-import { BottomToolbar } from '@/components/ui/BottomToolbar';
-import { UnauthorizedProfile } from '@/components/profile/UnauthorizedProfile';
+import { BalanceSection } from '@components/profile/BalanceSection';
+import { BookingsSection } from '@components/profile/BookingsSection';
+import { StatsSection } from '@components/profile/StatsSection';
+import { BottomToolbar } from '@components/ui/BottomToolbar';
+import { UnauthorizedProfile } from '@components/profile/UnauthorizedProfile';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { COLORS } from '@/shared/constants/colors';
-import { ProfileStackParamList } from '@/navigation/types';
+import { COLORS } from '@shared/constants/colors';
+import { ProfileStackParamList } from '@navigation/types';
 
 type ProfileScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
 

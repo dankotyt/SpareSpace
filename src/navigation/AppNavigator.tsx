@@ -3,13 +3,15 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { BottomTabNavigator } from './BottomTabNavigator';
 import { PhoneAuthScreen } from '@/screens/auth/PhoneAuthScreen';
 import { EmailAuthScreen } from '@/screens/auth/EmailAuthScreen';
-import { ProfileScreen } from '@/screens/ProfileScreen';
-import { MapScreen } from '@/screens/MapScreen';
+import { ProfileScreen } from '@screens/profile/ProfileScreen';
+import { MapScreen } from '@screens/map/MapScreen';
 import { RootStackParamList } from './types';
 import { AddAdvertisementScreen } from "@/screens/addAdvertisement/AddAdvertisementScreen";
 import { RegistrationScreen } from '@/screens/auth/RegistrationScreen';
 import SelectLocationScreen from "@screens/addAdvertisement/SelectLocationScreen";
-import {AdvertisementScreen} from "@screens/AdvertisementScreen";
+import {AdvertisementScreen} from "@screens/addAdvertisement/AdvertisementScreen";
+import { ChatScreen } from '@/screens/chat/ChatScreen';
+import SearchScreen from "@screens/main/SearchScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -34,7 +36,20 @@ export const AppNavigator: React.FC = () => {
                     presentation: 'modal',
                 }}
             />
-            <Stack.Screen name="Advertisement" component={AdvertisementScreen} options={{ headerShown: false }}
+            <Stack.Screen
+                name="Advertisement"
+                component={AdvertisementScreen}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="SearchScreen"
+                component={SearchScreen}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="Chat"
+                component={ChatScreen}
+                options={{ headerShown: false }}
             />
         </Stack.Navigator>
     );

@@ -1,6 +1,6 @@
 import React from 'react';
-import { useMain } from '@/hooks/useMain';
-import { MainLayout } from '@/components/main/MainLayout';
+import { useMain } from '@hooks/useMain';
+import { MainLayout } from '@components/main/MainLayout';
 
 export const MainScreen: React.FC = () => {
     const { categories, ads, selectedCategory, handleCategorySelect, handleRefresh, isRefreshing } = useMain();

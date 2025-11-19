@@ -3,21 +3,23 @@ import {ActivityIndicator, Dimensions, Modal, ScrollView, StyleSheet, Text, Touc
 import {RouteProp, useNavigation, useRoute} from '@react-navigation/native';
 import MapView, {Marker, PROVIDER_DEFAULT, Region} from 'react-native-maps';
 import {Ionicons} from '@expo/vector-icons';
-import {BackButton} from '@/components/ui/BackButton';
-import {COLORS} from '@/shared/constants/colors';
-import {listingApiService, ListingResponse} from '@/services/api/listingApi'
+import {BackButton} from '@components/ui/BackButton';
+import {COLORS} from '@shared/constants/colors';
+import {listingApiService, ListingResponse} from '@services/api/listingApi'
 import {StackNavigationProp} from "@react-navigation/stack";
 import {RootStackParamList} from "@navigation/types";
-import {useAuth} from '@/hooks/useAuth';
-import {useAdvertisement} from '@/services/AdvertisementContext';
+import {useAuth} from '@hooks/useAuth';
+import {useAdvertisement} from '@services/AdvertisementContext';
 
 type MapScreenRouteProp = RouteProp<RootStackParamList, 'MapScreen'>;
 
 export const MapScreen: React.FC = () => {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const route = useRoute<MapScreenRouteProp>();
+    const { filterType, searchQuery, pricePeriod, listing } = route.params || {};
     const { isAuthenticated } = useAuth();
     const { userAds, refreshAds } = useAdvertisement();
+    const [hasNoResults, setHasNoResults] = useState(false);
 
     const [region, setRegion] = useState<Region>({
         latitude: 55.7558,
@@ -34,7 +36,7 @@ export const MapScreen: React.FC = () => {
 
     useEffect(() => {
         loadListings();
-    }, [userAds.length]);
+    }, [userAds.length, filterType, searchQuery, pricePeriod]);
 
     useEffect(() => {
         if (route.params?.listing) {
@@ -69,9 +71,6 @@ export const MapScreen: React.FC = () => {
         }
 
         try {
-            console.log('🔍 Attempting to parse location as WKT:', location);
-
-            // Формат: "POINT(longitude latitude)"
             const match = location.match(/POINT\(([^ ]+) ([^)]+)\)/);
             if (match && match[1] && match[2]) {
                 const longitude = parseFloat(match[1]);
@@ -81,7 +80,6 @@ export const MapScreen: React.FC = () => {
                     latitude >= -90 && latitude <= 90 &&
                     longitude >= -180 && longitude <= 180) {
 
-                    console.log('✅ Successfully parsed WKT coordinates:', { latitude, longitude });
                     return { latitude, longitude };
                 }
             }
@@ -97,38 +95,59 @@ export const MapScreen: React.FC = () => {
     const loadListings = async () => {
         try {
             setIsLoading(true);
-            console.log('🔄 MapScreen: Загрузка объявлений...');
+            setHasNoResults(false);
 
             const listingsData = await listingApiService.getListings();
-            console.log('📋 MapScreen: Получено объявлений:', listingsData.length);
 
-            const activeListings = listingsData.filter(listing => {
+            let filteredListings = listingsData.filter(listing => {
                 const isActive = listing.status === 'ACTIVE';
                 const hasCoords = getListingCoordinates(listing) !== null;
-
-                console.log(`📍 Listing ${listing.id}: active=${isActive}, hasCoords=${hasCoords}`);
-
                 return isActive && hasCoords;
             });
 
-            console.log('✅ MapScreen: Активных объявлений с координатами:', activeListings.length);
-            setListings(activeListings);
+            if (filterType && filterType !== 'SEARCH') {
+                filteredListings = filteredListings.filter(listing => listing.type === filterType);
+            }
+
+            if (pricePeriod) {
+                filteredListings = filteredListings.filter(listing => listing.pricePeriod === pricePeriod);
+            }
+
+            if (searchQuery) {
+                const searchTerms = searchQuery.toLowerCase().split(/\s+/);
+
+                filteredListings = filteredListings.filter(listing => {
+                    const searchText = `
+      ${listing.title} 
+      ${listing.description} 
+      ${listing.address}
+      ${getTypeLabel(listing.type)}
+    `.toLowerCase();
+
+                    return searchTerms.some(term =>
+                        term.length > 2 && searchText.includes(term)
+                    );
+                });
+
+            }
+            setListings(filteredListings);
+
+            if (filteredListings.length === 0 && (filterType || pricePeriod || searchQuery)) {
+                setHasNoResults(true);
+            } else {
+                setHasNoResults(false);
+            }
 
         } catch (error) {
             console.error('❌ MapScreen: Ошибка загрузки:', error);
             setListings([]);
+            setHasNoResults(true);
         } finally {
             setIsLoading(false);
         }
     };
 
-    // MapScreen.tsx
     const getListingCoordinates = (listing: ListingResponse): { latitude: number; longitude: number } | null => {
-        console.log('🔍 getListingCoordinates для listing:', {
-            id: listing.id,
-            location: listing.location,
-            locationType: typeof listing.location
-        });
 
         if (!listing.location) {
             console.log('❌ Нет location в listing');
@@ -137,7 +156,6 @@ export const MapScreen: React.FC = () => {
 
         // Если location - GeoJSONPoint объект
         if (typeof listing.location === 'object' && listing.location.type === 'Point') {
-            console.log('📍 Location is GeoJSON Point:', listing.location);
 
             const coordinates = listing.location.coordinates;
 
@@ -145,10 +163,7 @@ export const MapScreen: React.FC = () => {
                 // В GeoJSON порядок: [longitude, latitude]
                 const [longitude, latitude] = coordinates;
 
-                console.log('📌 GeoJSON coordinates:', { longitude, latitude });
-
                 if (isValidCoordinate(latitude, longitude)) {
-                    console.log('✅ Valid coordinates from GeoJSON');
                     return { latitude, longitude };
                 } else {
                     console.log('❌ Invalid coordinate values in GeoJSON');
@@ -160,26 +175,19 @@ export const MapScreen: React.FC = () => {
 
         // Если location - строка (WKT формат)
         if (typeof listing.location === 'string') {
-            console.log('📍 Location is string:', listing.location);
             const coords = parseLocation(listing.location);
             if (coords) {
-                console.log('✅ Valid coordinates from WKT string');
                 return coords;
             }
         }
 
-        // Если location - объект с прямыми координатами (старый формат)
         if (typeof listing.location === 'object') {
-            console.log('📍 Location is plain object:', listing.location);
 
-            // Проверяем прямой доступ к координатам
             const anyLocation = listing.location as any;
             if (anyLocation.longitude !== undefined && anyLocation.latitude !== undefined) {
                 const { longitude, latitude } = anyLocation;
-                console.log('📌 Direct coordinates:', { longitude, latitude });
 
                 if (isValidCoordinate(latitude, longitude)) {
-                    console.log('✅ Valid coordinates from direct access');
                     return { latitude, longitude };
                 }
             }
@@ -190,13 +198,9 @@ export const MapScreen: React.FC = () => {
     };
 
     const isValidCoordinate = (lat: number, lng: number): boolean => {
-        const valid =
-            !isNaN(lat) && !isNaN(lng) &&
+        return !isNaN(lat) && !isNaN(lng) &&
             lat >= -90 && lat <= 90 &&
             lng >= -180 && lng <= 180;
-
-        console.log(`📏 Coordinate validation: lat=${lat}, lng=${lng}, valid=${valid}`);
-        return valid;
     };
 
     const handleBack = () => {
@@ -269,6 +273,32 @@ export const MapScreen: React.FC = () => {
 
     return (
         <View style={styles.container}>
+            {!isLoading && hasNoResults && (
+                <View style={styles.noResultsContainer}>
+                    <View style={styles.noResultsContent}>
+                        <Ionicons name="search-outline" size={64} color={COLORS.gray[400]} />
+                        <Text style={styles.noResultsTitle}>Ничего не найдено</Text>
+                        <Text style={styles.noResultsText}>
+                            {searchQuery
+                                ? `По запросу "${searchQuery}" не найдено подходящих объявлений`
+                                : 'По вашим критериям поиска ничего не найдено'
+                            }
+                        </Text>
+                        <TouchableOpacity
+                            style={styles.showAllButton}
+                            onPress={() => {
+                                navigation.setParams({
+                                    filterType: undefined,
+                                    pricePeriod: undefined,
+                                    searchQuery: undefined
+                                });
+                            }}
+                        >
+                            <Text style={styles.showAllButtonText}>Показать все объявления</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            )}
             <View style={styles.header}>
                 <BackButton onPress={handleBack} filled={true}/>
                 <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
@@ -649,6 +679,53 @@ const styles = StyleSheet.create({
         color: COLORS.white,
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    noResultsContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    },
+    noResultsContent: {
+        backgroundColor: COLORS.white,
+        padding: 24,
+        borderRadius: 16,
+        alignItems: 'center',
+        marginHorizontal: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    noResultsTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: COLORS.text,
+        marginTop: 16,
+        marginBottom: 8,
+    },
+    noResultsText: {
+        fontSize: 16,
+        color: COLORS.gray[600],
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: 20,
+    },
+    showAllButton: {
+        backgroundColor: COLORS.primary,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 8,
+    },
+    showAllButtonText: {
+        color: COLORS.white,
+        fontSize: 16,
+        fontWeight: '600',
     },
 });
 

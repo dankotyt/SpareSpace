@@ -1,3 +1,4 @@
+// В существующий Header.tsx добавляем обработчик нажатия на поле поиска
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -32,6 +33,9 @@ export const Header: React.FC = () => {
         setShowAuthPopup(false);
     };
 
+    const handleSearchPress = () => {
+        navigation.navigate('SearchScreen');
+    };
 
     return (
         <View style={styles.header}>
@@ -58,13 +62,16 @@ export const Header: React.FC = () => {
                 </View>
             </View>
 
-            <View style={styles.searchContainer}>
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder="Что будем искать?"
-                    placeholderTextColor="#9CA3AF"
-                />
-            </View>
+            <TouchableOpacity style={styles.searchContainer} onPress={handleSearchPress}>
+                <View pointerEvents="none">
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Что будем искать?"
+                        placeholderTextColor="#9CA3AF"
+                        editable={false}
+                    />
+                </View>
+            </TouchableOpacity>
 
             <AuthRequiredPopup
                 visible={showAuthPopup}
@@ -75,6 +82,7 @@ export const Header: React.FC = () => {
     );
 };
 
+// Стили остаются прежними...
 const styles = StyleSheet.create({
     header: {
         backgroundColor: '#E9E5FF',

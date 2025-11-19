@@ -6,15 +6,18 @@ import {
     ScrollView,
     TouchableOpacity,
     Dimensions,
+    Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
 import { COLORS } from '@/shared/constants/colors';
-import {Listing} from "@/types/profile";
-import {formatListingForDisplay} from "@shared/utils/priceFormatter";
-import {useNavigation} from "@react-navigation/native";
-import {StackNavigationProp} from "@react-navigation/stack";
-import {RootStackParamList} from "@navigation/types";
+import { Listing } from "@/types/profile";
+import { formatListingForDisplay } from "@shared/utils/priceFormatter";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "@navigation/types";
+import { useAuth } from '@/hooks/useAuth';
+import { useChat } from '@/hooks/useChat';
 
 interface AdvertisementDetailsProps {
     listing: Listing;
@@ -32,7 +35,10 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
                                                                               scrollEnabled = true,
                                                                           }) => {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+    const { user, isAuthenticated } = useAuth();
+    const { createConversation } = useChat();
     const [isFavorite, setIsFavorite] = useState(false);
+    const [isCreatingChat, setIsCreatingChat] = useState(false);
     const formattedListing = formatListingForDisplay(listing);
 
     const handleFavoritePress = () => {
@@ -42,6 +48,57 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
 
     const handleMapPress = () => {
         navigation.navigate('MapScreen', { listing });
+    };
+
+    const handleChatPress = async () => {
+        if (!isAuthenticated) {
+            Alert.alert(
+                'Необходима авторизация',
+                'Чтобы написать сообщение, войдите в аккаунт',
+                [
+                    { text: 'Отмена', style: 'cancel' },
+                    { text: 'Войти', onPress: () => navigation.navigate('EmailAuth') }
+                ]
+            );
+            return;
+        }
+
+        if (user?.id === listing.userId) {
+            Alert.alert('Невозможно отправить сообщение', 'Вы не можете написать самому себе');
+            return;
+        }
+
+        try {
+            setIsCreatingChat(true);
+            console.log('🔄 Creating conversation...', {
+                currentUserId: user?.id,
+                participantId: listing.userId,
+                listingId: listing.id
+            });
+
+            const conversation = await createConversation({
+                participantId: listing.userId,
+                listingId: listing.id
+            });
+
+            console.log('✅ Conversation created successfully:', conversation);
+            console.log('📝 Conversation ID:', conversation.id);
+
+            navigation.navigate('Chat', {
+                conversationId: conversation.id
+            });
+
+        } catch (error: any) {
+            console.error('❌ Error creating conversation:', error);
+            console.error('Error details:', error.response?.data || error.message);
+
+            Alert.alert(
+                'Ошибка',
+                error.message || 'Не удалось создать чат. Попробуйте позже.'
+            );
+        } finally {
+            setIsCreatingChat(false);
+        }
     };
 
     const getTypeLabel = () => {
@@ -313,10 +370,37 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
                 </View>
             </View>
 
-            {/* Кнопка связи */}
-            <TouchableOpacity style={styles.contactButton} onPress={onContactPress}>
-                <Text style={styles.contactButtonText}>Позвонить</Text>
-            </TouchableOpacity>
+            {/* Кнопки действий */}
+            <View style={styles.actionsContainer}>
+                <TouchableOpacity
+                    style={[styles.actionButton, styles.chatButton]}
+                    onPress={handleChatPress}
+                    disabled={isCreatingChat}
+                >
+                    <Ionicons
+                        name="chatbubble-outline"
+                        size={20}
+                        color={COLORS.white}
+                        style={styles.buttonIcon}
+                    />
+                    <Text style={styles.chatButtonText}>
+                        {isCreatingChat ? 'Создание чата...' : 'Написать в чат'}
+                    </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.actionButton, styles.callButton]}
+                    onPress={onContactPress}
+                >
+                    <Ionicons
+                        name="call-outline"
+                        size={20}
+                        color={COLORS.primary}
+                        style={styles.buttonIcon}
+                    />
+                    <Text style={styles.callButtonText}>Позвонить</Text>
+                </TouchableOpacity>
+            </View>
         </ScrollView>
     );
 };
@@ -443,15 +527,38 @@ const styles = StyleSheet.create({
         color: COLORS.gray[500],
         fontStyle: 'italic',
     },
-    contactButton: {
-        backgroundColor: COLORS.primary,
-        paddingVertical: 16,
-        borderRadius: 12,
-        alignItems: 'center',
+    actionsContainer: {
+        flexDirection: 'row',
+        gap: 12,
         marginVertical: 20,
     },
-    contactButtonText: {
-        color: COLORS.textLight,
+    actionButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 16,
+        borderRadius: 12,
+        borderWidth: 2,
+    },
+    chatButton: {
+        backgroundColor: COLORS.primary,
+        borderColor: COLORS.primary,
+    },
+    callButton: {
+        backgroundColor: COLORS.white,
+        borderColor: COLORS.primary,
+    },
+    buttonIcon: {
+        marginRight: 8,
+    },
+    chatButtonText: {
+        color: COLORS.white,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    callButtonText: {
+        color: COLORS.primary,
         fontSize: 16,
         fontWeight: '600',
     },

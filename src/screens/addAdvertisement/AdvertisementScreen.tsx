@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
-import { AdvertisementCard } from '@/components/advertisement/AdvertisementCard';
-import { COLORS } from '@/shared/constants/colors';
-import { Listing } from "@/types/profile";
+import { AdvertisementCard } from '@components/advertisement/AdvertisementCard';
+import { COLORS } from '@shared/constants/colors';
+import { Listing } from "@types/profile";
 
 type AdvertisementScreenRouteProp = RouteProp<{
     Advertisement: { listing: Listing };

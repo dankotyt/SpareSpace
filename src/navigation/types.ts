@@ -8,6 +8,7 @@ export type RootStackParamList = {
     EmailAuth: undefined;
     Registration: undefined;
     Profile: undefined;
+    FavoritesScreen: undefined;
     SearchScreen: undefined;
     MapScreen: {
         filterType?: string;

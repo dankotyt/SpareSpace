@@ -102,6 +102,7 @@ export const MapScreen: React.FC = () => {
             let filteredListings = listingsData.filter(listing => {
                 const isActive = listing.status === 'ACTIVE';
                 const hasCoords = getListingCoordinates(listing) !== null;
+
                 return isActive && hasCoords;
             });
 
@@ -114,19 +115,24 @@ export const MapScreen: React.FC = () => {
             }
 
             if (searchQuery) {
-                const searchTerms = searchQuery.toLowerCase().split(/\s+/);
+                const searchTerms = searchQuery.toLowerCase().split(/\s+/).filter(term => term.length > 2);
 
                 filteredListings = filteredListings.filter(listing => {
                     const searchText = `
-      ${listing.title} 
-      ${listing.description} 
-      ${listing.address}
-      ${getTypeLabel(listing.type)}
-    `.toLowerCase();
+                    ${listing.title || ''} 
+                    ${listing.description || ''} 
+                    ${listing.address || ''}
+                    ${getTypeLabel(listing.type)}
+                `.toLowerCase();
 
-                    return searchTerms.some(term =>
-                        term.length > 2 && searchText.includes(term)
-                    );
+                    // Ищем совпадения с любым из поисковых терминов
+                    const hasMatch = searchTerms.some(term => searchText.includes(term));
+
+                    if (hasMatch) {
+                        console.log(`✅ Найдено совпадение для listing ${listing.id}:`, listing.title);
+                    }
+
+                    return hasMatch;
                 });
 
             }
@@ -134,6 +140,7 @@ export const MapScreen: React.FC = () => {
 
             if (filteredListings.length === 0 && (filterType || pricePeriod || searchQuery)) {
                 setHasNoResults(true);
+                console.log('❌ Ничего не найдено по заданным критериям');
             } else {
                 setHasNoResults(false);
             }

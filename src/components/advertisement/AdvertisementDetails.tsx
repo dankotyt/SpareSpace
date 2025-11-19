@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
     View,
     Text,
@@ -18,6 +18,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@navigation/types";
 import { useAuth } from '@/hooks/useAuth';
 import { useChat } from '@/hooks/useChat';
+import { favoritesService } from '@services/favoritesService';
 
 interface AdvertisementDetailsProps {
     listing: Listing;
@@ -41,9 +42,37 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
     const [isCreatingChat, setIsCreatingChat] = useState(false);
     const formattedListing = formatListingForDisplay(listing);
 
-    const handleFavoritePress = () => {
-        setIsFavorite(!isFavorite);
-        onFavoritePress();
+    useEffect(() => {
+        checkFavoriteStatus();
+    }, [listing.id]);
+
+    const checkFavoriteStatus = async () => {
+        const favorite = await favoritesService.isListingFavorite(listing.id);
+        setIsFavorite(favorite);
+    };
+
+    const handleFavoritePress = async () => {
+        try {
+            if (isFavorite) {
+                // Находим ID избранного элемента для удаления
+                const favorites = await favoritesService.loadFavorites();
+                const favoriteItem = favorites.find(
+                    item => item.type === 'listing' && item.data.id === listing.id
+                );
+
+                if (favoriteItem) {
+                    await favoritesService.removeFavorite(favoriteItem.id);
+                }
+            } else {
+                await favoritesService.addListing(listing);
+            }
+
+            setIsFavorite(!isFavorite);
+            onFavoritePress();
+        } catch (error) {
+            console.error('❌ Ошибка при работе с избранным:', error);
+            Alert.alert('Ошибка', 'Не удалось обновить избранное');
+        }
     };
 
     const handleMapPress = () => {

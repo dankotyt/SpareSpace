@@ -8,6 +8,7 @@ import { AuthScreen } from '@/screens/auth/AuthScreen';
 import { ConversationsScreen } from '@/screens/chat/ConversationsScreen';
 import { ChatScreen } from '@/screens/chat/ChatScreen';
 import { BottomTabParamList, ChatStackParamList } from './types';
+import FavoritesScreen from "@screens/favorites/FavoritesScreen";
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 const ChatStack = createStackNavigator<ChatStackParamList>();
@@ -32,7 +33,7 @@ export const BottomTabNavigator: React.FC = () => {
         >
             <Tab.Screen name="MainScreen" component={MainScreen} />
             <Tab.Screen name="Profile" component={ProfileScreen} />
-            <Tab.Screen name="Favorites" component={MainScreen} />
+            <Tab.Screen name="Favorites" component={FavoritesScreen} />
             <Tab.Screen name="Search" component={MapScreen} />
             <Tab.Screen name="Messages" component={ChatNavigator} />
         </Tab.Navigator>

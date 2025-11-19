@@ -16,6 +16,7 @@ import { BackButton } from '@components/ui/BackButton';
 import { searchHistoryService, SearchHistoryItem } from '@services/search/searchHistoryService';
 import {listingApiService} from "@services/api/listingApi";
 import {expandQueryWithSynonyms, normalizeQuery} from "@services/search/synonymService";
+import { favoritesService } from '@services/favoritesService';
 
 type SearchScreenNavigationProp = StackNavigationProp<RootStackParamList, 'SearchScreen'>;
 
@@ -75,8 +76,43 @@ export const SearchScreen: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
     const [isChecking, setIsChecking] = useState(false);
+    const [favoriteSearches, setFavoriteSearches] = useState<Set<string>>(new Set());
 
-    // Загрузка истории поиска при монтировании
+    useEffect(() => {
+        loadFavoriteSearches();
+    }, []);
+
+    const loadFavoriteSearches = async () => {
+        const favorites = await favoritesService.getFavoriteSearches();
+        const favoriteIds = new Set(favorites.map(fav => fav.data.id));
+        setFavoriteSearches(favoriteIds);
+    };
+
+    const handleSearchFavoritePress = async (searchItem: SearchHistoryItem) => {
+        try {
+            if (favoriteSearches.has(searchItem.id)) {
+                const favorites = await favoritesService.loadFavorites();
+                const favoriteItem = favorites.find(
+                    item => item.type === 'search' && item.data.id === searchItem.id
+                );
+
+                if (favoriteItem) {
+                    await favoritesService.removeFavorite(favoriteItem.id);
+                    setFavoriteSearches(prev => {
+                        const newSet = new Set(prev);
+                        newSet.delete(searchItem.id);
+                        return newSet;
+                    });
+                }
+            } else {
+                await favoritesService.addSearch(searchItem);
+                setFavoriteSearches(prev => new Set(prev).add(searchItem.id));
+            }
+        } catch (error) {
+            console.error('❌ Ошибка при работе с избранным поиском:', error);
+        }
+    };
+
     useEffect(() => {
         loadSearchHistory();
     }, []);
@@ -88,10 +124,19 @@ export const SearchScreen: React.FC = () => {
 
     const handleQuickActionPress = async (type: string, label: string) => {
         const pricePeriod = extractPricePeriod(label);
+        const normalizedQuery = normalizeQuery(label);
+        const expandedQuery = expandQueryWithSynonyms(normalizedQuery);
 
-        // Проверяем есть ли результаты для этого запроса
+        console.log('🔍 Быстрый поиск:', {
+            original: label,
+            normalized: normalizedQuery,
+            expanded: expandedQuery,
+            type: type,
+            period: pricePeriod
+        });
+
         setIsChecking(true);
-        const { hasResults, count } = await checkSearchResults(type, pricePeriod, label);
+        const { hasResults, count } = await checkSearchResults(type, pricePeriod, expandedQuery);
         setIsChecking(false);
 
         if (!hasResults) {
@@ -99,7 +144,6 @@ export const SearchScreen: React.FC = () => {
             return;
         }
 
-        // Сохраняем в историю и переходим
         const newHistory = await searchHistoryService.addToHistory({
             type,
             timestamp: Date.now(),
@@ -112,16 +156,27 @@ export const SearchScreen: React.FC = () => {
         navigation.navigate('MapScreen', {
             filterType: type,
             pricePeriod: pricePeriod,
-            searchQuery: label
+            searchQuery: expandedQuery
         });
     };
 
     const handleHistoryItemPress = async (item: SearchHistoryItem) => {
+        const normalizedQuery = normalizeQuery(item.label);
+        const expandedQuery = expandQueryWithSynonyms(normalizedQuery);
+
+        console.log('🔍 Исторический запрос:', {
+            original: item.label,
+            normalized: normalizedQuery,
+            expanded: expandedQuery,
+            type: item.type,
+            period: item.pricePeriod
+        });
+
         setIsChecking(true);
         const { hasResults, count } = await checkSearchResults(
             item.type !== 'SEARCH' ? item.type : undefined,
             item.pricePeriod,
-            item.label
+            expandedQuery
         );
         setIsChecking(false);
 
@@ -133,7 +188,7 @@ export const SearchScreen: React.FC = () => {
         navigation.navigate('MapScreen', {
             filterType: item.type !== 'SEARCH' ? item.type : undefined,
             pricePeriod: item.pricePeriod,
-            searchQuery: item.label
+            searchQuery: expandedQuery
         });
     };
 
@@ -167,7 +222,7 @@ export const SearchScreen: React.FC = () => {
         const { hasResults, count } = await checkSearchResults(
             searchType !== 'SEARCH' ? searchType : undefined,
             pricePeriod,
-            expandedQuery // Используем расширенный запрос
+            expandedQuery
         );
         setIsChecking(false);
 
@@ -292,19 +347,22 @@ export const SearchScreen: React.FC = () => {
             }
 
             if (searchQuery) {
-                const searchTerms = searchQuery.toLowerCase().split(/\s+/);
+                const searchTerms = searchQuery.toLowerCase().split(/\s+/).filter(term => term.length > 2);
 
                 filteredListings = filteredListings.filter(listing => {
                     const searchText = `
-          ${listing.title} 
-          ${listing.description} 
-          ${listing.address}
+          ${listing.title || ''} 
+          ${listing.description || ''} 
+          ${listing.address || ''}
           ${getTypeLabel(listing.type)}
         `.toLowerCase();
+                    const hasMatch = searchTerms.some(term => searchText.includes(term));
 
-                    return searchTerms.some(term =>
-                        term.length > 2 && searchText.includes(term)
-                    );
+                    if (hasMatch) {
+                        console.log(`✅ Совпадение найдено: "${listing.title}"`);
+                    }
+
+                    return hasMatch;
                 });
             }
 
@@ -408,35 +466,19 @@ export const SearchScreen: React.FC = () => {
                                     disabled={isChecking}
                                 >
                                     <View style={styles.historyItemLeft}>
-                                        <View style={[
-                                            styles.historyIcon,
-                                            isChecking && styles.historyIconDisabled
-                                        ]}>
+                                        <View style={styles.historyIcon}>
                                             <Ionicons
                                                 name={getTypeIcon(item.type) as any}
                                                 size={16}
-                                                color={isChecking ? COLORS.gray[400] : COLORS.primary}
+                                                color={COLORS.primary}
                                             />
                                         </View>
                                         <View style={styles.historyContent}>
-                                            <Text style={[
-                                                styles.historyLabel,
-                                                isChecking && styles.historyLabelDisabled
-                                            ]}>
-                                                {item.label}
-                                            </Text>
+                                            <Text style={styles.historyLabel}>{item.label}</Text>
                                             <View style={styles.historyMeta}>
-                                                <Text style={[
-                                                    styles.historyType,
-                                                    isChecking && styles.historyTypeDisabled
-                                                ]}>
-                                                    {getTypeLabel(item.type)}
-                                                </Text>
+                                                <Text style={styles.historyType}>{getTypeLabel(item.type)}</Text>
                                                 {item.pricePeriod && (
-                                                    <Text style={[
-                                                        styles.historyPeriod,
-                                                        isChecking && styles.historyPeriodDisabled
-                                                    ]}>
+                                                    <Text style={styles.historyPeriod}>
                                                         {getPeriodLabel(item.pricePeriod)}
                                                     </Text>
                                                 )}
@@ -444,17 +486,26 @@ export const SearchScreen: React.FC = () => {
                                             </View>
                                         </View>
                                     </View>
-                                    <TouchableOpacity
-                                        onPress={() => removeHistoryItem(item.id)}
-                                        style={styles.deleteButton}
-                                        disabled={isChecking}
-                                    >
-                                        <Ionicons
-                                            name="close"
-                                            size={16}
-                                            color={isChecking ? COLORS.gray[400] : COLORS.gray[500]}
-                                        />
-                                    </TouchableOpacity>
+
+                                    <View style={styles.historyActions}>
+                                        <TouchableOpacity
+                                            onPress={() => handleSearchFavoritePress(item)}
+                                            style={styles.favoriteButton}
+                                        >
+                                            <Ionicons
+                                                name={favoriteSearches.has(item.id) ? "heart" : "heart-outline"}
+                                                size={20}
+                                                color={favoriteSearches.has(item.id) ? COLORS.red[50] : COLORS.gray[400]}
+                                            />
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity
+                                            onPress={() => removeHistoryItem(item.id)}
+                                            style={styles.deleteButton}
+                                        >
+                                            <Ionicons name="close" size={16} color={COLORS.gray[500]} />
+                                        </TouchableOpacity>
+                                    </View>
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -662,6 +713,14 @@ const styles = StyleSheet.create({
         color: COLORS.gray[500],
         textAlign: 'center',
         lineHeight: 20,
+    },
+    historyActions: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    favoriteButton: {
+        padding: 4,
+        marginRight: 8,
     },
 });
 

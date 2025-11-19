@@ -12,6 +12,7 @@ import SelectLocationScreen from "@screens/addAdvertisement/SelectLocationScreen
 import {AdvertisementScreen} from "@screens/addAdvertisement/AdvertisementScreen";
 import { ChatScreen } from '@/screens/chat/ChatScreen';
 import SearchScreen from "@screens/main/SearchScreen";
+import { FavoritesScreen } from '@/screens/favorites/FavoritesScreen';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -49,6 +50,11 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen
                 name="Chat"
                 component={ChatScreen}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="FavoritesScreen"
+                component={FavoritesScreen}
                 options={{ headerShown: false }}
             />
         </Stack.Navigator>

@@ -44,7 +44,6 @@ export const TYPE_KEYWORDS = {
     'GARAGE': ['гараж', 'гаражное помещение', 'автогараж', 'бокс'],
 };
 
-// Функция для расширения запроса синонимами
 export const expandQueryWithSynonyms = (query: string): string => {
     if (!query || query.trim().length === 0) return query;
 
@@ -52,19 +51,15 @@ export const expandQueryWithSynonyms = (query: string): string => {
     const words = queryLower.split(/\s+/);
     const expandedWords = new Set<string>();
 
-    // Добавляем оригинальные слова
     words.forEach(word => expandedWords.add(word));
 
-    // Ищем синонимы для каждого слова
     words.forEach(word => {
-        // Прямой поиск синонимов
         if (SEARCH_SYNONYMS[word]) {
             SEARCH_SYNONYMS[word].forEach(synonym => {
                 expandedWords.add(synonym);
             });
         }
 
-        // Обратный поиск - если слово является синонимом
         Object.entries(SEARCH_SYNONYMS).forEach(([mainWord, synonyms]) => {
             if (synonyms.includes(word)) {
                 expandedWords.add(mainWord);
@@ -72,7 +67,6 @@ export const expandQueryWithSynonyms = (query: string): string => {
         });
     });
 
-    // Также добавляем комбинации слов
     if (words.length > 1) {
         const twoWordPhrase = words.slice(0, 2).join(' ');
         if (SEARCH_SYNONYMS[twoWordPhrase]) {

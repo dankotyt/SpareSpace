@@ -275,6 +275,15 @@ export const MapScreen: React.FC = () => {
 
     const isOwnListing = (listing: ListingResponse): boolean => {
         if (!isAuthenticated) return false;
+
+        if (listing.userId) {
+            const { user } = useAuth();
+
+            if (user && user.id) {
+                return listing.userId === user.id;
+            }
+        }
+
         return userAds.some(userAd => userAd.id === listing.id);
     };
 
@@ -485,7 +494,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: '50%',
         left: '50%',
-        transform: [{ translateX: -75 }, { translateY: -25 }],
+        transform: [{ translateX: -100 }, { translateY: -25 }],
         backgroundColor: 'white',
         padding: 20,
         borderRadius: 10,
@@ -565,7 +574,7 @@ const styles = StyleSheet.create({
         marginTop: 2,
     },
     ownLabel: {
-        color: COLORS.primary,
+        color: COLORS.white,
         fontSize: 8,
         fontWeight: 'bold',
         marginTop: 2,

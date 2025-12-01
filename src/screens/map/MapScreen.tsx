@@ -8,7 +8,7 @@ import {COLORS} from '@shared/constants/colors';
 import {listingApiService, ListingResponse} from '@services/api/listingApi'
 import {StackNavigationProp} from "@react-navigation/stack";
 import {RootStackParamList} from "@navigation/types";
-import {useAuth} from '@hooks/useAuth';
+import {useAuth} from '@hooks/auth/useAuth';
 import {useAdvertisement} from '@services/AdvertisementContext';
 
 type MapScreenRouteProp = RouteProp<RootStackParamList, 'MapScreen'>;
@@ -17,7 +17,7 @@ export const MapScreen: React.FC = () => {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const route = useRoute<MapScreenRouteProp>();
     const { filterType, searchQuery, pricePeriod, listing } = route.params || {};
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
     const { userAds, refreshAds } = useAdvertisement();
     const [hasNoResults, setHasNoResults] = useState(false);
 
@@ -277,7 +277,6 @@ export const MapScreen: React.FC = () => {
         if (!isAuthenticated) return false;
 
         if (listing.userId) {
-            const { user } = useAuth();
 
             if (user && user.id) {
                 return listing.userId === user.id;

@@ -33,12 +33,13 @@ interface AdvertisementCardProps {
     listing: Listing;
     onContactPress: () => void;
     onFavoritePress: () => void;
+    onBackPress: () => void;
 }
 
 export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
                                                                         listing,
                                                                         onContactPress,
-                                                                        onFavoritePress,
+                                                                        onFavoritePress, onBackPress,
                                                                     }) => {
     const navigation = useNavigation();
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);

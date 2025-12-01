@@ -74,6 +74,7 @@ const styles = StyleSheet.create({
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'flex-end',
+        marginBottom: 30,
     },
     input: {
         flex: 1,

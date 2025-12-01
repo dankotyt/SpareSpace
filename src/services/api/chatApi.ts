@@ -50,6 +50,10 @@ class ChatApiService {
         return await this.request(`/chat/conversations?${params}`);
     }
 
+    async getConversationById(conversationId: number): Promise<Conversation> {
+        return await this.request(`/chat/conversations/${conversationId}`);
+    }
+
     async createConversation(dto: CreateConversationDto): Promise<Conversation> {
         return await this.request('/chat/conversations', {
             method: 'POST',

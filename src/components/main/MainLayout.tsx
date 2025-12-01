@@ -95,7 +95,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 
     const handleAdPress = useCallback((item: AdItem) => {
         navigation.navigate('Advertisement', {
-            listing: item.originalData
+            listingId: item.originalData.id
         });
     }, [navigation]);
 

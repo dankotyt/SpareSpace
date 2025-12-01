@@ -12,13 +12,26 @@ export interface Conversation {
         lastName: string;
         avatar?: string;
     };
-    listing?: {
-        id: number;
-        title: string;
-    };
+    listingId?: number;
+    listingTitle?: string;
     lastMessageAt: string;
     unreadCount?: number;
+    lastMessage?: {
+        text: string;
+        senderId: number;
+    };
 }
+
+export const getOtherParticipant = (conversation: Conversation, currentUserId: number) => {
+    return conversation.participant1.id === currentUserId
+        ? conversation.participant2
+        : conversation.participant1;
+};
+
+export const getParticipantName = (conversation: Conversation, currentUserId: number) => {
+    const otherParticipant = getOtherParticipant(conversation, currentUserId);
+    return `${otherParticipant.firstName} ${otherParticipant.lastName}`.trim();
+};
 
 export interface Message {
     id: number;

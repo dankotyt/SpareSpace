@@ -1,8 +1,8 @@
 import {useCallback, useContext, useEffect, useState} from 'react';
-import {isCompletePhoneNumber} from '@/shared/utils/phoneFormatter';
-import {AuthContext} from '@/services/AuthContext';
-import {authApiService} from '@/services/api/authApi';
-import {tokenService} from '@/services/tokenService';
+import {isCompletePhoneNumber} from '@shared/utils/phoneFormatter';
+import {AuthContext} from '@services/AuthContext';
+import {authApiService} from '@services/api/authApi';
+import {tokenService} from '@services/tokenService';
 
 export const useAuth = () => {
     const context = useContext(AuthContext);

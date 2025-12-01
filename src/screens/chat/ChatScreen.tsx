@@ -7,37 +7,97 @@ import {
     ActivityIndicator,
     Alert,
     TouchableOpacity,
+    Image
 } from 'react-native';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { MessageInput } from '@/components/chat/MessageInput';
-import { useChat } from '@/hooks/useChat';
-import { useAuth } from '@/hooks/useAuth';
+import { PinnedAd } from '@/components/chat/PinnedAd';
 import { COLORS } from '@/shared/constants/colors';
-import { Message } from '@/types/chat';
+import { Message, Conversation } from '@/types/chat';
 import { socketService } from '@/services/socketService';
+import { chatApiService } from '@/services/api/chatApi';
+import { listingApiService } from '@/services/api/listingApi';
+import { profileApiService } from '@/services/api/profileApi';
 import { RootStackParamList } from '@/navigation/types';
+import {useChat} from "@hooks/chat/useChat";
+import {useAuth} from "@hooks/auth/useAuth";
+import {StackNavigationProp} from "@react-navigation/stack";
+import {BackButton} from "@components/ui/BackButton";
 
 type ChatRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 
 export const ChatScreen: React.FC = () => {
     const route = useRoute<ChatRouteProp>();
-    const navigation = useNavigation();
+    const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const { conversationId } = route.params;
     const { user, isAuthenticated } = useAuth();
+
     const {
         messages,
-        loading,
+        loading: messagesLoading,
         error,
         fetchMessages,
-        sendMessage,
         addNewMessage,
         setMessages
     } = useChat();
+
     const [sending, setSending] = useState(false);
     const [wsConnected, setWsConnected] = useState(false);
+    const [conversationData, setConversationData] = useState<Conversation | null>(null);
+    const [loadingConversation, setLoadingConversation] = useState(true);
+    const [participantData, setParticipantData] = useState<any>(null);
+    const [listingData, setListingData] = useState<any>(null);
+
     const flatListRef = useRef<FlatList>(null);
     const cleanupRef = useRef<(() => void) | null>(null);
+
+    const loadConversationData = useCallback(async () => {
+        if (!conversationId || !user) return;
+
+        try {
+            setLoadingConversation(true);
+            const data = await chatApiService.getConversationById(conversationId);
+            setConversationData(data);
+
+            const otherParticipantId = data.participant1.id === user.id
+                ? data.participant2.id
+                : data.participant1.id;
+
+            if (otherParticipantId) {
+                try {
+                    const participant = await profileApiService.getPublicUserProfile(otherParticipantId);
+                    setParticipantData(participant);
+                } catch (error) {
+                    console.error('Error loading participant data:', error);
+                }
+            }
+
+            if (data.listingId) {
+                try {
+                    const listing = await listingApiService.getListingById(data.listingId);
+                    setListingData(listing);
+                } catch (error) {
+                    console.error('Error loading listing data:', error);
+                }
+            }
+
+        } catch (error) {
+            console.error('Error loading conversation data:', error);
+            Alert.alert('Ошибка', 'Не удалось загрузить данные диалога');
+        } finally {
+            setLoadingConversation(false);
+        }
+    }, [conversationId, user]);
+
+    const loadMessages = useCallback(async () => {
+        try {
+            await fetchMessages(conversationId, { limit: 50, offset: 0 });
+        } catch (err: any) {
+            console.error('❌ Error loading messages:', err);
+            Alert.alert('Ошибка', 'Не удалось загрузить сообщения');
+        }
+    }, [conversationId, fetchMessages]);
 
     const setupSocket = useCallback(async () => {
         if (!isAuthenticated || !user) {
@@ -94,6 +154,7 @@ export const ChatScreen: React.FC = () => {
             }
         } catch (error) {
             setWsConnected(false);
+            console.error('❌ Socket setup error:', error);
         }
 
         return null;
@@ -102,6 +163,7 @@ export const ChatScreen: React.FC = () => {
     useEffect(() => {
         if (isAuthenticated && user) {
             loadMessages();
+            loadConversationData();
 
             const initializeSocket = async () => {
                 const cleanup = await setupSocket();
@@ -125,44 +187,26 @@ export const ChatScreen: React.FC = () => {
         }
     }, [conversationId, isAuthenticated, user]);
 
-    const loadMessages = async () => {
-        try {
-            await fetchMessages(conversationId, { limit: 50, offset: 0 });
-        } catch (err: any) {
-            console.error('❌ Error loading messages:', err);
-
-            if (err.message?.includes('Access denied') || err.message?.includes('Conversation not found')) {
-                Alert.alert(
-                    'Ошибка доступа',
-                    'У вас нет доступа к этому чату или чат не существует',
-                    [{ text: 'OK', onPress: () => navigation.goBack() }]
-                );
-            } else {
-                Alert.alert('Ошибка', 'Не удалось загрузить сообщения');
-            }
-        }
-    };
-
     const handleSendMessage = async (text: string) => {
         if (!user) {
             Alert.alert('Ошибка', 'Пользователь не авторизован');
             return;
         }
 
-        let optimisticMessage: Message | null = null;
+        if (!wsConnected) {
+            Alert.alert('Ошибка', 'Нет подключения к чату');
+            return;
+        }
+
+        const optimisticId = -Date.now();
 
         try {
             setSending(true);
 
-            optimisticMessage = {
-                id: -Date.now(),
+            const optimisticMessage: Message = {
+                id: optimisticId,
                 text,
-                sender: {
-                    id: user.id,
-                    firstName: user.firstName,
-                    lastName: user.lastName,
-                    avatar: user.avatar,
-                },
+                sender: user,
                 sentAt: new Date().toISOString(),
                 isRead: false,
             };
@@ -173,32 +217,55 @@ export const ChatScreen: React.FC = () => {
                 flatListRef.current?.scrollToEnd({ animated: true });
             }, 100);
 
-            if (wsConnected) {
-                await socketService.sendMessage(conversationId, text);
-            } else {
-                const sentMessage = await sendMessage(conversationId, text);
+            await socketService.sendMessage(conversationId, text);
 
-                setMessages((prev: Message[]) =>
-                    prev.map(msg => msg.id === optimisticMessage!.id ? sentMessage : msg)
-                );
-            }
+        } catch (error: any) {
+            console.error('❌ Error sending message via WebSocket:', error);
 
-        } catch (err: any) {
-            console.error('❌ Error sending message:', err);
+            setMessages(prev => prev.filter(msg => msg.id !== optimisticId));
             Alert.alert('Ошибка', 'Не удалось отправить сообщение');
-
-            if (optimisticMessage) {
-                setMessages((prev: Message[]) =>
-                    prev.filter(msg => msg.id !== optimisticMessage!.id)
-                );
-            }
         } finally {
             setSending(false);
         }
     };
 
+    const getParticipantName = () => {
+        if (!conversationData || !user) return 'Пользователь';
+
+        const otherParticipant = conversationData.participant1.id === user.id
+            ? conversationData.participant2
+            : conversationData.participant1;
+
+        return `${otherParticipant.firstName} ${otherParticipant.lastName}`.trim();
+    };
+
+    const handleBackPress = () => {
+        navigation.goBack();
+    };
+
+    const handleAdPress = () => {
+        if (conversationData?.listingId) {
+            navigation.navigate('Advertisement', {
+                listingId: conversationData.listingId
+            });
+        }
+    };
+
+    const handleUserProfilePress = () => {
+        if (conversationData && user) {
+            const otherParticipantId = conversationData.participant1.id === user.id
+                ? conversationData.participant2.id
+                : conversationData.participant1.id;
+
+            navigation.navigate('Profile', {
+                userId: otherParticipantId
+            });
+        }
+    };
+
     const handleRefresh = async () => {
         await loadMessages();
+        await loadConversationData();
     };
 
     const renderMessage = ({ item }: { item: Message }) => {
@@ -206,11 +273,13 @@ export const ChatScreen: React.FC = () => {
         return <MessageBubble message={item} isOwn={isOwn} />;
     };
 
-    if (loading && messages.length === 0) {
+    const isLoading = messagesLoading || loadingConversation;
+
+    if (isLoading && messages.length === 0) {
         return (
             <View style={styles.centered}>
                 <ActivityIndicator size="large" color={COLORS.primary} />
-                <Text style={styles.loadingText}>Загрузка сообщений...</Text>
+                <Text style={styles.loadingText}>Загрузка чата...</Text>
             </View>
         );
     }
@@ -231,25 +300,50 @@ export const ChatScreen: React.FC = () => {
 
     return (
         <View style={styles.container}>
-            {/* Индикатор подключения */}
-            <View style={[
-                styles.connectionStatus,
-                { backgroundColor: wsConnected ? COLORS.green[500] : COLORS.red[10] }
-            ]}>
-                <Text style={styles.connectionText}>
-                    {wsConnected ? '✅ Онлайн' : '⚠️ Оффлайн'}
-                </Text>
+            {/* Хедер */}
+            <View style={styles.header}>
+                <BackButton onPress={handleBackPress} backgroundColor={COLORS.transparent}/>
+                <TouchableOpacity
+                    style={styles.headerInfo}
+                    onPress={handleUserProfilePress}
+                    activeOpacity={0.7}
+                >
+                    <Text style={styles.headerName}>
+                        {getParticipantName()}
+                    </Text>
+                    <View style={styles.statusContainer}>
+                        <View style={[
+                            styles.statusDot,
+                            { backgroundColor: wsConnected ? COLORS.green[500] : COLORS.gray[400] }
+                        ]} />
+                        <Text style={styles.statusText}>
+                            {wsConnected ? 'онлайн' : 'оффлайн'}
+                        </Text>
+                    </View>
+                </TouchableOpacity>
             </View>
 
+            {/* Закрепленное объявление */}
+            {conversationData?.listingId && (
+                <PinnedAd
+                    listingId={conversationData.listingId}
+                    onPress={handleAdPress}
+                />
+            )}
+
+            {/* Список сообщений */}
             <FlatList
                 ref={flatListRef}
                 data={messages}
                 renderItem={renderMessage}
                 keyExtractor={(item) => `${item.id}-${item.sentAt}`}
-                contentContainerStyle={styles.messagesList}
+                contentContainerStyle={[
+                    styles.messagesList,
+                    { paddingTop: conversationData?.listingId ? 0 : 8 }
+                ]}
                 showsVerticalScrollIndicator={false}
                 onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
-                refreshing={loading}
+                refreshing={isLoading}
                 onRefresh={handleRefresh}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
@@ -259,6 +353,7 @@ export const ChatScreen: React.FC = () => {
                 }
             />
 
+            {/* Поле ввода */}
             <MessageInput
                 onSendMessage={handleSendMessage}
                 disabled={sending}
@@ -272,8 +367,42 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: COLORS.white,
     },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.gray[200],
+        marginTop: 50,
+    },
+    headerInfo: {
+        marginLeft: 12,
+        flex: 1,
+    },
+    headerName: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: COLORS.gray[900],
+        marginBottom: 2,
+    },
+    statusContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    statusDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginRight: 4,
+    },
+    statusText: {
+        fontSize: 12,
+        color: COLORS.gray[500],
+    },
     messagesList: {
-        paddingVertical: 8,
+        paddingHorizontal: 16,
+        paddingBottom: 8,
         flexGrow: 1,
     },
     centered: {
@@ -282,25 +411,16 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 20,
     },
-    connectionStatus: {
-        padding: 8,
-        alignItems: 'center',
-    },
-    connectionText: {
-        color: COLORS.white,
-        fontSize: 12,
-        fontWeight: '600',
+    loadingText: {
+        marginTop: 12,
+        fontSize: 14,
+        color: COLORS.gray[500],
     },
     errorText: {
         color: COLORS.red[50],
         fontSize: 16,
         textAlign: 'center',
         marginBottom: 16,
-    },
-    loadingText: {
-        marginTop: 12,
-        color: COLORS.gray[500],
-        fontSize: 14,
     },
     retryButton: {
         backgroundColor: COLORS.primary,

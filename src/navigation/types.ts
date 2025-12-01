@@ -7,7 +7,7 @@ export type RootStackParamList = {
     PhoneAuth: undefined;
     EmailAuth: undefined;
     Registration: undefined;
-    Profile: undefined;
+    Profile: { userId?: number };
     FavoritesScreen: undefined;
     SearchScreen: undefined;
     MapScreen: {
@@ -31,8 +31,8 @@ export type RootStackParamList = {
         };
         onLocationSelected?: (locationData: LocationData) => void;
     };
-    Advertisement: { listing: Listing };
-    Chat: { conversationId: number };
+    Advertisement: { listingId: number };
+    Chat: { conversationId: number; };
     Conversations: undefined;
 };
 

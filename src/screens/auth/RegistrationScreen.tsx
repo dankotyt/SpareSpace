@@ -27,7 +27,7 @@ import { BackButton } from '@/components/ui/BackButton';
 import { COLORS } from '@/shared/constants/colors';
 import { globalStyles } from '@/shared/constants/global';
 import { RootStackParamList } from '@/navigation/types';
-import { useRegistration } from '@/hooks/useRegistration';
+import { useRegistration } from '@hooks/auth/useRegistration';
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 

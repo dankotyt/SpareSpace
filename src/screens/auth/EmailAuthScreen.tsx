@@ -10,7 +10,7 @@ import {
     TouchableOpacity,
     Alert,
 } from 'react-native';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@hooks/auth/useAuth';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { EmailInput, PasswordInput, AuthButton, SupportLink } from '@/components/auth';

@@ -11,10 +11,10 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { ConversationList } from '@/components/chat/ConversationList';
 import { BackButton } from '@/components/ui/BackButton';
-import { useChat } from '@/hooks/useChat';
-import { useAuth } from '@/hooks/useAuth';
 import { COLORS } from '@/shared/constants/colors';
 import { Conversation } from '@/types/chat';
+import {useChat} from "@hooks/chat/useChat";
+import {useAuth} from "@hooks/auth/useAuth";
 
 type ChatStackParamList = {
     Chat: { conversationId: number };
@@ -51,12 +51,11 @@ export const ConversationsScreen: React.FC = () => {
         setRefreshing(false);
     };
 
-    const handleConversationPress = (conversation: Conversation) => {
+    const handleConversationPress = (conversationId: number) => {
         if (!isAuthenticated) {
-            // Не показываем ошибку, просто не переходим
             return;
         }
-        navigation.navigate('Chat', { conversationId: conversation.id });
+        navigation.navigate('Chat', { conversationId: conversationId });
     };
 
     const handleBackPress = () => {
@@ -67,7 +66,6 @@ export const ConversationsScreen: React.FC = () => {
         navigation.navigate('Auth');
     };
 
-    // Если пользователь не авторизован
     if (!isAuthenticated) {
         return (
             <View style={styles.container}>
@@ -133,8 +131,10 @@ export const ConversationsScreen: React.FC = () => {
             ) : (
                 <ConversationList
                     conversations={conversations}
-                    onConversationPress={handleConversationPress}
                     currentUserId={user?.id || 0}
+                    onConversationPress={handleConversationPress}
+                    loading={loading}
+                    onRefresh={handleRefresh}
                 />
             )}
         </View>
@@ -175,7 +175,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     emptyText: {
-        color: COLORS.borderEmpty,
         fontSize: 16,
         textAlign: 'center',
     },

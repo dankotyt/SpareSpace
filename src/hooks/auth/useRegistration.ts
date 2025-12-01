@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { authApiService } from '@/services/api/authApi';
+import { authApiService } from '@services/api/authApi';
 
 export const useRegistration = () => {
     const [registrationData, setRegistrationData] = useState({

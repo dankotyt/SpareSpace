@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { UserProfile, FormattedUserProfile, UserStats } from '@/types/profile';
 import { profileApiService } from '@/services/api/profileApi';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@hooks/auth/useAuth';
 import { tokenService } from '@/services/tokenService';
 import { authApiService } from "@services/api/authApi";
 

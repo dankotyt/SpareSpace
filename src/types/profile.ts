@@ -10,6 +10,7 @@ export interface UserProfile {
     verified: boolean;
     createdAt: string;
     updatedAt: string;
+    avatar?: string;
 }
 
 export interface Review {
@@ -99,6 +100,7 @@ export interface FormattedUserProfile {
     verified: boolean;
     createdAt: string;
     updatedAt: string;
+    avatar?: string;
 
     fullName: string;
     joinYear: string;

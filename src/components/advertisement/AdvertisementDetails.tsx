@@ -16,9 +16,10 @@ import { formatListingForDisplay } from "@shared/utils/priceFormatter";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@navigation/types";
-import { useAuth } from '@/hooks/useAuth';
-import { useChat } from '@/hooks/useChat';
+import { useAuth } from '@hooks/auth/useAuth';
+import { useChat } from '@hooks/chat/useChat';
 import { favoritesService } from '@services/favoritesService';
+import {Conversation} from "@/types/chat";
 
 interface AdvertisementDetailsProps {
     listing: Listing;
@@ -41,6 +42,7 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
     const [isFavorite, setIsFavorite] = useState(false);
     const [isCreatingChat, setIsCreatingChat] = useState(false);
     const formattedListing = formatListingForDisplay(listing);
+    const { fetchConversations } = useChat();
 
     useEffect(() => {
         checkFavoriteStatus();
@@ -99,31 +101,59 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
 
         try {
             setIsCreatingChat(true);
-            console.log('🔄 Creating conversation...', {
-                currentUserId: user?.id,
-                participantId: listing.userId,
-                listingId: listing.id
-            });
 
-            const conversation = await createConversation({
-                participantId: listing.userId,
-                listingId: listing.id
-            });
+            let conversation;
 
-            console.log('✅ Conversation created successfully:', conversation);
-            console.log('📝 Conversation ID:', conversation.id);
+            try {
+                conversation = await createConversation({
+                    participantId: listing.userId,
+                    listingId: listing.id
+                });
+
+            } catch (error: any) {
+                if (error.message?.includes('Conversation already exists') ||
+                    error.message?.includes('уже существует')) {
+
+                    const response = await fetchConversations({
+                        limit: 100,
+                        offset: 0
+                    });
+
+                    const existingConversation = response.conversations.find((conv: Conversation) =>
+                        conv.listingId === listing.id &&
+                        (conv.participant1.id === listing.userId || conv.participant2.id === listing.userId)
+                    );
+
+                    if (!existingConversation) {
+                        conversation = response.conversations.find((conv: Conversation) =>
+                            conv.participant1.id === listing.userId || conv.participant2.id === listing.userId
+                        );
+
+                        if (!conversation) {
+                            throw new Error('Чат существует, но не найден в списке');
+                        }
+                    } else {
+                        conversation = existingConversation;
+                    }
+
+                    console.log('✅ Existing conversation found:', conversation.id);
+                } else {
+                    throw error;
+                }
+            }
+
+            console.log('📝 Opening conversation with ID:', conversation.id);
 
             navigation.navigate('Chat', {
                 conversationId: conversation.id
             });
 
         } catch (error: any) {
-            console.error('❌ Error creating conversation:', error);
-            console.error('Error details:', error.response?.data || error.message);
+            console.error('❌ Error handling conversation:', error);
 
             Alert.alert(
                 'Ошибка',
-                error.message || 'Не удалось создать чат. Попробуйте позже.'
+                error.message || 'Не удалось открыть чат. Попробуйте позже.'
             );
         } finally {
             setIsCreatingChat(false);

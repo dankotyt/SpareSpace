@@ -1,6 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import { useAuth } from '@hooks/useAuth';
+import { useAuth } from '@hooks/auth/useAuth';
 import { PhoneAuthScreen } from '@screens/auth/PhoneAuthScreen';
 import { EmailAuthScreen } from '@screens/auth/EmailAuthScreen';
 

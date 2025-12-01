@@ -1,6 +1,6 @@
 import {useCallback, useState} from 'react';
-import {chatApiService} from '@/services/api/chatApi';
-import {Conversation, CreateConversationDto, GetConversationsDto, GetMessagesDto, Message} from '@/types/chat';
+import {chatApiService} from '@services/api/chatApi';
+import {Conversation, CreateConversationDto, GetConversationsDto, GetMessagesDto, Message} from '@types/chat';
 
 export const useChat = () => {
     const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -54,19 +54,6 @@ export const useChat = () => {
         }
     }, []);
 
-    const sendMessage = useCallback(async (conversationId: number, text: string) => {
-        try {
-            setError(null);
-            const newMessage = await chatApiService.sendMessage(conversationId, text);
-            setMessages(prev => [...prev, newMessage]);
-            return newMessage;
-        } catch (err: any) {
-            const errorMessage = err.message || 'Ошибка отправки сообщения';
-            setError(errorMessage);
-            throw new Error(errorMessage);
-        }
-    }, []);
-
     const addNewMessage = useCallback((message: Message) => {
         setMessages(prev => [...prev, message]);
     }, []);
@@ -79,7 +66,6 @@ export const useChat = () => {
         fetchConversations,
         fetchMessages,
         createConversation,
-        sendMessage,
         addNewMessage,
         setConversations,
         setMessages,

@@ -11,17 +11,19 @@ interface ListingsSectionProps {
     listings: Listing[];
     onAllAdsPress: () => void;
     onAssetPress: (asset: FormattedListing) => void;
+    showAllListings: boolean;
 }
 
 export const ListingsSection: React.FC<ListingsSectionProps> = ({
                                                                     listings,
                                                                     onAllAdsPress,
-                                                                    onAssetPress
+                                                                    onAssetPress,
+                                                                    showAllListings,
                                                                 }) => {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
     const handleAssetPress = useCallback((asset: Listing) => {
-        navigation.navigate('Advertisement', { listing: asset });
+        navigation.navigate('Advertisement', { listingId: asset.id });
     }, [navigation]);
 
     const getAssetIcon = (type: string) => {

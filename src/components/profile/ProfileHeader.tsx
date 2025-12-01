@@ -6,9 +6,10 @@ import { COLORS } from '@/shared/constants/colors';
 interface ProfileHeaderProps {
     profile: FormattedUserProfile;
     onReviewsPress: () => void;
+    canEdit: boolean;
 }
 
-export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile, onReviewsPress }) => {
+export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile, onReviewsPress, canEdit }) => {
     const getInitials = (name: string, surname: string, patronymic?: string) => {
         return `${name[0]}${surname[0]}`.toUpperCase();
     };

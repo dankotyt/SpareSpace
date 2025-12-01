@@ -7,7 +7,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { COLORS } from '@/shared/constants/colors';
 import { RootStackParamList } from "@/navigation/types";
 import { AuthRequiredPopup } from '@/components/auth/AuthRequiredPopup';
-import { useAuthCheck } from '@/hooks/useAuthCheck';
+import { useAuthCheck } from '@hooks/auth/useAuthCheck';
 
 export const Header: React.FC = () => {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();

@@ -69,6 +69,14 @@ class ProfileApiService {
         };
     }
 
+    async getPublicUserProfile(userId: number): Promise<ProfileResponse> {
+        const response = await this.request<any>(`/users/${userId}`);
+        return {
+            success: true,
+            data: response,
+        };
+    }
+
     async getUserReviews(userId: number): Promise<ReviewsResponse> {
         try {
             const response = await this.request<any>('/reviews');

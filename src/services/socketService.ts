@@ -97,10 +97,14 @@ class SocketService {
     }
 
     async sendMessage(conversationId: number, text: string): Promise<void> {
+        console.log('🔌 WebSocket sendMessage called:', { conversationId, text, connected: this.isConnected });
+
         if (this.socket && this.isConnected) {
+            console.log('📤 Emitting sendMessage via WebSocket');
             this.socket.emit('sendMessage', { conversationId, text });
+            console.log('✅ sendMessage emitted successfully');
         } else {
-            console.warn('❌ Socket not connected, cannot send message');
+            console.error('❌ WebSocket not connected!');
             throw new Error('Socket not connected');
         }
     }

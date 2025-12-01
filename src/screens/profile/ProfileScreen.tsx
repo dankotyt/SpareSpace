@@ -1,4 +1,5 @@
-import React, { useCallback } from 'react';
+// screens/profile/ProfileScreen.tsx
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     View,
     ScrollView,
@@ -6,11 +7,12 @@ import {
     StyleSheet,
     Alert,
     ActivityIndicator,
-    Text, TouchableOpacity,
+    Text,
+    TouchableOpacity,
 } from 'react-native';
+import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { useProfile } from '@hooks/useProfile';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { ProfileHeader } from '@components/profile/ProfileHeader';
 import { ProfileMenu } from '@components/profile/ProfileMenu';
 import { ListingsSection } from '@components/profile/ListingsSection';
@@ -19,17 +21,147 @@ import { BookingsSection } from '@components/profile/BookingsSection';
 import { StatsSection } from '@components/profile/StatsSection';
 import { BottomToolbar } from '@components/ui/BottomToolbar';
 import { UnauthorizedProfile } from '@components/profile/UnauthorizedProfile';
-import { StackNavigationProp } from '@react-navigation/stack';
 import { COLORS } from '@shared/constants/colors';
-import { ProfileStackParamList } from '@navigation/types';
+import { RootStackParamList } from '@navigation/types';
+import { useAuth } from '@hooks/auth/useAuth';
+import { useProfile } from '@hooks/useProfile';
+import { profileApiService } from '@/services/api/profileApi';
+import { FormattedUserProfile, UserProfile } from '@/types/profile';
 
-type ProfileScreenNavigationProp = StackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
+type ProfileScreenRouteProp = RouteProp<RootStackParamList, 'Profile'>;
+type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 
 export const ProfileScreen: React.FC = () => {
-    const { isAuthenticated, userProfile, loading, refreshing, error, handleRefresh, logout } = useProfile();
-    const insets = useSafeAreaInsets();
+    const route = useRoute<ProfileScreenRouteProp>();
     const navigation = useNavigation<ProfileScreenNavigationProp>();
+    const { user: currentUser, isAuthenticated } = useAuth();
+    const {
+        userProfile: ownProfile,
+        loading,
+        refreshing,
+        error,
+        handleRefresh,
+        logout
+    } = useProfile();
 
+    const [publicProfile, setPublicProfile] = useState<FormattedUserProfile | null>(null);
+    const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+    const [profileError, setProfileError] = useState<string | null>(null);
+
+    const { userId } = route.params || {};
+
+    // Определяем, чей профиль мы смотрим
+    const isViewingOwnProfile = !userId || (currentUser && userId === currentUser.id);
+    const targetUserId = userId || currentUser?.id;
+
+    const isOwner = (currentUserId: number | undefined, profileUserId: number): boolean => {
+        return currentUserId === profileUserId;
+    };
+
+    // Профиль для отображения
+    const displayProfile = isViewingOwnProfile ? ownProfile : publicProfile;
+
+    // Проверяем права доступа - только по ID
+    const canViewPrivateInfo = isOwner(currentUser?.id, targetUserId);
+    const canEditProfile = isOwner(currentUser?.id, targetUserId);
+
+    // Форматируем публичный профиль для отображения
+    const formatPublicProfile = (profile: UserProfile): FormattedUserProfile => {
+        return {
+            ...profile,
+            fullName: `${profile.firstName} ${profile.lastName} ${profile.patronymic || ''}`.trim(),
+            joinYear: new Date(profile.createdAt).getFullYear().toString(),
+            balance: 0,
+            reviews: [], // Публичный профиль не включает отзывы
+            listings: [], // Публичный профиль не включает объявления
+            bookings: [], // Публичный профиль не включает бронирования
+            stats: {
+                totalListings: 0,
+                activeListings: 0,
+                totalBookings: 0,
+                pendingBookings: 0,
+                totalReviews: 0,
+                averageRating: profile.rating || 0
+            }
+        };
+    };
+
+    // Загружаем публичный профиль если смотрим чужой профиль
+    useEffect(() => {
+        if (userId && currentUser && userId !== currentUser.id) {
+            loadPublicProfile(userId);
+        } else if (userId && !currentUser) {
+            // Если не авторизован, но смотрим чужой профиль
+            loadPublicProfile(userId);
+        }
+    }, [userId, currentUser]);
+
+    const loadPublicProfile = async (profileUserId: number) => {
+        try {
+            setIsLoadingProfile(true);
+            setProfileError(null);
+
+            // Загружаем публичный профиль
+            const profileResponse = await profileApiService.getPublicUserProfile(profileUserId);
+
+            if (!profileResponse.success || !profileResponse.data) {
+                throw new Error(profileResponse.message || 'Не удалось загрузить профиль');
+            }
+
+            const formattedProfile = formatPublicProfile(profileResponse.data);
+            setPublicProfile(formattedProfile);
+
+        } catch (error) {
+            console.error('Error loading public profile:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Не удалось загрузить профиль пользователя';
+            setProfileError(errorMessage);
+            Alert.alert('Ошибка', errorMessage);
+        } finally {
+            setIsLoadingProfile(false);
+        }
+    };
+
+    // Для своего профиля загружаем дополнительные данные
+    useEffect(() => {
+        if (isViewingOwnProfile && ownProfile) {
+            // Догружаем дополнительные данные для своего профиля
+            loadOwnProfileAdditionalData();
+        }
+    }, [isViewingOwnProfile, ownProfile]);
+
+    const loadOwnProfileAdditionalData = async () => {
+        if (!ownProfile || !currentUser) return;
+
+        try {
+            // Загружаем отзывы, объявления и бронирования для своего профиля
+            const fullData = await profileApiService.getFullUserData(currentUser.id, currentUser.id);
+
+            const updatedProfile: FormattedUserProfile = {
+                ...ownProfile,
+                reviews: Array.isArray(fullData.reviews) ? fullData.reviews : [],
+                listings: Array.isArray(fullData.listings) ? fullData.listings : [],
+                bookings: Array.isArray(fullData.bookings) ? fullData.bookings : [],
+                stats: fullData.stats || {
+                    totalListings: 0,
+                    activeListings: 0,
+                    totalBookings: 0,
+                    pendingBookings: 0,
+                    totalReviews: 0,
+                    averageRating: 0
+                }
+            };
+
+            // Если это свой профиль, обновляем данные
+            if (isViewingOwnProfile) {
+                // Здесь нужно обновить ownProfile в useProfile hook
+                // Или использовать локальное состояние
+            }
+        } catch (error) {
+            console.error('Error loading additional profile data:', error);
+        }
+    };
+
+    // Обработчики (остаются без изменений)
     const handleMenuItemPress = useCallback((itemId: string) => {
         Alert.alert('Menu Item Pressed', `You pressed: ${itemId}`);
     }, []);
@@ -75,10 +207,26 @@ export const ProfileScreen: React.FC = () => {
     }, [navigation]);
 
     const handleStatsPress = useCallback(() => {
-        Alert.alert('Статистика', `Всего объявлений: ${userProfile?.stats?.totalListings || 0}\nАктивных: ${userProfile?.stats?.activeListings || 0}\nБронирований: ${userProfile?.stats?.totalBookings || 0}\nОтзывов: ${userProfile?.stats?.totalReviews || 0}`);
-    }, [userProfile]);
+        if (!displayProfile?.stats) return;
 
-    const safeStats = userProfile?.stats || {
+        Alert.alert('Статистика',
+            `Всего объявлений: ${displayProfile.stats.totalListings || 0}\n` +
+            `Активных: ${displayProfile.stats.activeListings || 0}\n` +
+            `Бронирований: ${displayProfile.stats.totalBookings || 0}\n` +
+            `Отзывов: ${displayProfile.stats.totalReviews || 0}`
+        );
+    }, [displayProfile]);
+
+    const handleRefreshProfile = useCallback(() => {
+        if (isViewingOwnProfile) {
+            handleRefresh();
+        } else if (userId) {
+            loadPublicProfile(userId);
+        }
+    }, [isViewingOwnProfile, userId, handleRefresh]);
+
+    // Безопасные данные
+    const safeStats = displayProfile?.stats || {
         totalListings: 0,
         activeListings: 0,
         totalBookings: 0,
@@ -87,12 +235,24 @@ export const ProfileScreen: React.FC = () => {
         averageRating: 0
     };
 
-    const safeListings = Array.isArray(userProfile?.listings) ? userProfile.listings : [];
-    const safeBookings = Array.isArray(userProfile?.bookings) ? userProfile.bookings : [];
-    const safeBalance = userProfile?.balance || 0;
+    const safeListings = Array.isArray(displayProfile?.listings) ? displayProfile.listings : [];
+    const safeBookings = Array.isArray(displayProfile?.bookings) ? displayProfile.bookings : [];
+    const safeBalance = displayProfile?.balance || 0;
+
+    // Для публичного профиля показываем только активные объявления
+    const getFilteredListings = () => {
+        if (canViewPrivateInfo) {
+            return safeListings; // Все объявления для владельца
+        } else {
+            return safeListings.filter(listing => listing.status === 'ACTIVE'); // Только активные для посетителей
+        }
+    };
+
+    const filteredListings = getFilteredListings();
 
     const renderContent = () => {
-        if (!isAuthenticated) {
+        if (!isAuthenticated && !userId) {
+            // Не авторизован и не смотрим чужой профиль
             return (
                 <ScrollView
                     style={styles.scrollView}
@@ -111,39 +271,44 @@ export const ProfileScreen: React.FC = () => {
             );
         }
 
-        if (loading && !userProfile) {
+        const isLoading = (isViewingOwnProfile ? loading : isLoadingProfile);
+        const hasError = (isViewingOwnProfile ? error : profileError);
+        const hasProfile = !!displayProfile;
+
+        if (isLoading && !hasProfile) {
             return (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color={COLORS.primary} />
-                    <Text style={styles.loadingText}>Загрузка профиля...</Text>
+                    <Text style={styles.loadingText}>
+                        {isViewingOwnProfile ? 'Загрузка профиля...' : 'Загрузка публичного профиля...'}
+                    </Text>
                 </View>
             );
         }
 
-        if (error && !userProfile) {
+        if (hasError && !hasProfile) {
             return (
                 <View style={styles.errorContainer}>
                     <Text style={styles.errorTitle}>Ошибка загрузки</Text>
-                    <Text style={styles.errorText}>{error}</Text>
-                    <Text style={styles.retryText} onPress={handleRefresh}>
+                    <Text style={styles.errorText}>{hasError}</Text>
+                    <Text style={styles.retryText} onPress={handleRefreshProfile}>
                         Попробовать снова
                     </Text>
-                    <Text style={styles.retryAuth} onPress={handleRefresh}>
-                        Повторная авторизация
-                    </Text>
-                    <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-                        <Text style={styles.logoutButtonText}>Выйти из профиля</Text>
-                    </TouchableOpacity>
+                    {isViewingOwnProfile && (
+                        <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+                            <Text style={styles.logoutButtonText}>Выйти из профиля</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
             );
         }
 
-        if (!userProfile) {
+        if (!hasProfile) {
             return (
                 <View style={styles.errorContainer}>
                     <Text style={styles.errorTitle}>Профиль не найден</Text>
                     <Text style={styles.errorText}>Не удалось загрузить данные профиля</Text>
-                    <Text style={styles.retryText} onPress={handleRefresh}>
+                    <Text style={styles.retryText} onPress={handleRefreshProfile}>
                         Попробовать снова
                     </Text>
                 </View>
@@ -155,8 +320,8 @@ export const ProfileScreen: React.FC = () => {
                 style={styles.scrollView}
                 refreshControl={
                     <RefreshControl
-                        refreshing={refreshing}
-                        onRefresh={handleRefresh}
+                        refreshing={isViewingOwnProfile ? refreshing : isLoadingProfile}
+                        onRefresh={handleRefreshProfile}
                         colors={[COLORS.primary]}
                         tintColor={COLORS.primary}
                     />
@@ -164,8 +329,9 @@ export const ProfileScreen: React.FC = () => {
                 showsVerticalScrollIndicator={false}
             >
                 <ProfileHeader
-                    profile={userProfile}
+                    profile={displayProfile}
                     onReviewsPress={handleReviewsPress}
+                    canEdit={canEditProfile}
                 />
 
                 <StatsSection
@@ -173,46 +339,62 @@ export const ProfileScreen: React.FC = () => {
                     onPress={handleStatsPress}
                 />
 
-                <ListingsSection
-                    listings={safeListings}
-                    onAllAdsPress={handleAllAdsPress}
-                    onAssetPress={handleAssetPress}
-                />
+                {/* Объявления показываем только если они есть */}
+                {filteredListings.length > 0 && (
+                    <ListingsSection
+                        listings={filteredListings}
+                        onAllAdsPress={handleAllAdsPress}
+                        onAssetPress={handleAssetPress}
+                        showAllListings={canViewPrivateInfo}
+                    />
+                )}
 
-                <BookingsSection
-                    bookings={safeBookings}
-                    stats={safeStats}
-                    onAllBookingsPress={handleAllBookingsPress}
-                    onBookingPress={handleBookingPress}
-                />
+                {/* Показываем приватные секции только владельцу */}
+                {canViewPrivateInfo && (
+                    <>
+                        {safeBookings.length > 0 && (
+                            <BookingsSection
+                                bookings={safeBookings}
+                                stats={safeStats}
+                                onAllBookingsPress={handleAllBookingsPress}
+                                onBookingPress={handleBookingPress}
+                            />
+                        )}
 
-                <BalanceSection
-                    balance={safeBalance}
-                    onTopUp={handleTopUp}
-                    onWithdraw={handleWithdraw}
-                    onPromoCode={handlePromoCode}
-                    operations={handleOperations}
-                />
+                        <BalanceSection
+                            balance={safeBalance}
+                            onTopUp={handleTopUp}
+                            onWithdraw={handleWithdraw}
+                            onPromoCode={handlePromoCode}
+                            operations={handleOperations}
+                        />
 
-                <ProfileMenu
-                    onMenuItemPress={handleMenuItemPress}
-                    onLogout={logout}
-                />
+                        <ProfileMenu
+                            onMenuItemPress={handleMenuItemPress}
+                            onLogout={logout}
+                        />
+                    </>
+                )}
             </ScrollView>
         );
     };
+
+    const insets = useSafeAreaInsets();
 
     return (
         <View style={[styles.container, { paddingTop: insets.top }]}>
             {renderContent()}
 
-            <View style={styles.bottomToolbarWrapper}>
-                <BottomToolbar />
-            </View>
+            {isViewingOwnProfile && (
+                <View style={styles.bottomToolbarWrapper}>
+                    <BottomToolbar />
+                </View>
+            )}
         </View>
     );
 };
 
+// Стили остаются без изменений
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -258,14 +440,6 @@ const styles = StyleSheet.create({
         color: COLORS.primary,
         fontWeight: '600',
         textAlign: 'center',
-    },
-    retryAuth: {
-        fontSize: 16,
-        color: COLORS.white,
-        fontWeight: '600',
-        textAlign: 'center',
-        borderColor: COLORS.primary,
-        paddingHorizontal: 8,
     },
     bottomToolbarWrapper: {
         position: 'absolute',

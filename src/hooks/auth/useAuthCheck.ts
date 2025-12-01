@@ -1,5 +1,5 @@
 import {useCallback, useState} from 'react';
-import {tokenService} from '@/services/tokenService';
+import {tokenService} from '@services/tokenService';
 import {authApiService} from "@services/api/authApi";
 
 export const useAuthCheck = () => {

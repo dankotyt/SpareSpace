@@ -1,12 +1,6 @@
-import { tokenService } from '@/services/tokenService';
-import { API_BASE_URL } from '@/config/env';
-import {
-    Conversation,
-    Message,
-    GetConversationsDto,
-    GetMessagesDto,
-    CreateConversationDto
-} from '@/types/chat';
+import {tokenService} from '@/services/tokenService';
+import {API_BASE_URL} from '@/config/env';
+import {Conversation, CreateConversationDto, GetConversationsDto, GetMessagesDto, Message} from '@/types/chat';
 
 class ChatApiService {
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {

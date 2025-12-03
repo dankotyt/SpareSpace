@@ -338,7 +338,7 @@ export const ChatScreen: React.FC = () => {
             </View>
 
             {/* Закрепленное объявление */}
-            {conversationData?.listingId && conversationData.listingId > 0 ? (
+            {conversationData?.listingId ? (
                 <PinnedAd
                     listingId={conversationData.listingId}
                     onPress={handleAdPress}

@@ -22,22 +22,17 @@ export const PinnedAd: React.FC<PinnedAdProps> = ({ listingId, onPress }) => {
 
     useEffect(() => {
         const loadListing = async () => {
+            if (!listingId) {
+                setLoading(false);
+                return;
+            }
+
             try {
                 setLoading(true);
-                setError(null);
-
-                if (!listingId || listingId <= 0) {
-                    setError('Некорректный ID объявления');
-                    setLoading(false);
-                    return;
-                }
-
                 const data = await listingApiService.getListingById(listingId);
-                console.log('✅ PinnedAd loaded listing:', data);
                 setListing(data);
-            } catch (err: any) {
-                console.error('❌ Error loading listing in PinnedAd:', err);
-                setError(err.message || 'Ошибка загрузки объявления');
+            } catch (error) {
+                console.error('Error loading listing:', error);
             } finally {
                 setLoading(false);
             }
@@ -50,7 +45,6 @@ export const PinnedAd: React.FC<PinnedAdProps> = ({ listingId, onPress }) => {
         return (
             <View style={[styles.container, styles.loadingContainer]}>
                 <ActivityIndicator size="small" color={COLORS.primary} />
-                <Text style={styles.loadingText}>Загрузка объявления...</Text>
             </View>
         );
     }
@@ -131,11 +125,6 @@ export const PinnedAd: React.FC<PinnedAdProps> = ({ listingId, onPress }) => {
             onPress={() => onPress?.(listingId)}
             activeOpacity={0.7}
         >
-            {/* Бейдж "Объявление" */}
-            <View style={styles.badge}>
-                <Text style={styles.badgeText}>Объявление</Text>
-            </View>
-
             <View style={styles.content}>
                 {/* Изображение */}
                 {firstPhoto ? (
@@ -166,12 +155,6 @@ export const PinnedAd: React.FC<PinnedAdProps> = ({ listingId, onPress }) => {
                     <Text style={styles.price}>
                         {formatPrice(listing.price || 0, listing.pricePeriod)}
                     </Text>
-
-                    {listing.description && (
-                        <Text style={styles.description} numberOfLines={1}>
-                            {listing.description}
-                        </Text>
-                    )}
                 </View>
 
                 {/* Стрелка */}

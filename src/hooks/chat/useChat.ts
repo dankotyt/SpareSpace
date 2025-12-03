@@ -1,6 +1,6 @@
 import {useCallback, useState} from 'react';
 import {chatApiService} from '@services/api/chatApi';
-import {Conversation, CreateConversationDto, GetConversationsDto, GetMessagesDto, Message} from '@types/chat';
+import {Conversation, CreateConversationDto, GetConversationsDto, GetMessagesDto, Message} from '@/types/chat';
 
 export const useChat = () => {
     const [conversations, setConversations] = useState<Conversation[]>([]);

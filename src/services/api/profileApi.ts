@@ -109,7 +109,44 @@ class ProfileApiService {
 
     async getUserListings(userId: number, currentUserId?: number): Promise<ListingsResponse> {
         try {
-            const listings = await listingApiService.getMyListings();
+            try {
+                const url = `${API_BASE_URL}/listings/user/${userId}`;
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const listings = data.listings || data || [];
+
+                    const formattedListings: FormattedListing[] = listings.map((listing: any) => ({
+                        ...listing,
+                        displayPrice: `${Math.round(listing.price).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ₽${
+                            listing.pricePeriod === 'HOUR' ? '/час' :
+                                listing.pricePeriod === 'DAY' ? '/день' :
+                                    listing.pricePeriod === 'WEEK' ? '/неделя' :
+                                        listing.pricePeriod === 'MONTH' ? '/месяц' : ''
+                        }`,
+                        displayType: listing.type === 'PARKING' ? 'Парковочное место' :
+                            listing.type === 'GARAGE' ? 'Гараж' :
+                                listing.type === 'STORAGE' ? 'Кладовая' : 'Другое',
+                        displayPriceShort: `${Math.round(listing.price).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ₽`
+                    }));
+
+                    return {
+                        success: true,
+                        data: formattedListings,
+                    };
+                }
+            } catch (publicError) {
+                console.log('Public endpoint failed, trying authenticated...');
+            }
+
+            const listings = await listingApiService.getListings();
 
             const userListings = listings.filter(listing => {
                 return listing.userId === userId;
@@ -146,36 +183,11 @@ class ProfileApiService {
 
         } catch (error) {
             console.error('❌ Error fetching user listings:', error);
-
-            try {
-                const response = await this.request<any>(`/listings/user/${userId}`);
-                const listings = response.listings || response || [];
-
-                const formattedListings: FormattedListing[] = listings.map((listing: any) => ({
-                    ...listing,
-                    displayPrice: `${Math.round(listing.price).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ₽${
-                        listing.pricePeriod === 'HOUR' ? '/час' :
-                            listing.pricePeriod === 'DAY' ? '/день' :
-                                listing.pricePeriod === 'WEEK' ? '/неделя' :
-                                    listing.pricePeriod === 'MONTH' ? '/месяц' : ''
-                    }`,
-                    displayType: listing.type === 'PARKING' ? 'Парковочное место' :
-                        listing.type === 'GARAGE' ? 'Гараж' :
-                            listing.type === 'STORAGE' ? 'Кладовая' : 'Другое',
-                    displayPriceShort: `${Math.round(listing.price).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ₽`
-                }));
-
-                return {
-                    success: true,
-                    data: formattedListings,
-                };
-            } catch (fallbackError) {
-                return {
-                    success: false,
-                    data: [],
-                    message: 'Не удалось загрузить объявления'
-                };
-            }
+            return {
+                success: false,
+                data: [],
+                message: 'Не удалось загрузить объявления'
+            };
         }
     }
 

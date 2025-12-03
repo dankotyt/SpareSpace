@@ -273,6 +273,20 @@ export const ChatScreen: React.FC = () => {
         return <MessageBubble message={item} isOwn={isOwn} />;
     };
 
+    useEffect(() => {
+        if (conversationData) {
+            console.log('📌 Conversation data loaded:', {
+                conversationId: conversationData.id,
+                listingId: conversationData.listingId,
+                hasListing: !!conversationData.listingId
+            });
+
+            if (conversationData.listingId) {
+                console.log('🔍 Will try to load listing with ID:', conversationData.listingId);
+            }
+        }
+    }, [conversationData]);
+
     const isLoading = messagesLoading || loadingConversation;
 
     if (isLoading && messages.length === 0) {
@@ -324,11 +338,15 @@ export const ChatScreen: React.FC = () => {
             </View>
 
             {/* Закрепленное объявление */}
-            {conversationData?.listingId && (
+            {conversationData?.listingId && conversationData.listingId > 0 ? (
                 <PinnedAd
                     listingId={conversationData.listingId}
                     onPress={handleAdPress}
                 />
+            ) : (
+                <View style={styles.noAdContainer}>
+                    <Text style={styles.noAdText}>Объявление не найдено</Text>
+                </View>
             )}
 
             {/* Список сообщений */}
@@ -447,5 +465,16 @@ const styles = StyleSheet.create({
     emptySubtext: {
         fontSize: 14,
         color: COLORS.gray[400],
+    },
+    noAdContainer: {
+        padding: 12,
+        marginHorizontal: 12,
+        backgroundColor: COLORS.gray[100],
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    noAdText: {
+        fontSize: 12,
+        color: COLORS.gray[500],
     },
 });

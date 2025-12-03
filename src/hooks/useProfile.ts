@@ -44,21 +44,6 @@ export const useProfile = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const checkAuthStatus = useCallback(async (): Promise<boolean> => {
-        try {
-            const token = await tokenService.getToken();
-            if (!token || token.trim() === '') {
-                return false;
-            }
-
-            const profileResponse = await authApiService.getProfile();
-            return profileResponse.success && !!profileResponse.data;
-        } catch (error) {
-            console.log('Auth check failed:', error);
-            return false;
-        }
-    }, []);
-
     const loadProfile = useCallback(async (forceLoad = false) => {
         if (!isAuthenticated && !forceLoad) {
             setUserProfile(null);
@@ -104,6 +89,11 @@ export const useProfile = () => {
             setRefreshing(false);
         }
     }, [isAuthenticated, currentUser]);
+
+    const updateUserProfile = useCallback((updatedProfile: FormattedUserProfile) => {
+        setUserProfile(updatedProfile);
+    }, []);
+
     const handleRefresh = useCallback(() => {
         setRefreshing(true);
         loadProfile(true);
@@ -150,5 +140,6 @@ export const useProfile = () => {
         handleRefresh,
         logout,
         loadProfile: () => loadProfile(true),
+        setUserProfile: updateUserProfile, // Добавлен экспорт
     };
 };

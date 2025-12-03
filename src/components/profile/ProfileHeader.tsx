@@ -1,15 +1,24 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import {FormattedUserProfile, UserProfile} from '@/types/profile';
+import { BackButton } from '@components/ui/BackButton';
+import { FormattedUserProfile } from '@/types/profile';
 import { COLORS } from '@/shared/constants/colors';
 
 interface ProfileHeaderProps {
     profile: FormattedUserProfile;
     onReviewsPress: () => void;
     canEdit: boolean;
+    isPublicProfile?: boolean;
+    onBackPress?: () => void;
 }
 
-export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile, onReviewsPress, canEdit }) => {
+export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
+                                                                profile,
+                                                                onReviewsPress,
+                                                                canEdit,
+                                                                isPublicProfile = false,
+                                                                onBackPress
+                                                            }) => {
     const getInitials = (name: string, surname: string, patronymic?: string) => {
         return `${name[0]}${surname[0]}`.toUpperCase();
     };
@@ -28,48 +37,77 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile, onReviews
 
     return (
         <View style={styles.container}>
-            <View style={styles.avatarContainer}>
-                <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>
-                        {getInitials(profile.firstName, profile.lastName, profile.patronymic)}
-                    </Text>
+            {/* Кнопка назад для публичного профиля */}
+            {isPublicProfile && onBackPress && (
+                <View style={styles.backButtonContainer}>
+                    <BackButton
+                        onPress={onBackPress}
+                        backgroundColor={COLORS.transparent}
+                    />
                 </View>
-                {profile.verified && (
-                    <View style={styles.verifiedBadge}>
-                        <Text style={styles.verifiedText}>✓</Text>
+            )}
+
+            <View style={[
+                styles.contentContainer,
+                isPublicProfile && styles.publicProfileContent
+            ]}>
+                <View style={styles.avatarContainer}>
+                    <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>
+                            {getInitials(profile.firstName, profile.lastName, profile.patronymic)}
+                        </Text>
                     </View>
-                )}
-            </View>
-
-            <Text style={styles.name}>
-                {profile.fullName}
-            </Text>
-
-            <Text style={styles.joinDate}>
-                Присоединился {formatJoinDate(profile.createdAt)}
-            </Text>
-
-            <Text style={styles.email}>{profile.email}</Text>
-            <Text style={styles.phone}>{profile.phone}</Text>
-
-            <TouchableOpacity onPress={onReviewsPress}>
-                <View style={styles.ratingContainer}>
-                    <Text style={styles.rating}>{safeRating.toFixed(1)}</Text>
-                    <Text style={styles.reviews}>({safeReviewsCount} отзывов)</Text>
+                    {profile.verified && (
+                        <View style={styles.verifiedBadge}>
+                            <Text style={styles.verifiedText}>✓</Text>
+                        </View>
+                    )}
                 </View>
-            </TouchableOpacity>
+
+                <Text style={styles.name}>
+                    {profile.fullName}
+                </Text>
+
+                <Text style={styles.joinDate}>
+                    Присоединился {formatJoinDate(profile.createdAt)}
+                </Text>
+
+                {profile.email && (
+                    <Text style={styles.email}>{profile.email}</Text>
+                )}
+
+                {profile.phone && (
+                    <Text style={styles.phone}>{profile.phone}</Text>
+                )}
+
+                <TouchableOpacity onPress={onReviewsPress}>
+                    <View style={styles.ratingContainer}>
+                        <Text style={styles.rating}>{safeRating.toFixed(1)}</Text>
+                        <Text style={styles.reviews}>({safeReviewsCount} отзывов)</Text>
+                    </View>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
-        alignItems: 'center',
-        paddingVertical: 24,
         backgroundColor: COLORS.white,
         borderBottomWidth: 1,
         borderBottomColor: COLORS.gray[200],
-        marginTop: 0,
+    },
+    backButtonContainer: {
+        paddingHorizontal: 16,
+        paddingTop: 16,
+        alignItems: 'flex-start',
+    },
+    contentContainer: {
+        alignItems: 'center',
+        paddingVertical: 24,
+    },
+    publicProfileContent: {
+        paddingTop: 0,
     },
     avatarContainer: {
         marginBottom: 16,

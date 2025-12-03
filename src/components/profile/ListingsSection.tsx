@@ -47,7 +47,7 @@ export const ListingsSection: React.FC<ListingsSectionProps> = ({
         <View style={styles.container}>
             <TouchableOpacity style={styles.header} onPress={onAllAdsPress}>
                 <View>
-                    <Text style={styles.sectionTitle}>Мои объявления</Text>
+                    <Text style={styles.sectionTitle}>Объявления</Text>
                     <Text style={styles.subtitle}>
                         {listings.length} объявлений
                     </Text>

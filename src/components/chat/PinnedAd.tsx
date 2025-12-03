@@ -24,19 +24,26 @@ export const PinnedAd: React.FC<PinnedAdProps> = ({ listingId, onPress }) => {
         const loadListing = async () => {
             try {
                 setLoading(true);
+                setError(null);
+
+                if (!listingId || listingId <= 0) {
+                    setError('Некорректный ID объявления');
+                    setLoading(false);
+                    return;
+                }
+
                 const data = await listingApiService.getListingById(listingId);
+                console.log('✅ PinnedAd loaded listing:', data);
                 setListing(data);
             } catch (err: any) {
-                setError(err.message);
-                console.error('❌ Error loading listing:', err);
+                console.error('❌ Error loading listing in PinnedAd:', err);
+                setError(err.message || 'Ошибка загрузки объявления');
             } finally {
                 setLoading(false);
             }
         };
 
-        if (listingId) {
-            loadListing();
-        }
+        loadListing();
     }, [listingId]);
 
     if (loading) {
@@ -49,6 +56,7 @@ export const PinnedAd: React.FC<PinnedAdProps> = ({ listingId, onPress }) => {
     }
 
     if (error || !listing) {
+        console.log('PinnedAd not rendered due to:', error || 'No listing');
         return null;
     }
 
@@ -63,10 +71,59 @@ export const PinnedAd: React.FC<PinnedAdProps> = ({ listingId, onPress }) => {
         return `${price.toLocaleString('ru-RU')} ₽/${periodText}`;
     };
 
-    const firstPhoto = listing.photosJson?.[0] ||
-        (typeof listing.photos === 'string'
-            ? JSON.parse(listing.photos)?.[0]
-            : null);
+    const getFirstPhoto = () => {
+        if (!listing) return null;
+
+        console.log('Listing photos structure:', {
+            photoUrls: listing.photoUrls,
+            photosJson: listing.photosJson,
+            photos: listing.photos,
+            images: listing.images
+        });
+
+        if (listing.photoUrls && Array.isArray(listing.photoUrls) && listing.photoUrls.length > 0) {
+            return listing.photoUrls[0];
+        }
+
+        if (listing.photosJson && Array.isArray(listing.photosJson) && listing.photosJson.length > 0) {
+            return listing.photosJson[0];
+        }
+
+        if (listing.photos) {
+            if (Array.isArray(listing.photos) && listing.photos.length > 0) {
+                return listing.photos[0];
+            }
+
+            if (typeof listing.photos === 'string') {
+                try {
+                    const parsedPhotos = JSON.parse(listing.photos);
+                    if (Array.isArray(parsedPhotos) && parsedPhotos.length > 0) {
+                        return parsedPhotos[0];
+                    }
+                } catch (e) {
+                    console.error('Error parsing photos string:', e);
+                }
+            }
+        }
+
+        if (listing.images && Array.isArray(listing.images) && listing.images.length > 0) {
+            return listing.images[0];
+        }
+
+        return null;
+    };
+
+    const firstPhoto = getFirstPhoto();
+    console.log('First photo URL:', firstPhoto);
+
+    const getListingType = () => {
+        switch (listing.type) {
+            case 'PARKING': return 'Парковочное место';
+            case 'GARAGE': return 'Гараж';
+            case 'STORAGE': return 'Кладовая';
+            default: return 'Объявление';
+        }
+    };
 
     return (
         <TouchableOpacity
@@ -81,27 +138,40 @@ export const PinnedAd: React.FC<PinnedAdProps> = ({ listingId, onPress }) => {
 
             <View style={styles.content}>
                 {/* Изображение */}
-                {firstPhoto && (
+                {firstPhoto ? (
                     <Image
                         source={{ uri: firstPhoto }}
                         style={styles.image}
                         resizeMode="cover"
+                        onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
                     />
+                ) : (
+                    <View style={[styles.image, styles.noImage]}>
+                        <Text style={styles.noImageText}>{getListingType()}</Text>
+                    </View>
                 )}
 
                 {/* Информация */}
                 <View style={styles.info}>
                     <Text style={styles.title} numberOfLines={2}>
-                        {listing.title}
+                        {listing.title || `${getListingType()} - ${listing.address || 'Без адреса'}`}
                     </Text>
+
                     {listing.address && (
-                        <Text style={styles.description} numberOfLines={1}>
-                            {listing.address}
+                        <Text style={styles.address} numberOfLines={1}>
+                            📍 {listing.address}
                         </Text>
                     )}
+
                     <Text style={styles.price}>
-                        {formatPrice(listing.price, listing.pricePeriod)}
+                        {formatPrice(listing.price || 0, listing.pricePeriod)}
                     </Text>
+
+                    {listing.description && (
+                        <Text style={styles.description} numberOfLines={1}>
+                            {listing.description}
+                        </Text>
+                    )}
                 </View>
 
                 {/* Стрелка */}
@@ -158,10 +228,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     image: {
-        width: 60,
-        height: 60,
+        width: 70,
+        height: 70,
         borderRadius: 8,
         marginRight: 12,
+    },
+    noImage: {
+        backgroundColor: COLORS.gray[100],
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: COLORS.gray[300],
+    },
+    noImageText: {
+        fontSize: 10,
+        color: COLORS.gray[600],
+        textAlign: 'center',
+        paddingHorizontal: 4,
+        fontWeight: '500',
     },
     info: {
         flex: 1,
@@ -174,7 +258,7 @@ const styles = StyleSheet.create({
         marginBottom: 4,
         lineHeight: 18,
     },
-    description: {
+    address: {
         fontSize: 12,
         color: COLORS.gray[600],
         marginBottom: 4,
@@ -183,6 +267,12 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '700',
         color: COLORS.primary,
+        marginBottom: 4,
+    },
+    description: {
+        fontSize: 11,
+        color: COLORS.gray[500],
+        fontStyle: 'italic',
     },
     arrow: {
         paddingLeft: 8,

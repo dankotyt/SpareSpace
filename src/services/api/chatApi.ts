@@ -47,18 +47,43 @@ class ChatApiService {
             offset: dto.offset.toString(),
         });
 
-        return await this.request(`/chat/conversations?${params}`);
+        const response = await this.request<{
+            conversations: any[];
+            total: number;
+            limit: number;
+            offset: number;
+        }>(`/chat/conversations?${params}`);
+
+        const conversations: Conversation[] = response.conversations.map(conv => ({
+            ...conv,
+            listingId: conv.listingId || conv.listing_id || null
+        }));
+
+        return {
+            ...response,
+            conversations
+        };
     }
 
     async getConversationById(conversationId: number): Promise<Conversation> {
-        return await this.request(`/chat/conversations/${conversationId}`);
+        const conversation = await this.request<any>(`/chat/conversations/${conversationId}`);
+
+        return {
+            ...conversation,
+            listingId: conversation.listingId || conversation.listing_id || null
+        };
     }
 
     async createConversation(dto: CreateConversationDto): Promise<Conversation> {
-        return await this.request('/chat/conversations', {
+        const conversation = await this.request<any>('/chat/conversations', {
             method: 'POST',
             body: JSON.stringify(dto),
         });
+
+        return {
+            ...conversation,
+            listingId: conversation.listingId || conversation.listing_id || null
+        };
     }
 
     async getMessages(

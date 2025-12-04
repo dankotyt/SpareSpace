@@ -12,8 +12,15 @@ export interface Conversation {
         lastName: string;
         avatar?: string;
     };
-    listingId?: number;
-    listingTitle?: string;
+    listing: {
+        id: number;
+        title: string;
+        address: string;
+        price: number;
+        pricePeriod: string;
+        firstPhotoUrl?: string;
+        type?: string;
+    };
     lastMessageAt: string;
     unreadCount?: number;
     lastMessage?: {

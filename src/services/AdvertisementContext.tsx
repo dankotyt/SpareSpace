@@ -13,8 +13,8 @@ interface AdvertisementContextType {
 const AdvertisementContext = createContext<AdvertisementContextType | undefined>(undefined);
 
 export const AdvertisementProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [ads, setAds] = useState<AdItem[]>([]); // ТОЛЬКО реальные данные
-    const [userAds, setUserAds] = useState<ListingResponse[]>([]); // ТОЛЬКО реальные данные
+    const [ads, setAds] = useState<AdItem[]>([]);
+    const [userAds, setUserAds] = useState<ListingResponse[]>([]);
     const [loading, setLoading] = useState(false);
 
     const getTypeText = (type: string): string => {

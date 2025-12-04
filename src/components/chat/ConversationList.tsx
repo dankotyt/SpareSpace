@@ -97,9 +97,9 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                         {item.lastMessage?.text || 'Нет сообщений'}
                     </Text>
 
-                    {item.listingTitle && (
+                    {item.listing && (
                         <Text style={styles.listingText} numberOfLines={1}>
-                            📍 {item.listingTitle}
+                            📍 {item.listing.title}
                         </Text>
                     )}
                 </View>

@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
 import { COLORS } from '@/shared/constants/colors';
 import { Listing } from "@/types/profile";
-import { formatListingForDisplay } from "@shared/utils/priceFormatter";
+import { formatListingForDisplay } from "@shared/utils/listingFormatter";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@navigation/types";
@@ -56,7 +56,6 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
     const handleFavoritePress = async () => {
         try {
             if (isFavorite) {
-                // Находим ID избранного элемента для удаления
                 const favorites = await favoritesService.loadFavorites();
                 const favoriteItem = favorites.find(
                     item => item.type === 'listing' && item.data.id === listing.id
@@ -120,7 +119,7 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
                     });
 
                     const existingConversation = response.conversations.find((conv: Conversation) =>
-                        conv.listingId === listing.id &&
+                        conv.listing?.id === listing.id &&
                         (conv.participant1.id === listing.userId || conv.participant2.id === listing.userId)
                     );
 
@@ -136,13 +135,10 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
                         conversation = existingConversation;
                     }
 
-                    console.log('✅ Existing conversation found:', conversation.id);
                 } else {
                     throw error;
                 }
             }
-
-            console.log('📝 Opening conversation with ID:', conversation.id);
 
             navigation.navigate('Chat', {
                 conversationId: conversation.id
@@ -251,7 +247,6 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
             };
         }
 
-        // Fallback на Москву если координат нет
         return {
             latitude: 55.7558,
             longitude: 37.6173,
@@ -288,25 +283,6 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         }
 
         return details.join(' • ');
-    };
-
-    const parseAvailability = (availability: any) => {
-        if (!availability) return [];
-
-        if (Array.isArray(availability)) {
-            return availability;
-        }
-
-        if (typeof availability === 'string') {
-            try {
-                const parsed = JSON.parse(availability);
-                return Array.isArray(parsed) ? parsed : [];
-            } catch {
-                return [];
-            }
-        }
-
-        return [];
     };
 
     const availability = Array.isArray(listing.availability) ? listing.availability : [];

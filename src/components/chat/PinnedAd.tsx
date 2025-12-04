@@ -1,117 +1,50 @@
-import React, { useState, useEffect } from 'react';
-import {
-    View,
-    Text,
-    Image,
-    TouchableOpacity,
-    StyleSheet,
-    ActivityIndicator
-} from 'react-native';
-import { COLORS } from '@/shared/constants/colors';
-import { listingApiService } from '@/services/api/listingApi';
+import React from 'react';
+import {Image, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
+import {COLORS} from '@/shared/constants/colors';
+import {formatPriceWithCurrency} from "@shared/utils/listingFormatter";
 
 interface PinnedAdProps {
-    listingId: number;
+    listingData: any;
     onPress?: (listingId: number) => void;
 }
 
-export const PinnedAd: React.FC<PinnedAdProps> = ({ listingId, onPress }) => {
-    const [listing, setListing] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+export const PinnedAd: React.FC<PinnedAdProps> = ({ listingData, onPress }) => {
 
-    useEffect(() => {
-        const loadListing = async () => {
-            if (!listingId) {
-                setLoading(false);
-                return;
-            }
-
-            try {
-                setLoading(true);
-                const data = await listingApiService.getListingById(listingId);
-                setListing(data);
-            } catch (error) {
-                console.error('Error loading listing:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadListing();
-    }, [listingId]);
-
-    if (loading) {
-        return (
-            <View style={[styles.container, styles.loadingContainer]}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-            </View>
-        );
-    }
-
-    if (error || !listing) {
-        console.log('PinnedAd not rendered due to:', error || 'No listing');
+    if (!listingData) {
         return null;
     }
 
-    const formatPrice = (price: number, period?: string) => {
-        const periodText = {
+    const getPeriodText = (period?: string) => {
+        return {
             'HOUR': 'час',
             'DAY': 'день',
             'WEEK': 'неделя',
             'MONTH': 'месяц'
         }[period || 'DAY'] || 'день';
-
-        return `${price.toLocaleString('ru-RU')} ₽/${periodText}`;
     };
 
     const getFirstPhoto = () => {
-        if (!listing) return null;
+        if (!listingData) return null;
 
-        console.log('Listing photos structure:', {
-            photoUrls: listing.photoUrls,
-            photosJson: listing.photosJson,
-            photos: listing.photos,
-            images: listing.images
-        });
+        const possibleSources = [
+            listingData.firstPhotoUrl,
+            ...(Array.isArray(listingData.photoUrls) ? listingData.photoUrls : []),
+            ...(Array.isArray(listingData.photosJson) ? listingData.photosJson : []),
+            ...(Array.isArray(listingData.photos) ? listingData.photos : []),
+            ...(Array.isArray(listingData.images) ? listingData.images : []),
+        ];
 
-        if (listing.photoUrls && Array.isArray(listing.photoUrls) && listing.photoUrls.length > 0) {
-            return listing.photoUrls[0];
-        }
+        const validPhoto = possibleSources.find(source =>
+            source && typeof source === 'string' && source.trim() !== ''
+        );
 
-        if (listing.photosJson && Array.isArray(listing.photosJson) && listing.photosJson.length > 0) {
-            return listing.photosJson[0];
-        }
-
-        if (listing.photos) {
-            if (Array.isArray(listing.photos) && listing.photos.length > 0) {
-                return listing.photos[0];
-            }
-
-            if (typeof listing.photos === 'string') {
-                try {
-                    const parsedPhotos = JSON.parse(listing.photos);
-                    if (Array.isArray(parsedPhotos) && parsedPhotos.length > 0) {
-                        return parsedPhotos[0];
-                    }
-                } catch (e) {
-                    console.error('Error parsing photos string:', e);
-                }
-            }
-        }
-
-        if (listing.images && Array.isArray(listing.images) && listing.images.length > 0) {
-            return listing.images[0];
-        }
-
-        return null;
+        return validPhoto || null;
     };
 
     const firstPhoto = getFirstPhoto();
-    console.log('First photo URL:', firstPhoto);
 
     const getListingType = () => {
-        switch (listing.type) {
+        switch (listingData.type) {
             case 'PARKING': return 'Парковочное место';
             case 'GARAGE': return 'Гараж';
             case 'STORAGE': return 'Кладовая';
@@ -122,7 +55,7 @@ export const PinnedAd: React.FC<PinnedAdProps> = ({ listingId, onPress }) => {
     return (
         <TouchableOpacity
             style={styles.container}
-            onPress={() => onPress?.(listingId)}
+            onPress={() => onPress?.(listingData.id)}
             activeOpacity={0.7}
         >
             <View style={styles.content}>
@@ -143,17 +76,17 @@ export const PinnedAd: React.FC<PinnedAdProps> = ({ listingId, onPress }) => {
                 {/* Информация */}
                 <View style={styles.info}>
                     <Text style={styles.title} numberOfLines={2}>
-                        {listing.title || `${getListingType()} - ${listing.address || 'Без адреса'}`}
+                        {listingData.title || `${getListingType()} - ${listingData.address || 'Без адреса'}`}
                     </Text>
 
-                    {listing.address && (
+                    {listingData.address && (
                         <Text style={styles.address} numberOfLines={1}>
-                            📍 {listing.address}
+                            📍 {listingData.address}
                         </Text>
                     )}
 
                     <Text style={styles.price}>
-                        {formatPrice(listing.price || 0, listing.pricePeriod)}
+                        {formatPriceWithCurrency(listingData.price || 0, '₽')}/{getPeriodText(listingData.pricePeriod)}
                     </Text>
                 </View>
 

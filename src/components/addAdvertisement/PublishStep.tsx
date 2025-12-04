@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { formatPrice } from '@/shared/utils/priceFormatter';
+import { formatPrice } from '@shared/utils/listingFormatter';
 import { COLORS } from '@/shared/constants/colors';
 
 interface PublishStepProps {

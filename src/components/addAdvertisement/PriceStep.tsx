@@ -3,7 +3,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Modal } from 'react-native';
 import { COLORS } from '@/shared/constants/colors';
 import { Ionicons } from '@expo/vector-icons';
-import { formatPrice } from '@/shared/utils/priceFormatter';
+import { formatPrice } from '@shared/utils/listingFormatter';
 
 interface PriceStepProps {
     price: {

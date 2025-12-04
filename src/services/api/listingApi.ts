@@ -2,7 +2,7 @@ import {tokenService} from '@/services/tokenService';
 import {API_BASE_URL} from '@/config/env';
 import {Listing} from "@/types/profile";
 import {authApiService} from "@services/api/authApi";
-import {formatListingForDisplay} from '@/shared/utils/priceFormatter';
+import {formatListingForDisplay} from '@shared/utils/listingFormatter';
 
 export interface CreateListingRequest {
     type: string;

@@ -7,7 +7,6 @@ import {
     ActivityIndicator,
     Alert,
     TouchableOpacity,
-    Image
 } from 'react-native';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { MessageBubble } from '@/components/chat/MessageBubble';
@@ -17,7 +16,6 @@ import { COLORS } from '@/shared/constants/colors';
 import { Message, Conversation } from '@/types/chat';
 import { socketService } from '@/services/socketService';
 import { chatApiService } from '@/services/api/chatApi';
-import { listingApiService } from '@/services/api/listingApi';
 import { profileApiService } from '@/services/api/profileApi';
 import { RootStackParamList } from '@/navigation/types';
 import {useChat} from "@hooks/chat/useChat";
@@ -44,10 +42,9 @@ export const ChatScreen: React.FC = () => {
 
     const [sending, setSending] = useState(false);
     const [wsConnected, setWsConnected] = useState(false);
-    const [conversationData, setConversationData] = useState<Conversation | null>(null);
+    const [conversationData, setConversationData] = useState<Conversation>();
     const [loadingConversation, setLoadingConversation] = useState(true);
     const [participantData, setParticipantData] = useState<any>(null);
-    const [listingData, setListingData] = useState<any>(null);
 
     const flatListRef = useRef<FlatList>(null);
     const cleanupRef = useRef<(() => void) | null>(null);
@@ -70,15 +67,6 @@ export const ChatScreen: React.FC = () => {
                     setParticipantData(participant);
                 } catch (error) {
                     console.error('Error loading participant data:', error);
-                }
-            }
-
-            if (data.listingId) {
-                try {
-                    const listing = await listingApiService.getListingById(data.listingId);
-                    setListingData(listing);
-                } catch (error) {
-                    console.error('Error loading listing data:', error);
                 }
             }
 
@@ -244,9 +232,9 @@ export const ChatScreen: React.FC = () => {
     };
 
     const handleAdPress = () => {
-        if (conversationData?.listingId) {
+        if (conversationData?.listing) {
             navigation.navigate('Advertisement', {
-                listingId: conversationData.listingId
+                listingId: conversationData.listing.id
             });
         }
     };
@@ -272,20 +260,6 @@ export const ChatScreen: React.FC = () => {
         const isOwn = item.sender.id === user?.id;
         return <MessageBubble message={item} isOwn={isOwn} />;
     };
-
-    useEffect(() => {
-        if (conversationData) {
-            console.log('📌 Conversation data loaded:', {
-                conversationId: conversationData.id,
-                listingId: conversationData.listingId,
-                hasListing: !!conversationData.listingId
-            });
-
-            if (conversationData.listingId) {
-                console.log('🔍 Will try to load listing with ID:', conversationData.listingId);
-            }
-        }
-    }, [conversationData]);
 
     const isLoading = messagesLoading || loadingConversation;
 
@@ -338,9 +312,9 @@ export const ChatScreen: React.FC = () => {
             </View>
 
             {/* Закрепленное объявление */}
-            {conversationData?.listingId ? (
+            {conversationData!.listing ? (
                 <PinnedAd
-                    listingId={conversationData.listingId}
+                    listingData={conversationData!.listing}
                     onPress={handleAdPress}
                 />
             ) : (
@@ -357,7 +331,7 @@ export const ChatScreen: React.FC = () => {
                 keyExtractor={(item) => `${item.id}-${item.sentAt}`}
                 contentContainerStyle={[
                     styles.messagesList,
-                    { paddingTop: conversationData?.listingId ? 0 : 8 }
+                    { paddingTop: conversationData?.listing ? 0 : 8 }
                 ]}
                 showsVerticalScrollIndicator={false}
                 onContentSizeChange={() => flatListRef.current?.scrollToEnd()}

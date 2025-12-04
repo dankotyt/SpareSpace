@@ -13,7 +13,7 @@ import {useNavigation, useRoute} from "@react-navigation/native";
 import {StackNavigationProp} from "@react-navigation/stack";
 import {RootStackParamList} from "@/navigation/types";
 import { useAdvertisement } from '@/services/AdvertisementContext';
-import { formatPrice } from '@/shared/utils/priceFormatter';
+import { formatPrice } from '@shared/utils/listingFormatter';
 import { useListing } from '@/hooks/useListing';
 import {useProfile} from "@hooks/useProfile";
 

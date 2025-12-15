@@ -97,10 +97,9 @@ class ChatApiService {
         return await this.request(`/chat/conversations/${conversationId}/messages?${params}`);
     }
 
-    async sendMessage(conversationId: number, text: string): Promise<Message> {
-        return await this.request(`/chat/conversations/${conversationId}/messages`, {
-            method: 'POST',
-            body: JSON.stringify({ text }),
+    async deleteConversation(conversationId: number): Promise<void> {
+        await this.request(`/chat/conversations/${conversationId}/delete`, {
+            method: 'DELETE',
         });
     }
 }

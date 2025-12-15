@@ -13,6 +13,9 @@ import {AdvertisementScreen} from "@screens/addAdvertisement/AdvertisementScreen
 import { ChatScreen } from '@/screens/chat/ChatScreen';
 import SearchScreen from "@screens/main/SearchScreen";
 import { FavoritesScreen } from '@/screens/favorites/FavoritesScreen';
+import {BookingsScreen} from "@screens/bookings/BookingsScreen";
+import { BookingDetailsScreen } from '@/screens/bookings/BookingDetailsScreen';
+import {LandlordBookingsScreen} from "@screens/bookings/LandlordBookingsScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -41,6 +44,21 @@ export const AppNavigator: React.FC = () => {
                 name="Advertisement"
                 component={AdvertisementScreen}
                 options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="Bookings"
+                component={BookingsScreen}
+                options={{ title: 'Мои бронирования' }}
+            />
+            <Stack.Screen
+                name="BookingDetails"
+                component={BookingDetailsScreen}
+                options={{ title: 'Детали бронирования' }}
+            />
+            <Stack.Screen
+                name="LandlordBookings"
+                component={LandlordBookingsScreen}
+                options={{ title: 'Заявки на бронирование' }}
             />
             <Stack.Screen
                 name="SearchScreen"

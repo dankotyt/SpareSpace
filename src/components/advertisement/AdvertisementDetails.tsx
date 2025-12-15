@@ -6,13 +6,13 @@ import {
     ScrollView,
     TouchableOpacity,
     Dimensions,
-    Alert,
+    Alert, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
 import { COLORS } from '@/shared/constants/colors';
 import { Listing } from "@/types/profile";
-import { formatListingForDisplay } from "@shared/utils/listingFormatter";
+import {formatListingForDisplay, formatNumberWithSpaces} from "@shared/utils/listingFormatter";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "@navigation/types";
@@ -20,6 +20,10 @@ import { useAuth } from '@hooks/auth/useAuth';
 import { useChat } from '@hooks/chat/useChat';
 import { favoritesService } from '@services/favoritesService';
 import {Conversation} from "@/types/chat";
+import { DateRangePicker } from '@/components/ui/DateRangePicker';
+import { bookingsService, CreateBookingDto } from '@services/bookingsService';
+import {listingApiService} from "@services/api/listingApi";
+import {bookingsApiService} from "@services/api/bookingsApi";
 
 interface AdvertisementDetailsProps {
     listing: Listing;
@@ -41,12 +45,47 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
     const { createConversation } = useChat();
     const [isFavorite, setIsFavorite] = useState(false);
     const [isCreatingChat, setIsCreatingChat] = useState(false);
+    const [showBookingModal, setShowBookingModal] = useState(false);
+    const [bookingDates, setBookingDates] = useState<{start: Date | null, end: Date | null}>({ start: null, end: null });
+    const [isBooking, setIsBooking] = useState(false);
+    const [availableSlots, setAvailableSlots] = useState<Array<{start: string, end: string}>>([]);
+    const [existingBookings, setExistingBookings] = useState<any[]>([]);
+    const [loadingBookings, setLoadingBookings] = useState(false);
     const formattedListing = formatListingForDisplay(listing);
     const { fetchConversations } = useChat();
 
     useEffect(() => {
         checkFavoriteStatus();
     }, [listing.id]);
+
+    useEffect(() => {
+        if (showBookingModal) {
+            loadExistingBookings();
+        }
+    }, [showBookingModal]);
+
+    const loadExistingBookings = async () => {
+        try {
+            setLoadingBookings(true);
+            const response = await bookingsApiService.findAll({
+                limit: 100,
+                offset: 0
+            });
+            const activeBookings = response.bookings.filter(booking =>
+                booking.status === 'PENDING' || booking.status === 'CONFIRMED'
+            );
+
+            console.log('📦 Активные бронирования:', activeBookings);
+            setExistingBookings(activeBookings);
+
+        } catch (error) {
+            console.error('❌ Ошибка при загрузке бронирований:', error);
+            Alert.alert('Ошибка', 'Не удалось проверить доступность дат');
+            setExistingBookings([]);
+        } finally {
+            setLoadingBookings(false);
+        }
+    };
 
     const checkFavoriteStatus = async () => {
         const favorite = await favoritesService.isListingFavorite(listing.id);
@@ -156,6 +195,140 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         }
     };
 
+    const handleBookPress = async () => {
+        if (!isAuthenticated) {
+            Alert.alert(
+                'Необходима авторизация',
+                'Чтобы забронировать объект, войдите в аккаунт',
+                [
+                    { text: 'Отмена', style: 'cancel' },
+                    { text: 'Войти', onPress: () => navigation.navigate('EmailAuth') }
+                ]
+            );
+            return;
+        }
+
+        if (user?.id === listing.userId) {
+            Alert.alert('Невозможно забронировать', 'Вы не можете забронировать свой собственный объект');
+            return;
+        }
+
+        try {
+            // Загружаем доступные слоты
+            if (listing.availability && Array.isArray(listing.availability)) {
+                setAvailableSlots(listing.availability);
+            } else {
+                // Или получаем из API
+                const listingDetails = await listingApiService.getListingById(listing.id);
+                if (listingDetails.availability) {
+                    setAvailableSlots(Array.isArray(listingDetails.availability) ? listingDetails.availability : []);
+                }
+            }
+
+            setShowBookingModal(true);
+        } catch (error) {
+            console.error('Error loading availability:', error);
+            setShowBookingModal(true);
+        }
+    };
+
+    const handleDateRangeSelected = (start: Date, end: Date) => {
+        setBookingDates({ start, end });
+    };
+
+    const confirmBooking = async () => {
+        if (!bookingDates.start || !bookingDates.end) {
+            Alert.alert('Ошибка', 'Пожалуйста, выберите даты бронирования');
+            return;
+        }
+
+        if (bookingDates.end <= bookingDates.start) {
+            Alert.alert('Ошибка', 'Дата окончания должна быть позже даты начала');
+            return;
+        }
+
+        const today = new Date();
+        if (bookingDates.start < today) {
+            Alert.alert('Ошибка', 'Нельзя забронировать объект на прошедшую дату');
+            return;
+        }
+
+        // Проверяем, не забронированы ли выбранные даты
+        if (isRangeBooked(bookingDates.start, bookingDates.end)) {
+            Alert.alert('Ошибка', 'Выбранные даты уже забронированы другим пользователем');
+            return;
+        }
+
+        setIsBooking(true);
+        try {
+            const bookingData = {
+                listingId: listing.id,
+                period: {
+                    start: bookingDates.start.toISOString(),
+                    end: bookingDates.end.toISOString(),
+                }
+            };
+
+            await bookingsApiService.create(bookingData);
+
+            Alert.alert(
+                'Успешно!',
+                'Объект успешно забронирован. Вы можете увидеть свои бронирования в разделе "Мои бронирования".',
+                [
+                    {
+                        text: 'ОК',
+                        onPress: () => {
+                            setShowBookingModal(false);
+                            setBookingDates({ start: null, end: null });
+                            loadExistingBookings();
+                        }
+                    }
+                ]
+            );
+
+        } catch (error: any) {
+            console.error('❌ Ошибка при бронировании:', error);
+
+            let errorMessage = 'Не удалось создать бронирование';
+            if (error.message?.includes('недоступен') || error.message?.includes('Conflict')) {
+                errorMessage = 'Объект уже забронирован на выбранные даты. Пожалуйста, выберите другие даты.';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+
+            Alert.alert('Ошибка', errorMessage);
+        } finally {
+            setIsBooking(false);
+        }
+    };
+
+    const calculateTotalPrice = () => {
+        if (!bookingDates.start || !bookingDates.end || !listing.price) return '0';
+
+        const durationMs = bookingDates.end.getTime() - bookingDates.start.getTime();
+        let duration;
+
+        switch (listing.pricePeriod) {
+            case 'HOUR':
+                duration = Math.ceil(durationMs / (1000 * 60 * 60));
+                break;
+            case 'DAY':
+                duration = Math.ceil(durationMs / (1000 * 60 * 60 * 24));
+                break;
+            case 'WEEK':
+                duration = Math.ceil(durationMs / (1000 * 60 * 60 * 24 * 7));
+                break;
+            case 'MONTH':
+                duration = Math.ceil(durationMs / (1000 * 60 * 60 * 24 * 30));
+                break;
+            default:
+                duration = Math.ceil(durationMs / (1000 * 60 * 60 * 24));
+        }
+
+        const totalPrice = (listing.price * duration);
+        return formatNumberWithSpaces(totalPrice);
+    };
+
     const getTypeLabel = () => {
         switch (listing.type) {
             case 'PARKING': return 'Парковочное место';
@@ -212,6 +385,36 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         };
 
         return amenityLabels[amenity] || amenity;
+    };
+
+    const isDateBooked = (date: Date): boolean => {
+        if (existingBookings.length === 0) return false;
+
+        const dateStr = date.toISOString().split('T')[0]; // Получаем только дату
+
+        return existingBookings.some(booking => {
+            const bookingStart = new Date(booking.startDate);
+            const bookingEnd = new Date(booking.endDate);
+
+            // Сбрасываем время для сравнения только дат
+            bookingStart.setHours(0, 0, 0, 0);
+            bookingEnd.setHours(0, 0, 0, 0);
+
+            return date >= bookingStart && date <= bookingEnd;
+        });
+    };
+
+    const isRangeBooked = (start: Date, end: Date): boolean => {
+        if (existingBookings.length === 0) return false;
+
+        // Проверяем каждую дату в диапазоне
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            if (isDateBooked(new Date(d))) {
+                return true;
+            }
+        }
+
+        return false;
     };
 
     const parseLocation = (location: any) => {
@@ -285,9 +488,20 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         return details.join(' • ');
     };
 
+    const getPricePeriodText = () => {
+        switch (listing.pricePeriod) {
+            case 'HOUR': return 'час';
+            case 'DAY': return 'день';
+            case 'WEEK': return 'неделю';
+            case 'MONTH': return 'месяц';
+            default: return 'период';
+        }
+    };
+
     const availability = Array.isArray(listing.availability) ? listing.availability : [];
 
     return (
+        <>
         <ScrollView
             style={styles.container}
             showsVerticalScrollIndicator={false}
@@ -405,7 +619,25 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
                 </View>
             </View>
 
-            {/* Кнопки действий */}
+            {/* Кнопка бронирования */}
+            <View style={styles.bookingButtonContainer}>
+                <TouchableOpacity
+                    style={styles.bookButton}
+                    onPress={handleBookPress}
+                >
+                    <Ionicons
+                        name="calendar-outline"
+                        size={20}
+                        color={COLORS.white}
+                        style={styles.buttonIcon}
+                    />
+                    <Text style={styles.bookButtonText}>
+                        Забронировать
+                    </Text>
+                </TouchableOpacity>
+            </View>
+
+            {/* Кнопка чата и вызова */}
             <View style={styles.actionsContainer}>
                 <TouchableOpacity
                     style={[styles.actionButton, styles.chatButton]}
@@ -437,6 +669,117 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
                 </TouchableOpacity>
             </View>
         </ScrollView>
+            {/* Модальное окно бронирования */}
+            <Modal
+                visible={showBookingModal}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => {
+                    setShowBookingModal(false);
+                    setBookingDates({ start: null, end: null });
+                }}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Бронирование объекта</Text>
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setShowBookingModal(false);
+                                    setBookingDates({ start: null, end: null });
+                                }}
+                                disabled={isBooking}
+                            >
+                                <Ionicons name="close" size={24} color={COLORS.text} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView style={styles.bookingContent}>
+                            <Text style={styles.bookingSectionTitle}>Выберите период бронирования</Text>
+
+                            <DateRangePicker
+                                onDateRangeSelected={handleDateRangeSelected}
+                                minDate={new Date()}
+                                availableDates={availableSlots}
+                                bookedDates={existingBookings.map(booking => ({
+                                    start: booking.startDate,
+                                    end: booking.endDate
+                                }))}
+                            />
+
+                            {bookingDates.start && bookingDates.end && (
+                                <View style={styles.bookingSummary}>
+                                    <Text style={styles.summaryTitle}>Детали бронирования:</Text>
+
+                                    <View style={styles.summaryRow}>
+                                        <Text style={styles.summaryLabel}>Объект:</Text>
+                                        <Text style={styles.summaryValue}>{getTypeLabel()}</Text>
+                                    </View>
+
+                                    <View style={styles.summaryRow}>
+                                        <Text style={styles.summaryLabel}>Адрес:</Text>
+                                        <Text style={styles.summaryValue}>{listing.address}</Text>
+                                    </View>
+
+                                    <View style={styles.summaryRow}>
+                                        <Text style={styles.summaryLabel}>Период:</Text>
+                                        <Text style={styles.summaryValue}>
+                                            {bookingDates.start.toLocaleDateString('ru-RU')} - {bookingDates.end.toLocaleDateString('ru-RU')}
+                                        </Text>
+                                    </View>
+
+                                    <View style={styles.summaryRow}>
+                                        <Text style={styles.summaryLabel}>Цена за {getPricePeriodText()}:</Text>
+                                        <Text style={styles.summaryValue}>
+                                            {formatNumberWithSpaces(listing.price)} руб.
+                                        </Text>
+                                    </View>
+
+                                    <View style={styles.summaryRow}>
+                                        <Text style={styles.summaryLabel}>Итоговая цена:</Text>
+                                        <Text style={styles.totalPrice}>{calculateTotalPrice()} руб.</Text>
+                                    </View>
+                                </View>
+                            )}
+
+                            <View style={styles.bookingNotice}>
+                                <Ionicons name="information-circle-outline" size={20} color={COLORS.primary} />
+                                <Text style={styles.bookingNoticeText}>
+                                    После подтверждения бронирования владелец объекта получит уведомление и подтвердит вашу заявку.
+                                </Text>
+                            </View>
+                        </ScrollView>
+
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity
+                                style={[styles.modalActionButton, styles.cancelButton]}
+                                onPress={() => {
+                                    setShowBookingModal(false);
+                                    setBookingDates({ start: null, end: null });
+                                }}
+                                disabled={isBooking}
+                            >
+                                <Text style={styles.cancelButtonText}>Отмена</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[
+                                    styles.modalActionButton,
+                                    styles.confirmButton,
+                                    (!bookingDates.start || !bookingDates.end) && styles.confirmButtonDisabled
+                                ]}
+                                onPress={confirmBooking}
+                                disabled={!bookingDates.start || !bookingDates.end || isBooking}
+                            >
+                                <Text style={styles.confirmButtonText}>
+                                    {isBooking ? 'Бронирование...' : 'Подтвердить бронирование'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+    </>
     );
 };
 
@@ -596,5 +939,148 @@ const styles = StyleSheet.create({
         color: COLORS.primary,
         fontSize: 16,
         fontWeight: '600',
+    },
+    bookingButtonContainer: {
+        marginHorizontal: 16,
+        marginBottom: 10,
+    },
+    bookButton: {
+        backgroundColor: COLORS.green[500],
+        borderColor: COLORS.green[500],
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 16,
+        borderRadius: 12,
+        borderWidth: 2,
+    },
+    bookButtonText: {
+        color: COLORS.white,
+        fontSize: 16,
+        fontWeight: '600',
+    },
+
+    // Стили для модального окна бронирования
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalContent: {
+        backgroundColor: COLORS.white,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        maxHeight: '90%',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.gray[200],
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: COLORS.text,
+    },
+    bookingContent: {
+        padding: 20,
+        maxHeight: 500,
+    },
+    bookingSectionTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: COLORS.text,
+        marginBottom: 16,
+    },
+    bookingSummary: {
+        backgroundColor: COLORS.gray[100],
+        padding: 16,
+        borderRadius: 12,
+        marginTop: 20,
+        marginBottom: 20,
+    },
+    summaryTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: COLORS.text,
+        marginBottom: 12,
+    },
+    summaryRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    summaryLabel: {
+        fontSize: 14,
+        color: COLORS.gray[600],
+        flex: 1,
+    },
+    summaryValue: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: COLORS.text,
+        flex: 1,
+        textAlign: 'right',
+    },
+    totalPrice: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: COLORS.primary,
+        textAlign: 'right',
+    },
+    bookingNotice: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        backgroundColor: COLORS.primaryLight,
+        padding: 12,
+        borderRadius: 8,
+        marginTop: 20,
+        gap: 8,
+    },
+    bookingNoticeText: {
+        fontSize: 12,
+        color: COLORS.primary,
+        flex: 1,
+        lineHeight: 16,
+    },
+    modalActions: {
+        flexDirection: 'row',
+        padding: 20,
+        borderTopWidth: 1,
+        borderTopColor: COLORS.gray[200],
+        gap: 12,
+    },
+    modalActionButton: {
+        flex: 1,
+        paddingVertical: 16,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+    },
+    cancelButton: {
+        backgroundColor: COLORS.gray[200],
+    },
+    cancelButtonText: {
+        color: COLORS.gray[700],
+        fontSize: 16,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    confirmButton: {
+        backgroundColor: COLORS.primary,
+    },
+    confirmButtonDisabled: {
+        backgroundColor: COLORS.gray[300],
+    },
+    confirmButtonText: {
+        color: COLORS.white,
+        fontSize: 16,
+        fontWeight: '600',
+        textAlign: 'center',
     },
 });

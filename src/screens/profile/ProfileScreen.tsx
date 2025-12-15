@@ -27,6 +27,7 @@ import { useAuth } from '@hooks/auth/useAuth';
 import { useProfile } from '@hooks/useProfile';
 import { profileApiService } from '@/services/api/profileApi';
 import { FormattedUserProfile, UserProfile } from '@/types/profile';
+import {LandlordBookingsSection} from "@components/profile/LandlordBookingsSection";
 
 type ProfileScreenRouteProp = RouteProp<RootStackParamList, 'Profile'>;
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
@@ -50,9 +51,8 @@ export const ProfileScreen: React.FC = () => {
     const [publicListings, setPublicListings] = useState<any[]>([]);
     const [isLoadingProfile, setIsLoadingProfile] = useState(false);
     const [profileError, setProfileError] = useState<string | null>(null);
-
     const { userId } = route.params || {};
-
+    const [isLandlord, setIsLandlord] = useState(false);
     // Определяем, чей профиль мы смотрим
     const isViewingOwnProfile = !userId || (currentUser && userId === currentUser.id);
     const targetUserId = userId || currentUser?.id;
@@ -66,7 +66,27 @@ export const ProfileScreen: React.FC = () => {
 
     // Проверяем права доступа - только по ID
     const canViewPrivateInfo = isOwner(currentUser?.id, targetUserId);
-    const canEditProfile = isOwner(currentUser?.id, targetUserId);
+
+    const safeListings = Array.isArray(displayProfile?.listings) ? displayProfile.listings : [];
+    const safeBookings = Array.isArray(displayProfile?.bookings) ? displayProfile.bookings : [];
+    const safeBalance = displayProfile?.balance || 0;
+
+    const filteredListings = safeListings.filter(listing =>
+        isViewingOwnProfile || listing.status === 'ACTIVE'
+    );
+
+    useEffect(() => {
+        if (isViewingOwnProfile && ownProfile) {
+            loadOwnProfileAdditionalData();
+            checkIfUserIsLandlord();
+        }
+    }, [isViewingOwnProfile, ownProfile, filteredListings]);
+
+    const checkIfUserIsLandlord = () => {
+        // Просто проверяем, есть ли активные объявления
+        const hasActiveListings = filteredListings.length > 0;
+        setIsLandlord(hasActiveListings);
+    };
 
     const loadUserReviews = async (userId: number) => {
         try {
@@ -199,12 +219,20 @@ export const ProfileScreen: React.FC = () => {
     }, []);
 
     const handleAllBookingsPress = useCallback(() => {
-        Alert.alert('Мои бронирования', 'Открытие экрана со всеми бронированиями');
-    }, []);
+        navigation.navigate('Bookings');
+    }, [navigation]);
 
     const handleBookingPress = useCallback((booking: any) => {
-        Alert.alert('Бронирование', `Открытие ${booking.title}`);
-    }, []);
+        navigation.navigate('BookingDetails', { bookingId: booking.id });
+    }, [navigation]);
+
+    const handlePendingBookingsPress = useCallback(() => {
+        navigation.navigate('LandlordBookings');
+    }, [navigation]);
+
+    const handleAllLandlordBookingsPress = useCallback(() => {
+        navigation.navigate('LandlordBookings');
+    }, [navigation]);
 
     const handleLoginPress = useCallback(() => {
         navigation.navigate('PhoneAuth');
@@ -238,14 +266,6 @@ export const ProfileScreen: React.FC = () => {
         totalReviews: 0,
         averageRating: 0
     };
-
-    const safeListings = Array.isArray(displayProfile?.listings) ? displayProfile.listings : [];
-    const safeBookings = Array.isArray(displayProfile?.bookings) ? displayProfile.bookings : [];
-    const safeBalance = displayProfile?.balance || 0;
-
-    const filteredListings = safeListings.filter(listing =>
-        isViewingOwnProfile || listing.status === 'ACTIVE'
-    );
 
     const handleBackPress = useCallback(() => {
         navigation.goBack();
@@ -354,12 +374,21 @@ export const ProfileScreen: React.FC = () => {
                 {/* Показываем приватные секции только владельцу */}
                 {canViewPrivateInfo && (
                     <>
-                        {safeBookings.length > 0 && (
-                            <BookingsSection
-                                bookings={safeBookings}
+                        <BookingsSection
+                            userId={targetUserId!}
+                            stats={safeStats}
+                            onAllBookingsPress={handleAllBookingsPress}
+                            onBookingPress={handleBookingPress}
+                        />
+
+                        {/* Бронирования объектов (где пользователь - арендодатель) */}
+                        {isLandlord && (
+                            <LandlordBookingsSection
+                                userId={targetUserId!}
                                 stats={safeStats}
-                                onAllBookingsPress={handleAllBookingsPress}
+                                onAllBookingsPress={handleAllLandlordBookingsPress}
                                 onBookingPress={handleBookingPress}
+                                onPendingBookingsPress={handlePendingBookingsPress}
                             />
                         )}
 

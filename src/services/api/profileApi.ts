@@ -1,7 +1,8 @@
-import {UserProfile, Booking, UserStats, Listing, Review, FormattedListing} from '@/types/profile';
+import {UserProfile, UserStats, Listing, Review, FormattedListing} from '@/types/profile';
 import {tokenService} from "@services/tokenService";
 import { API_BASE_URL } from '@/config/env';
 import {listingApiService} from "@services/api/listingApi";
+import {Booking, bookingsApiService} from "@services/api/bookingsApi";
 
 export interface ProfileResponse {
     success: boolean;
@@ -192,12 +193,22 @@ class ProfileApiService {
     }
 
     async getUserBookings(): Promise<BookingsResponse> {
-        const response = await this.request<any>('/bookings');
-        const bookings = response.bookings || response || [];
-        return {
-            success: true,
-            data: bookings,
-        };
+        try {
+            const response = await bookingsApiService.findAll({});
+            const activeBookings = response.bookings.filter(booking => booking.status !== 'CANCELLED');
+
+            return {
+                success: true,
+                data: activeBookings,
+            };
+        } catch (error) {
+            console.error('Error fetching bookings:', error);
+            return {
+                success: false,
+                data: [],
+                message: 'Не удалось загрузить бронирования'
+            };
+        }
     }
 
     async getUserStats(userId: number): Promise<StatsResponse> {

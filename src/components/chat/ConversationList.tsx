@@ -6,7 +6,7 @@ import {
     StyleSheet,
     TouchableOpacity,
     Image,
-    ActivityIndicator
+    ActivityIndicator, Alert
 } from 'react-native';
 import { Conversation } from '@/types/chat';
 import { NotificationBubble } from '@/components/chat/NotificationBubble';
@@ -18,6 +18,7 @@ interface ConversationListProps {
     currentUserId: number;
     loading?: boolean;
     onConversationPress: (conversationId: number) => void;
+    onDeleteConversation?: (conversationId: number) => void;
     onRefresh?: () => void;
 }
 
@@ -26,7 +27,8 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                                                                       currentUserId,
                                                                       loading = false,
                                                                       onConversationPress,
-                                                                      onRefresh
+                                                                      onDeleteConversation,
+                                                                      onRefresh,
                                                                   }) => {
     const getOtherParticipant = (conversation: Conversation) => {
         return conversation.participant1.id === currentUserId
@@ -47,7 +49,13 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             <TouchableOpacity
                 style={styles.conversationItem}
                 onPress={() => onConversationPress(item.id)}
+                onLongPress={() => {
+                    if (onDeleteConversation) {
+                        onDeleteConversation(item.id);
+                    }
+                }}
                 activeOpacity={0.7}
+                delayLongPress={500}
             >
                 {/* Аватар */}
                 <View style={styles.avatarContainer}>
@@ -94,7 +102,9 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                         ]}
                         numberOfLines={2}
                     >
-                        {item.lastMessage?.text || 'Нет сообщений'}
+                        {item.lastMessage && item.lastMessage.senderId === currentUserId
+                            ? `Вы: ${item.lastMessage.text}`
+                            : item.lastMessage?.text || 'Нет сообщений'}
                     </Text>
 
                     {item.listing && (

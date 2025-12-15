@@ -32,6 +32,9 @@ export type RootStackParamList = {
         onLocationSelected?: (locationData: LocationData) => void;
     };
     Advertisement: { listingId: number };
+    Bookings: { initialTab?: 'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled' } | undefined;
+    BookingDetails: { bookingId: number };
+    LandlordBookings: undefined;
     Chat: { conversationId: number; };
     Conversations: undefined;
 };

@@ -1,18 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
     View,
     Text,
     StyleSheet,
     ActivityIndicator,
-    RefreshControl,
-    TouchableOpacity,
+    TouchableOpacity, Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { ConversationList } from '@/components/chat/ConversationList';
 import { BackButton } from '@/components/ui/BackButton';
 import { COLORS } from '@/shared/constants/colors';
-import { Conversation } from '@/types/chat';
 import {useChat} from "@hooks/chat/useChat";
 import {useAuth} from "@hooks/auth/useAuth";
 
@@ -26,7 +24,7 @@ type NavigationProp = StackNavigationProp<ChatStackParamList>;
 export const ConversationsScreen: React.FC = () => {
     const navigation = useNavigation<NavigationProp>();
     const { user, isAuthenticated } = useAuth();
-    const { conversations, loading, error, fetchConversations } = useChat();
+    const { conversations, loading, error, fetchConversations, deleteConversation } = useChat();
     const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
@@ -65,6 +63,28 @@ export const ConversationsScreen: React.FC = () => {
     const handleAuthPress = () => {
         navigation.navigate('Auth');
     };
+
+    const handleDeleteConversation = useCallback(async (conversationId: number) => {
+        Alert.alert(
+            'Удалить чат',
+            'Вы уверены, что хотите удалить этот чат? Все сообщения будут удалены.',
+            [
+                { text: 'Отмена', style: 'cancel' },
+                {
+                    text: 'Удалить',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await deleteConversation(conversationId);
+                        } catch (error) {
+                            console.error('Error deleting conversation:', error);
+                            Alert.alert('Ошибка', 'Не удалось удалить чат');
+                        }
+                    }
+                }
+            ]
+        );
+    }, [deleteConversation]);
 
     if (!isAuthenticated) {
         return (
@@ -133,6 +153,7 @@ export const ConversationsScreen: React.FC = () => {
                     conversations={conversations}
                     currentUserId={user?.id || 0}
                     onConversationPress={handleConversationPress}
+                    onDeleteConversation={handleDeleteConversation}
                     loading={loading}
                     onRefresh={handleRefresh}
                 />

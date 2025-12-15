@@ -1,4 +1,3 @@
-// services/api/mainApi.ts
 import {listingApiService} from './listingApi';
 
 export interface SearchListingsDto {

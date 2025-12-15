@@ -22,6 +22,7 @@ import {useChat} from "@hooks/chat/useChat";
 import {useAuth} from "@hooks/auth/useAuth";
 import {StackNavigationProp} from "@react-navigation/stack";
 import {BackButton} from "@components/ui/BackButton";
+import {formatChatSeparatorDate} from "@shared/utils/dateUtils";
 
 type ChatRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 
@@ -102,9 +103,16 @@ export const ChatScreen: React.FC = () => {
                 const handleJoinedRoom = (data: { conversationId: number }) => {
                 };
 
+                const handleMessagesRead = () => {
+                    socketService.markAsRead(conversationId);
+                };
+
                 const handleNewMessage = (data: { message: Message }) => {
                     if (data.message.sender.id !== user.id) {
                         addNewMessage(data.message);
+
+                        socketService.markAsRead(conversationId);
+
                         setTimeout(() => {
                             flatListRef.current?.scrollToEnd({ animated: true });
                         }, 100);
@@ -130,6 +138,7 @@ export const ChatScreen: React.FC = () => {
                 socketService.on('joinedRoom', handleJoinedRoom);
                 socketService.on('newMessage', handleNewMessage);
                 socketService.on('messageSent', handleMessageSent);
+                socketService.on('messagesRead', handleMessagesRead);
                 socketService.on('error', handleError);
 
                 return () => {
@@ -227,6 +236,20 @@ export const ChatScreen: React.FC = () => {
         return `${otherParticipant.firstName} ${otherParticipant.lastName}`.trim();
     };
 
+    const groupMessagesByDate = (messages: Message[]) => {
+        const groups: { [key: string]: Message[] } = {};
+
+        messages.forEach(message => {
+            const date = new Date(message.sentAt).toDateString();
+            if (!groups[date]) {
+                groups[date] = [];
+            }
+            groups[date].push(message);
+        });
+
+        return groups;
+    };
+
     const handleBackPress = () => {
         navigation.goBack();
     };
@@ -254,6 +277,18 @@ export const ChatScreen: React.FC = () => {
     const handleRefresh = async () => {
         await loadMessages();
         await loadConversationData();
+    };
+
+    const renderDateSeparator = (dateString: string) => {
+        const displayDate = formatChatSeparatorDate(dateString);
+
+        return (
+            <View style={styles.dateSeparator}>
+                <View style={styles.dateSeparatorLine} />
+                <Text style={styles.dateSeparatorText}>{displayDate}</Text>
+                <View style={styles.dateSeparatorLine} />
+            </View>
+        );
     };
 
     const renderMessage = ({ item }: { item: Message }) => {
@@ -343,6 +378,21 @@ export const ChatScreen: React.FC = () => {
                         <Text style={styles.emptySubtext}>Начните общение первым!</Text>
                     </View>
                 }
+                ListHeaderComponent={() => {
+                    const groups = groupMessagesByDate(messages);
+                    return Object.keys(groups).map(date => (
+                        <View key={date}>
+                            {renderDateSeparator(date)}
+                            {groups[date].map(message => (
+                                <MessageBubble
+                                    key={`${message.id}-${message.sentAt}`}
+                                    message={message}
+                                    isOwn={message.sender.id === user?.id}
+                                />
+                            ))}
+                        </View>
+                    ));
+                }}
             />
 
             {/* Поле ввода */}
@@ -450,5 +500,22 @@ const styles = StyleSheet.create({
     noAdText: {
         fontSize: 12,
         color: COLORS.gray[500],
+    },
+    dateSeparator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: 16,
+        paddingHorizontal: 16,
+    },
+    dateSeparatorLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: COLORS.gray[300],
+    },
+    dateSeparatorText: {
+        paddingHorizontal: 12,
+        fontSize: 12,
+        color: COLORS.gray[500],
+        fontWeight: '500',
     },
 });

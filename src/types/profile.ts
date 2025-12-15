@@ -1,3 +1,5 @@
+import {Booking} from "@services/api/bookingsApi";
+
 export interface UserProfile {
     id: number;
     email: string;
@@ -64,19 +66,6 @@ export interface FormattedListing extends Listing {
     displayPrice: string;
     displayType: string;
     displayPriceShort: string;
-}
-
-export interface Booking {
-    id: number;
-    listingId: number;
-    userId: number;
-    startDate: string;
-    endDate: string;
-    totalPrice: number;
-    status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
-    createdAt: string;
-    updatedAt: string;
-    listing?: Listing;
 }
 
 export interface UserStats {

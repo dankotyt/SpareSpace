@@ -8,7 +8,7 @@ import {
     ScrollView,
     StatusBar,
     TouchableOpacity,
-    Alert,
+    Alert, Linking,
 } from 'react-native';
 import { useAuth } from '@hooks/auth/useAuth';
 import { useNavigation } from '@react-navigation/native';
@@ -18,6 +18,8 @@ import { BackButton } from '@/components/ui/BackButton';
 import { COLORS } from '@/shared/constants/colors';
 import { globalStyles } from '@/shared/constants/global';
 import { RootStackParamList } from '@/navigation/types';
+import {TelegramButton} from "@components/auth/TelegramButton";
+import {telegramApiService} from "@services/api/telegramApi";
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -75,6 +77,21 @@ export const EmailAuthScreen: React.FC = () => {
 
     const handleSupport = () => {
         console.log('Contact support');
+    };
+
+    const handleTelegramLogin = async () => {
+        try {
+            const response = await telegramApiService.generateTelegramLink();
+
+            if (response.link) {
+                Linking.openURL(response.link).catch(err =>
+                    console.error('Failed to open URL:', err)
+                );
+            }
+        } catch (error) {
+            console.log('Telegram login error:', error);
+            Alert.alert('Ошибка', 'Не удалось выполнить авторизацию через Telegram');
+        }
     };
 
     return (
@@ -138,6 +155,10 @@ export const EmailAuthScreen: React.FC = () => {
                                 title="Зарегистрироваться"
                                 onPress={handleRegister}
                                 variant="outline"
+                            />
+                            <TelegramButton
+                                onPress={handleTelegramLogin}
+                                isLoading={isLoading}
                             />
                         </View>
                     </ScrollView>

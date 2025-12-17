@@ -7,9 +7,10 @@ import {
     Platform,
     ScrollView,
     StatusBar,
-    Alert,
+    Alert, Linking,
 } from 'react-native';
 import { useAuth } from '@hooks/auth/useAuth';
+import { TelegramButton } from '@/components/auth/TelegramButton';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { PhoneInput, AuthButton, SupportLink } from '@/components/auth';
@@ -17,6 +18,7 @@ import { BackButton } from '@/components/ui/BackButton';
 import { COLORS } from '@/shared/constants/colors';
 import { globalStyles } from '@/shared/constants/global';
 import { RootStackParamList } from '@/navigation/types';
+import {telegramApiService} from "@services/api/telegramApi";
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -61,6 +63,23 @@ export const PhoneAuthScreen: React.FC = () => {
             console.log('Phone check error:', error);
             const errorMessage = error instanceof Error ? error.message : 'Ошибка проверки номера';
             Alert.alert('Ошибка', errorMessage);
+        }
+    };
+
+    const handleTelegramLogin = async () => {
+        try {
+            const response = await telegramApiService.generateTelegramLink();
+
+            if (response.link) {
+                Linking.openURL(response.link).catch(err =>
+                    console.error('Failed to open URL:', err)
+                );
+
+                navigation.navigate('TelegramAuth', { link: response.link });
+            }
+        } catch (error) {
+            console.log('Telegram login error:', error);
+            Alert.alert('Ошибка', 'Не удалось выполнить авторизацию через Telegram');
         }
     };
 
@@ -117,11 +136,14 @@ export const PhoneAuthScreen: React.FC = () => {
                                 variant="primary"
                                 loading={isLoading}
                             />
-
                             <AuthButton
                                 title="Другой способ входа"
                                 onPress={handleSwitchToEmail}
                                 variant="outline"
+                            />
+                            <TelegramButton
+                                onPress={handleTelegramLogin}
+                                isLoading={isLoading}
                             />
                         </View>
                     </ScrollView>

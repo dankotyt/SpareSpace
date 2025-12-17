@@ -1,28 +1,82 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    StyleSheet,
+    Alert,
+    ActivityIndicator
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/shared/constants/colors';
-
-interface MenuItem {
-    id: string;
-    title: string;
-    icon: keyof typeof Ionicons.glyphMap;
-    count?: number;
-}
+import { useAuth } from '@hooks/auth/useAuth';
+import { Linking } from 'react-native';
 
 interface ProfileMenuProps {
     onMenuItemPress: (itemId: string) => void;
     onLogout: () => void;
 }
 
-export const ProfileMenu: React.FC<ProfileMenuProps> = ({ onMenuItemPress, onLogout }) => {
-    const menuItems: MenuItem[] = [
-        { id: 'ads', title: 'Мои объявления', icon: 'document-text' },
-        { id: 'reviews', title: 'Отзывы', icon: 'star' },
-        { id: 'favorites', title: 'Избранное', icon: 'heart' },
-        { id: 'balance', title: 'Баланс', icon: 'wallet' },
-        { id: 'notifications', title: 'Уведомления', icon: 'notifications' },
-        { id: 'settings', title: 'Настройки', icon: 'settings' },
+export const ProfileMenu: React.FC<ProfileMenuProps> = ({
+                                                            onMenuItemPress,
+                                                            onLogout
+                                                        }) => {
+    const {
+        telegramLinked,
+        linkTelegramAccount,
+        unlinkTelegramAccount,
+        isLoading
+    } = useAuth();
+
+    const handleTelegramAction = async () => {
+        if (telegramLinked) {
+            Alert.alert(
+                'Отвязать Telegram',
+                'Вы уверены, что хотите отвязать Telegram аккаунт?',
+                [
+                    { text: 'Отмена', style: 'cancel' },
+                    {
+                        text: 'Отвязать',
+                        style: 'destructive',
+                        onPress: async () => {
+                            try {
+                                await unlinkTelegramAccount();
+                                Alert.alert('Успех', 'Telegram аккаунт отвязан');
+                            } catch (error) {
+                                Alert.alert('Ошибка', 'Не удалось отвязать Telegram аккаунт');
+                            }
+                        },
+                    },
+                ]
+            );
+        } else {
+            try {
+                const link = await linkTelegramAccount();
+                if (link) {
+                    Linking.openURL(link).catch(err => {
+                        console.error('Failed to open URL:', err);
+                        Alert.alert('Ошибка', 'Не удалось открыть ссылку для привязки');
+                    });
+                }
+            } catch (error) {
+                Alert.alert('Ошибка', 'Не удалось сгенерировать ссылку для привязки');
+            }
+        }
+    };
+
+    const menuItems = [
+        { id: 'ads', title: 'Мои объявления', icon: 'document-text' as const },
+        { id: 'reviews', title: 'Отзывы', icon: 'star' as const },
+        { id: 'favorites', title: 'Избранное', icon: 'heart' as const },
+        { id: 'balance', title: 'Баланс', icon: 'wallet' as const },
+        { id: 'notifications', title: 'Уведомления', icon: 'notifications' as const },
+        { id: 'settings', title: 'Настройки', icon: 'settings' as const },
+        {
+            id: 'telegram',
+            title: telegramLinked ? 'Отвязать Telegram' : 'Привязать Telegram',
+            icon: telegramLinked ? 'link' as const : 'link-outline' as const,
+            isTelegram: true
+        },
     ];
 
     const handleLogoutPress = () => {
@@ -49,20 +103,46 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ onMenuItemPress, onLog
                 <TouchableOpacity
                     key={item.id}
                     style={styles.menuItem}
-                    onPress={() => onMenuItemPress(item.id)}
+                    onPress={() => {
+                        if (item.isTelegram) {
+                            handleTelegramAction();
+                        } else {
+                            onMenuItemPress(item.id);
+                        }
+                    }}
+                    disabled={isLoading && item.isTelegram}
                 >
-                    <Ionicons name={item.icon} size={24} color="#6B7280" style={styles.menuIcon} />
-                    <Text style={styles.menuTitle}>{item.title}</Text>
-                    {item.count !== undefined && (
-                        <View style={styles.countBadge}>
-                            <Text style={styles.countText}>{item.count}</Text>
-                        </View>
+                    <Ionicons
+                        name={item.icon}
+                        size={24}
+                        color={item.isTelegram ? COLORS.primary : COLORS.gray[500]}
+                        style={styles.menuIcon}
+                    />
+                    <Text style={[
+                        styles.menuTitle,
+                        item.isTelegram && styles.telegramText
+                    ]}>
+                        {item.title}
+                    </Text>
+                    {isLoading && item.isTelegram && (
+                        <ActivityIndicator
+                            size="small"
+                            color={COLORS.primary}
+                            style={styles.loadingIndicator}
+                        />
                     )}
                 </TouchableOpacity>
             ))}
             <View style={styles.logoutContainer}>
-                <TouchableOpacity style={styles.logoutButton} onPress={handleLogoutPress}>
-                    <Ionicons name="log-out-outline" size={20} color={COLORS.red[500]} />
+                <TouchableOpacity
+                    style={styles.logoutButton}
+                    onPress={handleLogoutPress}
+                >
+                    <Ionicons
+                        name="log-out-outline"
+                        size={20}
+                        color={COLORS.red[500]}
+                    />
                     <Text style={styles.logoutButtonText}>Выйти</Text>
                 </TouchableOpacity>
             </View>
@@ -86,12 +166,6 @@ const styles = StyleSheet.create({
     menuIcon: {
         width: 32,
         marginRight: 12,
-        color: COLORS.gray[500],
-    },
-    exitIcon: {
-        width: 32,
-        marginRight: 12,
-        color: COLORS.red[500],
     },
     menuTitle: {
         flex: 1,
@@ -99,19 +173,11 @@ const styles = StyleSheet.create({
         color: COLORS.text,
         fontWeight: '500',
     },
-    countBadge: {
-        backgroundColor: COLORS.red[500],
-        borderRadius: 12,
-        minWidth: 24,
-        height: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 6,
+    telegramText: {
+        color: COLORS.primary,
     },
-    countText: {
-        color: COLORS.white,
-        fontSize: 12,
-        fontWeight: '600',
+    loadingIndicator: {
+        marginLeft: 8,
     },
     logoutContainer: {
         paddingVertical: 20,
@@ -134,5 +200,4 @@ const styles = StyleSheet.create({
         color: COLORS.red[500],
         marginLeft: 4,
     },
-
 });

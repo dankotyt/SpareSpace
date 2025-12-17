@@ -16,6 +16,7 @@ import { FavoritesScreen } from '@/screens/favorites/FavoritesScreen';
 import {BookingsScreen} from "@screens/bookings/BookingsScreen";
 import { BookingDetailsScreen } from '@/screens/bookings/BookingDetailsScreen';
 import {LandlordBookingsScreen} from "@screens/bookings/LandlordBookingsScreen";
+import {TelegramAuthScreen} from "@screens/auth/TelegramAuthScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -28,6 +29,11 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
             <Stack.Screen name="PhoneAuth" component={PhoneAuthScreen} />
             <Stack.Screen name="EmailAuth" component={EmailAuthScreen} />
+            <Stack.Screen
+                name="TelegramAuth"
+                component={TelegramAuthScreen}
+                options={{ headerShown: false }}
+            />
             <Stack.Screen name="Registration" component={RegistrationScreen} />
             <Stack.Screen name="MapScreen" component={MapScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />

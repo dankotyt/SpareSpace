@@ -3,6 +3,7 @@ import {isCompletePhoneNumber} from '@shared/utils/phoneFormatter';
 import {AuthContext} from '@services/AuthContext';
 import {authApiService} from '@services/api/authApi';
 import {tokenService} from '@services/tokenService';
+import {telegramApiService, TelegramProfile} from "@services/api/telegramApi";
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
@@ -24,6 +25,22 @@ export const useAuthLogic = () => {
     const [error, setError] = useState<string | null>(null);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const [user, setUser] = useState<any>(null);
+    const [telegramLinked, setTelegramLinked] = useState(false);
+    const [telegramProfile, setTelegramProfile] = useState<TelegramProfile | null>(null);
+
+    const checkTelegramConnection = useCallback(async () => {
+        try {
+            if (user?.id) {
+                const telegramData = await telegramApiService.getTelegramProfile();
+                setTelegramLinked(!!telegramData);
+                setTelegramProfile(telegramData);
+            }
+        } catch (error) {
+            console.error('Error checking Telegram connection:', error);
+            setTelegramLinked(false);
+            setTelegramProfile(null);
+        }
+    }, [user?.id]);
 
     const checkTokenValidity = useCallback(async (): Promise<boolean> => {
         try {
@@ -31,24 +48,31 @@ export const useAuthLogic = () => {
 
             if (!token || token.trim() === '') {
                 setUser(null);
+                setTelegramLinked(false);
+                setTelegramProfile(null);
                 return false;
             }
 
             const profileResponse = await authApiService.getProfile();
             if (profileResponse.success && profileResponse.data) {
                 setUser(profileResponse.data);
+                await checkTelegramConnection();
                 return true;
             } else {
                 setUser(null);
+                setTelegramLinked(false);
+                setTelegramProfile(null);
                 return false;
             }
 
         } catch (error) {
             await tokenService.removeToken();
             setUser(null);
+            setTelegramLinked(false);
+            setTelegramProfile(null);
             return false;
         }
-    }, []);
+    }, [checkTelegramConnection]);
 
     useEffect(() => {
         const initializeAuth = async () => {
@@ -207,6 +231,74 @@ export const useAuthLogic = () => {
         setError(null);
     }, []);
 
+    const updateTelegramToken = useCallback(async (token: string, telegramId?: string) => {
+        try {
+            await tokenService.saveToken(token);
+
+            const profileResponse = await authApiService.getProfile();
+            if (profileResponse.success && profileResponse.data) {
+                setUser(profileResponse.data);
+                setIsAuthenticated(true);
+
+                if (telegramId) {
+                    setTelegramLinked(true);
+                    await checkTelegramConnection();
+                }
+
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error updating Telegram token:', error);
+            return false;
+        }
+    }, [checkTelegramConnection]);
+
+    const generateTelegramLink = useCallback(async (): Promise<string> => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await telegramApiService.generateTelegramLink();
+            return response.link;
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Ошибка генерации ссылки';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    const linkTelegramAccount = useCallback(async (): Promise<string> => {
+        try {
+            return await generateTelegramLink();
+        } catch (error) {
+            throw error;
+        }
+    }, [generateTelegramLink]);
+
+    const unlinkTelegramAccount = useCallback(async () => {
+        if (!telegramProfile?.id) {
+            throw new Error('Telegram аккаунт не привязан');
+        }
+
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            await telegramApiService.unlinkTelegramAccount(telegramProfile.id);
+            setTelegramLinked(false);
+            setTelegramProfile(null);
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Ошибка отвязки Telegram';
+            setError(errorMessage);
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    }, [telegramProfile?.id]);
+
     const refreshAuthStatus = useCallback(async (): Promise<boolean> => {
         try {
             const isValid = await checkTokenValidity();
@@ -231,7 +323,10 @@ export const useAuthLogic = () => {
         error,
         isCheckingAuth,
         user,
+        telegramLinked,
+        telegramProfile,
 
+        // Методы
         setPhone: handleSetPhone,
         setEmail: handleSetEmail,
         setPassword: handleSetPassword,
@@ -245,5 +340,12 @@ export const useAuthLogic = () => {
         logout,
         clearError,
         refreshAuthStatus,
+
+        // Telegram методы
+        updateTelegramToken,
+        generateTelegramLink,
+        linkTelegramAccount,
+        unlinkTelegramAccount,
+        checkTelegramConnection,
     };
 };

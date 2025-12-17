@@ -6,6 +6,7 @@ export type RootStackParamList = {
     MainTabs: undefined;
     PhoneAuth: undefined;
     EmailAuth: undefined;
+    TelegramAuth: { link: string };
     Registration: undefined;
     Profile: { userId?: number };
     FavoritesScreen: undefined;

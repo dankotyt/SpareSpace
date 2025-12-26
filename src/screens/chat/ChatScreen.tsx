@@ -18,11 +18,11 @@ import { socketService } from '@/services/socketService';
 import { chatApiService } from '@/services/api/chatApi';
 import { profileApiService } from '@/services/api/profileApi';
 import { RootStackParamList } from '@/navigation/types';
-import {useChat} from "@hooks/chat/useChat";
-import {useAuth} from "@hooks/auth/useAuth";
-import {StackNavigationProp} from "@react-navigation/stack";
-import {BackButton} from "@components/ui/BackButton";
-import {formatChatSeparatorDate} from "@shared/utils/dateUtils";
+import { useChat } from "@hooks/chat/useChat";
+import { useAuth } from "@hooks/auth/useAuth";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { BackButton } from "@components/ui/BackButton";
+import { formatChatSeparatorDate } from "@shared/utils/dateUtils";
 
 type ChatRouteProp = RouteProp<RootStackParamList, 'Chat'>;
 
@@ -88,80 +88,151 @@ export const ChatScreen: React.FC = () => {
         }
     }, [conversationId, fetchMessages]);
 
+    // В ChatScreen.tsx
     const setupSocket = useCallback(async () => {
         if (!isAuthenticated || !user) {
+            console.log('🔐 User not authenticated');
             return null;
         }
 
         try {
+            console.log('🔄 Setting up WebSocket...');
+
+            // Подключаемся к WebSocket
             const connected = await socketService.connect();
             setWsConnected(connected);
 
-            if (connected) {
-                socketService.joinRoom(conversationId);
+            if (!connected) {
+                console.error('❌ Failed to connect to WebSocket');
+                Alert.alert('Ошибка', 'Не удалось подключиться к чату');
+                return null;
+            }
 
-                const handleJoinedRoom = (data: { conversationId: number }) => {
-                };
+            console.log('✅ WebSocket connected, joining room:', conversationId);
 
-                const handleMessagesRead = () => {
-                    socketService.markAsRead(conversationId);
-                };
+            // Присоединяемся к комнате
+            await socketService.joinRoom(conversationId);
 
-                const handleNewMessage = (data: { message: Message }) => {
-                    if (data.message.sender.id !== user.id) {
-                        addNewMessage(data.message);
+            // Используем useRef для отслеживания обработанных сообщений
+            const processedMessageIds = useRef<Set<number>>(new Set());
 
-                        socketService.markAsRead(conversationId);
+            const handleNewMessage = (data: { conversationId?: number; message: Message }) => {
+                console.log('📥 New message received from socket:', {
+                    conversationId: data.conversationId,
+                    messageId: data.message.id,
+                    text: data.message.text,
+                    senderId: data.message.sender.id,
+                    isFromMe: data.message.sender.id === user.id
+                });
 
-                        setTimeout(() => {
-                            flatListRef.current?.scrollToEnd({ animated: true });
-                        }, 100);
+                // ВАЖНО: Проверяем, для нашей ли беседы это сообщение
+                const eventConversationId = data.conversationId ? parseInt(data.conversationId.toString()) : null;
+                if (eventConversationId !== conversationId) {
+                    console.log('⏭️ Message for different conversation, skipping');
+                    return;
+                }
+
+                // Проверяем, не обработали ли мы уже это сообщение
+                if (processedMessageIds.current.has(data.message.id)) {
+                    console.log('⏭️ Message already processed, skipping');
+                    return;
+                }
+
+                // Добавляем ID в обработанные
+                processedMessageIds.current.add(data.message.id);
+
+                // Очищаем старые ID через 5 минут
+                setTimeout(() => {
+                    processedMessageIds.current.delete(data.message.id);
+                }, 5 * 60 * 1000);
+
+                // ИГНОРИРУЕМ сообщения от самого себя через broadcast
+                // Они уже добавлены как оптимистичные
+                if (data.message.sender.id === user.id) {
+                    console.log('⏭️ Ignoring own message from broadcast');
+                    return;
+                }
+
+                // Для сообщений от других пользователей
+                setMessages(prev => {
+                    // Проверяем, нет ли уже такого сообщения
+                    const exists = prev.some(msg => msg.id === data.message.id);
+                    if (exists) {
+                        console.log('⏭️ Message already exists in list, skipping');
+                        return prev;
                     }
-                };
 
-                const handleMessageSent = (data: { message: Message }) => {
-                    setMessages((prev: Message[]) => {
+                    console.log('✅ Adding message to list');
+                    return [...prev, data.message];
+                });
+
+                // Помечаем как прочитанное
+                socketService.markAsRead(conversationId, [data.message.id]);
+
+                setTimeout(() => {
+                    flatListRef.current?.scrollToEnd({ animated: true });
+                }, 100);
+            };
+
+            const handleMessageSent = (data: { success: boolean; data?: { message: Message } }) => {
+                console.log('✅ Message sent response:', data);
+
+                if (data.data?.message) {
+                    // Добавляем ID в обработанные
+                    processedMessageIds.current.add(data.data.message.id);
+
+                    // Заменяем оптимистичное сообщение на реальное
+                    setMessages(prev => {
                         return prev.map(msg => {
-                            if (msg.id < 0 && msg.text === data.message.text) {
-                                return data.message;
+                            // Ищем оптимистичное сообщение с таким же текстом от этого пользователя
+                            if (msg.id < 0 &&
+                                msg.sender.id === user.id &&
+                                msg.text === data.data!.message.text) {
+                                console.log('🔄 Replacing optimistic message with real one');
+                                return data.data!.message;
                             }
                             return msg;
                         });
                     });
-                };
+                }
+            };
 
-                const handleError = (data: { message: string }) => {
-                    console.error('❌ Socket error:', data);
-                    Alert.alert('Ошибка', data.message);
-                };
+            const handleError = (data: { message: string }) => {
+                console.error('❌ Socket error:', data);
+                Alert.alert('Ошибка', data.message || 'Ошибка соединения');
+            };
 
-                socketService.on('joinedRoom', handleJoinedRoom);
-                socketService.on('newMessage', handleNewMessage);
-                socketService.on('messageSent', handleMessageSent);
-                socketService.on('messagesRead', handleMessagesRead);
-                socketService.on('error', handleError);
+            // Подписываемся на события
+            socketService.on('success', handleMessageSent);
+            socketService.on('message:new', handleNewMessage);
+            socketService.on('error', handleError);
 
-                return () => {
-                    socketService.off('joinedRoom', handleJoinedRoom);
-                    socketService.off('newMessage', handleNewMessage);
-                    socketService.off('messageSent', handleMessageSent);
-                    socketService.off('error', handleError);
-                    socketService.leaveRoom(conversationId);
-                };
-            }
+            return () => {
+                console.log('🧹 Cleaning up WebSocket listeners for conversation:', conversationId);
+                socketService.off('success', handleMessageSent);
+                socketService.off('message:new', handleNewMessage);
+                socketService.off('error', handleError);
+                socketService.leaveRoom(conversationId);
+                processedMessageIds.current.clear();
+            };
+
         } catch (error) {
-            setWsConnected(false);
             console.error('❌ Socket setup error:', error);
+            setWsConnected(false);
+            Alert.alert('Ошибка', 'Ошибка настройки соединения');
+            return null;
         }
-
-        return null;
-    }, [conversationId, user, isAuthenticated, addNewMessage, setMessages]);
+    }, [conversationId, user, isAuthenticated]);
 
     useEffect(() => {
         if (isAuthenticated && user) {
+            console.log('🎬 Initializing chat for conversation:', conversationId);
+
+            // Загружаем данные
             loadMessages();
             loadConversationData();
 
+            // Настраиваем WebSocket
             const initializeSocket = async () => {
                 const cleanup = await setupSocket();
                 if (cleanup) {
@@ -172,11 +243,12 @@ export const ChatScreen: React.FC = () => {
             initializeSocket();
 
             return () => {
+                console.log('🧼 Cleaning up chat for conversation:', conversationId);
                 if (cleanupRef.current) {
                     cleanupRef.current();
                     cleanupRef.current = null;
                 }
-                socketService.disconnect();
+                // НЕ отключаем WebSocket полностью, только покидаем комнату
             };
         } else {
             Alert.alert('Ошибка', 'Требуется авторизация');
@@ -185,6 +257,8 @@ export const ChatScreen: React.FC = () => {
     }, [conversationId, isAuthenticated, user]);
 
     const handleSendMessage = async (text: string) => {
+        console.log('🔄 handleSendMessage called with text:', text);
+
         if (!user) {
             Alert.alert('Ошибка', 'Пользователь не авторизован');
             return;
@@ -195,31 +269,59 @@ export const ChatScreen: React.FC = () => {
             return;
         }
 
+        if (!conversationData) {
+            console.error('❌ conversationData is undefined');
+            Alert.alert('Ошибка', 'Данные беседы не загружены');
+            return;
+        }
+
         const optimisticId = -Date.now();
+        console.log('📝 Creating optimistic message with ID:', optimisticId);
 
         try {
             setSending(true);
 
+            // Создаем упрощенный объект conversation для оптимистичного сообщения
+            const optimisticConversation: Conversation = {
+                id: conversationId,
+                participant1: conversationData?.participant1 || user,
+                participant2: conversationData?.participant2 || user,
+                listing: conversationData.listing,
+                lastMessageAt: new Date().toISOString()
+            };
+
+            // Добавляем оптимистичное сообщение
             const optimisticMessage: Message = {
                 id: optimisticId,
                 text,
                 sender: user,
                 sentAt: new Date().toISOString(),
                 isRead: false,
+                conversation: optimisticConversation,
+                readAt: null
             };
 
+            console.log('➕ Adding optimistic message:', optimisticMessage.text);
             addNewMessage(optimisticMessage);
 
             setTimeout(() => {
                 flatListRef.current?.scrollToEnd({ animated: true });
             }, 100);
 
+            // Отправляем через WebSocket
+            console.log('📤 Sending via WebSocket...');
             await socketService.sendMessage(conversationId, text);
+            console.log('✅ Message sent via WebSocket');
 
         } catch (error: any) {
-            console.error('❌ Error sending message via WebSocket:', error);
+            console.error('❌ Error sending message:', error);
 
-            setMessages(prev => prev.filter(msg => msg.id !== optimisticId));
+            // Удаляем оптимистичное сообщение при ошибке
+            setMessages(prev => {
+                console.log('🗑️ Removing optimistic message due to error');
+                return prev.filter(msg => msg.id !== optimisticId);
+            });
+
             Alert.alert('Ошибка', 'Не удалось отправить сообщение');
         } finally {
             setSending(false);
@@ -325,7 +427,7 @@ export const ChatScreen: React.FC = () => {
         <View style={styles.container}>
             {/* Хедер */}
             <View style={styles.header}>
-                <BackButton onPress={handleBackPress} backgroundColor={COLORS.transparent}/>
+                <BackButton onPress={handleBackPress} backgroundColor={COLORS.transparent} />
                 <TouchableOpacity
                     style={styles.headerInfo}
                     onPress={handleUserProfilePress}
@@ -347,9 +449,9 @@ export const ChatScreen: React.FC = () => {
             </View>
 
             {/* Закрепленное объявление */}
-            {conversationData!.listing ? (
+            {conversationData?.listing ? (
                 <PinnedAd
-                    listingData={conversationData!.listing}
+                    listingData={conversationData.listing}
                     onPress={handleAdPress}
                 />
             ) : (
@@ -370,6 +472,7 @@ export const ChatScreen: React.FC = () => {
                 ]}
                 showsVerticalScrollIndicator={false}
                 onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
+                onLayout={() => flatListRef.current?.scrollToEnd()}
                 refreshing={isLoading}
                 onRefresh={handleRefresh}
                 ListEmptyComponent={
@@ -398,7 +501,7 @@ export const ChatScreen: React.FC = () => {
             {/* Поле ввода */}
             <MessageInput
                 onSendMessage={handleSendMessage}
-                disabled={sending}
+                disabled={sending || !wsConnected}
             />
         </View>
     );

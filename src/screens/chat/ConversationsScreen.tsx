@@ -67,19 +67,43 @@ export const ConversationsScreen: React.FC = () => {
     const handleDeleteConversation = useCallback(async (conversationId: number) => {
         Alert.alert(
             'Удалить чат',
-            'Вы уверены, что хотите удалить этот чат? Все сообщения будут удалены.',
+            'Вы уверены, что хотите удалить этот чат?',
             [
                 { text: 'Отмена', style: 'cancel' },
                 {
-                    text: 'Удалить',
-                    style: 'destructive',
+                    text: 'Мягкое удаление',
                     onPress: async () => {
                         try {
-                            await deleteConversation(conversationId);
+                            await deleteConversation(conversationId, false);
                         } catch (error) {
                             console.error('Error deleting conversation:', error);
                             Alert.alert('Ошибка', 'Не удалось удалить чат');
                         }
+                    }
+                },
+                {
+                    text: 'Полное удаление',
+                    style: 'destructive',
+                    onPress: async () => {
+                        Alert.alert(
+                            'Внимание',
+                            'Вы уверены, что хотите полностью удалить чат? Это действие необратимо.',
+                            [
+                                { text: 'Отмена', style: 'cancel' },
+                                {
+                                    text: 'Удалить',
+                                    style: 'destructive',
+                                    onPress: async () => {
+                                        try {
+                                            await deleteConversation(conversationId, true);
+                                        } catch (error) {
+                                            console.error('Error permanently deleting conversation:', error);
+                                            Alert.alert('Ошибка', 'Не удалось удалить чат');
+                                        }
+                                    }
+                                }
+                            ]
+                        );
                     }
                 }
             ]

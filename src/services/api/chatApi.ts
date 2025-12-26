@@ -1,6 +1,6 @@
-import {tokenService} from '@/services/tokenService';
-import {API_BASE_URL} from '@/config/env';
-import {Conversation, CreateConversationDto, GetConversationsDto, GetMessagesDto, Message} from '@/types/chat';
+import { tokenService } from '@/services/tokenService';
+import { API_BASE_URL } from '@/config/env';
+import { Conversation, CreateConversationDto, GetConversationsDto, GetMessagesDto, Message } from '@/types/chat';
 
 class ChatApiService {
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -21,6 +21,11 @@ class ChatApiService {
         };
 
         const response = await fetch(url, config);
+
+        if (response.status === 204) {
+            return {} as T;
+        }
+
         const responseData = await response.json();
 
         if (!response.ok) {
@@ -34,50 +39,25 @@ class ChatApiService {
         conversations: Conversation[];
         total: number;
         limit: number;
-        offset: number
+        offset: number;
     }> {
         const params = new URLSearchParams({
             limit: dto.limit.toString(),
             offset: dto.offset.toString(),
         });
 
-        const response = await this.request<{
-            conversations: any[];
-            total: number;
-            limit: number;
-            offset: number;
-        }>(`/chat/conversations?${params}`);
-
-        const conversations: Conversation[] = response.conversations.map(conv => ({
-            ...conv,
-            listingId: conv.listingId || conv.listing_id || null
-        }));
-
-        return {
-            ...response,
-            conversations
-        };
+        return await this.request(`/chat/conversations?${params}`);
     }
 
     async getConversationById(conversationId: number): Promise<Conversation> {
-        const conversation = await this.request<any>(`/chat/conversations/${conversationId}`);
-
-        return {
-            ...conversation,
-            listingId: conversation.listingId || conversation.listing_id || null
-        };
+        return await this.request<Conversation>(`/chat/conversations/${conversationId}`);
     }
 
     async createConversation(dto: CreateConversationDto): Promise<Conversation> {
-        const conversation = await this.request<any>('/chat/conversations', {
+        return await this.request<Conversation>('/chat/conversations', {
             method: 'POST',
             body: JSON.stringify(dto),
         });
-
-        return {
-            ...conversation,
-            listingId: conversation.listingId || conversation.listing_id || null
-        };
     }
 
     async getMessages(
@@ -87,7 +67,7 @@ class ChatApiService {
         messages: Message[];
         total: number;
         limit: number;
-        offset: number
+        offset: number;
     }> {
         const params = new URLSearchParams({
             limit: dto.limit.toString(),
@@ -97,9 +77,16 @@ class ChatApiService {
         return await this.request(`/chat/conversations/${conversationId}/messages?${params}`);
     }
 
-    async deleteConversation(conversationId: number): Promise<void> {
-        await this.request(`/chat/conversations/${conversationId}/delete`, {
+    async deleteConversation(conversationId: number, permanent: boolean = false): Promise<void> {
+        await this.request(`/chat/conversations/${conversationId}`, {
             method: 'DELETE',
+            body: JSON.stringify({ permanent }),
+        });
+    }
+
+    async restoreConversation(conversationId: number): Promise<void> {
+        await this.request(`/chat/conversations/${conversationId}/restore`, {
+            method: 'PATCH',
         });
     }
 }

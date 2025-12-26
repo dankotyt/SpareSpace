@@ -297,10 +297,7 @@ export const BookingDetailsScreen: React.FC = () => {
                         {/* Кликабельный арендатор */}
                         <TouchableOpacity
                             style={styles.participant}
-                            onPress={() => {
-                                const isRenterCurrentUser = booking.renter?.id === currentUser?.id;
-                                navigateToProfile(booking.renter?.id || 0, isRenterCurrentUser);
-                            }}
+                            onPress={() => navigateToProfile(booking.renter?.id || 0)}
                         >
                             <Ionicons name="person-outline" size={16} color={COLORS.primary} />
                             <Text style={styles.participantLabel}>Арендатор:</Text>
@@ -318,10 +315,7 @@ export const BookingDetailsScreen: React.FC = () => {
                         {/* Кликабельный владелец */}
                         <TouchableOpacity
                             style={styles.participant}
-                            onPress={() => {
-                                const isLandlordCurrentUser = booking.landlord?.id === currentUser?.id;
-                                navigateToProfile(booking.landlord?.id || 0, isLandlordCurrentUser);
-                            }}
+                            onPress={() => navigateToProfile(booking.landlord?.id || 0)}
                         >
                             <Ionicons name="person-outline" size={16} color={COLORS.primary} />
                             <Text style={styles.participantLabel}>Владелец:</Text>

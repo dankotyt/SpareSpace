@@ -74,14 +74,14 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                     )}
 
                     {/* Уведомления о новых сообщениях */}
-                    {item.unreadCount && item.unreadCount > 0 && (
+                    {item.unreadCount && item.unreadCount > 0 ? (
                         <NotificationBubble
                             count={item.unreadCount}
                             color={COLORS.primary}
                             enabled={true}
                             onPress={() => onConversationPress(item.id)}
                         />
-                    )}
+                    ) : null}
                 </View>
 
                 {/* Контент */}

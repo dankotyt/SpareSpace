@@ -51,7 +51,10 @@ export interface Message {
     };
     sentAt: string;
     isRead: boolean;
-    conversationId?: number;
+    conversation?: Conversation;
+    readAt?: string | null;
+    updatedAt?: string;
+    deletedAt?: string | null;
 }
 
 export interface GetConversationsDto {
@@ -68,3 +71,16 @@ export interface CreateConversationDto {
     participantId: number;
     listingId?: number;
 }
+
+export interface WsMessageResponse {
+    message: Message;
+    conversationId: number;
+}
+
+export interface WsMessagesReadResponse {
+    conversationId: number;
+    userId: number;
+    messageIds: number[];
+}
+
+export type OptimisticMessage = Omit<Message, 'id'> & { id: number | string; _isOptimistic?: boolean };

@@ -244,7 +244,7 @@ export const BookingsScreen: React.FC = () => {
                                 <View style={styles.participantsContainer}>
                                     <TouchableOpacity
                                         style={styles.participantRow}
-                                        onPress={() => navigateToProfileFromList(booking.landlord?.id || 0, booking.landlord?.id === user?.id)}
+                                        onPress={() => navigateToProfileFromList(booking.landlord?.id || 0)}
                                     >
                                         <Text style={styles.participantLabel}>Владелец:</Text>
                                         <View style={styles.participantInfo}>
@@ -259,7 +259,7 @@ export const BookingsScreen: React.FC = () => {
 
                                     <TouchableOpacity
                                         style={styles.participantRow}
-                                        onPress={() => navigateToProfileFromList(booking.renter?.id || 0, booking.renter?.id === user?.id)}
+                                        onPress={() => navigateToProfileFromList(booking.renter?.id || 0)}
                                     >
                                         <Text style={styles.participantLabel}>Арендатор:</Text>
                                         <View style={styles.participantInfo}>

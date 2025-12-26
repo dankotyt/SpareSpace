@@ -1,22 +1,21 @@
-import {AdvertisementFormData, LocationData} from "@/types/advertisement";
-import {Listing} from "@/types/profile";
+import {LocationData} from "@/types/advertisement";
 import {ListingResponse} from "@services/api/listingApi";
 
 export type RootStackParamList = {
+    // Главный таб-навигатор
     MainTabs: undefined;
+
+    // Аутентификация
     PhoneAuth: undefined;
     EmailAuth: undefined;
     TelegramAuth: { link: string };
     Registration: undefined;
+
+    // Профили
     Profile: { userId?: number };
-    FavoritesScreen: undefined;
-    SearchScreen: undefined;
-    MapScreen: {
-        filterType?: string;
-        searchQuery?: string;
-        pricePeriod?: string;
-        listing?: ListingResponse;
-    };
+
+    // Объявления
+    Advertisement: { listingId: number };
     AddAdvertisement: {
         selectedLocation?: {
             latitude: number;
@@ -32,12 +31,27 @@ export type RootStackParamList = {
         };
         onLocationSelected?: (locationData: LocationData) => void;
     };
-    Advertisement: { listingId: number };
+
+    // Поиск и карты
+    SearchScreen: undefined;
+    MapScreen: {
+        filterType?: string;
+        searchQuery?: string;
+        pricePeriod?: string;
+        listing?: ListingResponse;
+    };
+
+    // Бронирования
     Bookings: { initialTab?: 'all' | 'pending' | 'confirmed' | 'completed' | 'cancelled' } | undefined;
     BookingDetails: { bookingId: number };
     LandlordBookings: undefined;
-    Chat: { conversationId: number; };
+
+    // Чаты
     Conversations: undefined;
+    Chat: { conversationId: number };
+
+    // Избранное
+    FavoritesScreen: undefined;
 };
 
 export type BottomTabParamList = {
@@ -47,12 +61,6 @@ export type BottomTabParamList = {
     Messages: undefined;
     Profile: undefined;
     MapScreen: undefined;
-};
-
-export type ProfileStackParamList = {
-    ProfileMain: undefined;
-    PhoneAuth: undefined;
-    EmailAuth: undefined;
 };
 
 export type ChatStackParamList = {

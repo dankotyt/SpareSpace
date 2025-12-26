@@ -1,4 +1,3 @@
-// screens/profile/ProfileScreen.tsx
 import React, { useCallback, useEffect, useState } from 'react';
 import {
     View,
@@ -58,12 +57,12 @@ export const ProfileScreen: React.FC = () => {
     const targetUserId = userId || currentUser?.id;
 
     const [isTelegramLinked, setIsTelegramLinked] = useState(false);
-    const [telegramProfile, setTelegramProfile] = useState<TelegramProfile | null>(null);
-    useEffect(() => {
-        if (isAuthenticated && isViewingOwnProfile) {
-            loadTelegramInfo();
-        }
-    }, [isAuthenticated, isViewingOwnProfile]);
+    // const [telegramProfile, setTelegramProfile] = useState<TelegramProfile | null>(null);
+    // useEffect(() => {
+    //     if (isAuthenticated && isViewingOwnProfile) {
+    //         loadTelegramInfo();
+    //     }
+    // }, [isAuthenticated, isViewingOwnProfile]);
 
     const isOwner = (currentUserId: number | undefined, profileUserId: number): boolean => {
         return currentUserId === profileUserId;
@@ -106,15 +105,15 @@ export const ProfileScreen: React.FC = () => {
         }
     };
 
-    const loadTelegramInfo = async () => {
-        try {
-            const telegramData = await telegramApiService.getTelegramProfile();
-            setIsTelegramLinked(!!telegramData);
-            setTelegramProfile(telegramData);
-        } catch (error) {
-            console.error('Error loading Telegram info:', error);
-        }
-    };
+    // const loadTelegramInfo = async () => {
+    //     try {
+    //         const telegramData = await telegramApiService.getTelegramProfile();
+    //         setIsTelegramLinked(!!telegramData);
+    //         setTelegramProfile(telegramData);
+    //     } catch (error) {
+    //         console.error('Error loading Telegram info:', error);
+    //     }
+    // };
 
     const formatPublicProfile = async (profile: UserProfile, listings: any[] = []): Promise<FormattedUserProfile> => {
         const safeListings = Array.isArray(listings) ? listings : [];
@@ -176,12 +175,6 @@ export const ProfileScreen: React.FC = () => {
         }
     };
 
-    useEffect(() => {
-        if (isViewingOwnProfile && ownProfile) {
-            loadOwnProfileAdditionalData();
-        }
-    }, [isViewingOwnProfile, ownProfile]);
-
     const loadOwnProfileAdditionalData = async () => {
         if (!ownProfile || !currentUser) return;
 
@@ -197,7 +190,7 @@ export const ProfileScreen: React.FC = () => {
                     stats: fullData.stats
                 };
 
-               setUserProfile(updatedProfile);
+                setUserProfile(updatedProfile);
             }
         } catch (error) {
             console.error('Error loading additional profile data:', error);
@@ -286,38 +279,38 @@ export const ProfileScreen: React.FC = () => {
         }
     };
 
-    const handleUnlinkTelegram = async () => {
-        // Проверяем, что telegramProfile существует
-        if (!telegramProfile || !telegramProfile.id) {
-            Alert.alert('Ошибка', 'Telegram аккаунт не привязан или данные неполные');
-            return;
-        }
-
-        const telegramId = telegramProfile.id;
-
-        Alert.alert(
-            'Отвязать Telegram',
-            'Вы уверены, что хотите отвязать Telegram аккаунт?',
-            [
-                { text: 'Отмена', style: 'cancel' },
-                {
-                    text: 'Отвязать',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await telegramApiService.unlinkTelegramAccount(telegramId);
-                            setIsTelegramLinked(false);
-                            setTelegramProfile(null);
-                            Alert.alert('Успех', 'Telegram аккаунт отвязан');
-                        } catch (error) {
-                            console.error('Error unlinking Telegram:', error);
-                            Alert.alert('Ошибка', 'Не удалось отвязать Telegram аккаунт');
-                        }
-                    },
-                },
-            ]
-        );
-    };
+    // const handleUnlinkTelegram = async () => {
+    //     // Проверяем, что telegramProfile существует
+    //     if (!telegramProfile || !telegramProfile.id) {
+    //         Alert.alert('Ошибка', 'Telegram аккаунт не привязан или данные неполные');
+    //         return;
+    //     }
+    //
+    //     const telegramId = telegramProfile.id;
+    //
+    //     Alert.alert(
+    //         'Отвязать Telegram',
+    //         'Вы уверены, что хотите отвязать Telegram аккаунт?',
+    //         [
+    //             { text: 'Отмена', style: 'cancel' },
+    //             {
+    //                 text: 'Отвязать',
+    //                 style: 'destructive',
+    //                 onPress: async () => {
+    //                     try {
+    //                         await telegramApiService.unlinkTelegramAccount(telegramId);
+    //                         setIsTelegramLinked(false);
+    //                         setTelegramProfile(null);
+    //                         Alert.alert('Успех', 'Telegram аккаунт отвязан');
+    //                     } catch (error) {
+    //                         console.error('Error unlinking Telegram:', error);
+    //                         Alert.alert('Ошибка', 'Не удалось отвязать Telegram аккаунт');
+    //                     }
+    //                 },
+    //             },
+    //         ]
+    //     );
+    // };
 
     // Безопасные данные
     const safeStats = displayProfile?.stats || {

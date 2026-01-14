@@ -135,6 +135,8 @@ class SocketService {
     }
 
     private handleMessage(event: string, data: any) {
+        console.log(`📥 Processing WebSocket event "${event}":`, JSON.stringify(data));
+
         const handlers = this.messageHandlers.get(event) || [];
         handlers.forEach(handler => {
             try {

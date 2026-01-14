@@ -88,7 +88,6 @@ export const ChatScreen: React.FC = () => {
         }
     }, [conversationId, fetchMessages]);
 
-    // В ChatScreen.tsx
     const setupSocket = useCallback(async () => {
         if (!isAuthenticated || !user) {
             console.log('🔐 User not authenticated');
@@ -96,9 +95,6 @@ export const ChatScreen: React.FC = () => {
         }
 
         try {
-            console.log('🔄 Setting up WebSocket...');
-
-            // Подключаемся к WebSocket
             const connected = await socketService.connect();
             setWsConnected(connected);
 
@@ -108,66 +104,35 @@ export const ChatScreen: React.FC = () => {
                 return null;
             }
 
-            console.log('✅ WebSocket connected, joining room:', conversationId);
-
-            // Присоединяемся к комнате
             await socketService.joinRoom(conversationId);
 
-            // Используем useRef для отслеживания обработанных сообщений
-            const processedMessageIds = useRef<Set<number>>(new Set());
+            const processedMessageIds = new Set<number>();
 
-            const handleNewMessage = (data: { conversationId?: number; message: Message }) => {
-                console.log('📥 New message received from socket:', {
-                    conversationId: data.conversationId,
-                    messageId: data.message.id,
-                    text: data.message.text,
-                    senderId: data.message.sender.id,
-                    isFromMe: data.message.sender.id === user.id
-                });
+            const handleNewMessage = (data: { conversationId?: number | string; message: Message }) => {
 
-                // ВАЖНО: Проверяем, для нашей ли беседы это сообщение
-                const eventConversationId = data.conversationId ? parseInt(data.conversationId.toString()) : null;
-                if (eventConversationId !== conversationId) {
-                    console.log('⏭️ Message for different conversation, skipping');
-                    return;
-                }
+                const normalizedMessageId = data.message.id;
 
-                // Проверяем, не обработали ли мы уже это сообщение
-                if (processedMessageIds.current.has(data.message.id)) {
-                    console.log('⏭️ Message already processed, skipping');
-                    return;
-                }
+                processedMessageIds.add(normalizedMessageId);
 
-                // Добавляем ID в обработанные
-                processedMessageIds.current.add(data.message.id);
-
-                // Очищаем старые ID через 5 минут
                 setTimeout(() => {
-                    processedMessageIds.current.delete(data.message.id);
+                    processedMessageIds.delete(normalizedMessageId);
                 }, 5 * 60 * 1000);
 
-                // ИГНОРИРУЕМ сообщения от самого себя через broadcast
-                // Они уже добавлены как оптимистичные
                 if (data.message.sender.id === user.id) {
                     console.log('⏭️ Ignoring own message from broadcast');
                     return;
                 }
 
-                // Для сообщений от других пользователей
                 setMessages(prev => {
-                    // Проверяем, нет ли уже такого сообщения
-                    const exists = prev.some(msg => msg.id === data.message.id);
+                    const exists = prev.some(msg => msg.id === normalizedMessageId);
                     if (exists) {
-                        console.log('⏭️ Message already exists in list, skipping');
                         return prev;
                     }
 
-                    console.log('✅ Adding message to list');
                     return [...prev, data.message];
                 });
 
-                // Помечаем как прочитанное
-                socketService.markAsRead(conversationId, [data.message.id]);
+                socketService.markAsRead(conversationId, [normalizedMessageId]);
 
                 setTimeout(() => {
                     flatListRef.current?.scrollToEnd({ animated: true });
@@ -175,20 +140,18 @@ export const ChatScreen: React.FC = () => {
             };
 
             const handleMessageSent = (data: { success: boolean; data?: { message: Message } }) => {
-                console.log('✅ Message sent response:', data);
 
                 if (data.data?.message) {
-                    // Добавляем ID в обработанные
-                    processedMessageIds.current.add(data.data.message.id);
+                    const normalizedMessageId = typeof data.data.message.id === 'string' ?
+                        parseInt(data.data.message.id) : data.data.message.id;
 
-                    // Заменяем оптимистичное сообщение на реальное
+                    processedMessageIds.add(normalizedMessageId);
+
                     setMessages(prev => {
                         return prev.map(msg => {
-                            // Ищем оптимистичное сообщение с таким же текстом от этого пользователя
                             if (msg.id < 0 &&
                                 msg.sender.id === user.id &&
                                 msg.text === data.data!.message.text) {
-                                console.log('🔄 Replacing optimistic message with real one');
                                 return data.data!.message;
                             }
                             return msg;
@@ -202,18 +165,16 @@ export const ChatScreen: React.FC = () => {
                 Alert.alert('Ошибка', data.message || 'Ошибка соединения');
             };
 
-            // Подписываемся на события
             socketService.on('success', handleMessageSent);
             socketService.on('message:new', handleNewMessage);
             socketService.on('error', handleError);
 
             return () => {
-                console.log('🧹 Cleaning up WebSocket listeners for conversation:', conversationId);
                 socketService.off('success', handleMessageSent);
                 socketService.off('message:new', handleNewMessage);
                 socketService.off('error', handleError);
                 socketService.leaveRoom(conversationId);
-                processedMessageIds.current.clear();
+                processedMessageIds.clear();
             };
 
         } catch (error) {
@@ -226,13 +187,9 @@ export const ChatScreen: React.FC = () => {
 
     useEffect(() => {
         if (isAuthenticated && user) {
-            console.log('🎬 Initializing chat for conversation:', conversationId);
-
-            // Загружаем данные
             loadMessages();
             loadConversationData();
 
-            // Настраиваем WebSocket
             const initializeSocket = async () => {
                 const cleanup = await setupSocket();
                 if (cleanup) {
@@ -243,7 +200,6 @@ export const ChatScreen: React.FC = () => {
             initializeSocket();
 
             return () => {
-                console.log('🧼 Cleaning up chat for conversation:', conversationId);
                 if (cleanupRef.current) {
                     cleanupRef.current();
                     cleanupRef.current = null;
@@ -257,8 +213,6 @@ export const ChatScreen: React.FC = () => {
     }, [conversationId, isAuthenticated, user]);
 
     const handleSendMessage = async (text: string) => {
-        console.log('🔄 handleSendMessage called with text:', text);
-
         if (!user) {
             Alert.alert('Ошибка', 'Пользователь не авторизован');
             return;
@@ -276,12 +230,10 @@ export const ChatScreen: React.FC = () => {
         }
 
         const optimisticId = -Date.now();
-        console.log('📝 Creating optimistic message with ID:', optimisticId);
 
         try {
             setSending(true);
 
-            // Создаем упрощенный объект conversation для оптимистичного сообщения
             const optimisticConversation: Conversation = {
                 id: conversationId,
                 participant1: conversationData?.participant1 || user,
@@ -290,7 +242,6 @@ export const ChatScreen: React.FC = () => {
                 lastMessageAt: new Date().toISOString()
             };
 
-            // Добавляем оптимистичное сообщение
             const optimisticMessage: Message = {
                 id: optimisticId,
                 text,
@@ -301,24 +252,18 @@ export const ChatScreen: React.FC = () => {
                 readAt: null
             };
 
-            console.log('➕ Adding optimistic message:', optimisticMessage.text);
             addNewMessage(optimisticMessage);
 
             setTimeout(() => {
                 flatListRef.current?.scrollToEnd({ animated: true });
             }, 100);
 
-            // Отправляем через WebSocket
-            console.log('📤 Sending via WebSocket...');
             await socketService.sendMessage(conversationId, text);
-            console.log('✅ Message sent via WebSocket');
 
         } catch (error: any) {
             console.error('❌ Error sending message:', error);
 
-            // Удаляем оптимистичное сообщение при ошибке
             setMessages(prev => {
-                console.log('🗑️ Removing optimistic message due to error');
                 return prev.filter(msg => msg.id !== optimisticId);
             });
 
@@ -336,20 +281,6 @@ export const ChatScreen: React.FC = () => {
             : conversationData.participant1;
 
         return `${otherParticipant.firstName} ${otherParticipant.lastName}`.trim();
-    };
-
-    const groupMessagesByDate = (messages: Message[]) => {
-        const groups: { [key: string]: Message[] } = {};
-
-        messages.forEach(message => {
-            const date = new Date(message.sentAt).toDateString();
-            if (!groups[date]) {
-                groups[date] = [];
-            }
-            groups[date].push(message);
-        });
-
-        return groups;
     };
 
     const handleBackPress = () => {
@@ -393,9 +324,30 @@ export const ChatScreen: React.FC = () => {
         );
     };
 
-    const renderMessage = ({ item }: { item: Message }) => {
+    const renderMessage = ({ item, index }: { item: Message; index: number }) => {
         const isOwn = item.sender.id === user?.id;
-        return <MessageBubble message={item} isOwn={isOwn} />;
+        const showDateSeparator = shouldShowDateSeparator(index);
+
+        return (
+            <View key={`${item.id}-${item.sentAt}`}>
+                {showDateSeparator && renderDateSeparator(item.sentAt)}
+                <MessageBubble message={item} isOwn={isOwn} />
+            </View>
+        );
+    };
+
+    const shouldShowDateSeparator = (currentIndex: number): boolean => {
+        if (currentIndex === 0) return true;
+
+        const currentMessage = messages[currentIndex];
+        const previousMessage = messages[currentIndex - 1];
+
+        if (!currentMessage || !previousMessage) return false;
+
+        const currentDate = new Date(currentMessage.sentAt).toDateString();
+        const previousDate = new Date(previousMessage.sentAt).toDateString();
+
+        return currentDate !== previousDate;
     };
 
     const isLoading = messagesLoading || loadingConversation;
@@ -481,21 +433,6 @@ export const ChatScreen: React.FC = () => {
                         <Text style={styles.emptySubtext}>Начните общение первым!</Text>
                     </View>
                 }
-                ListHeaderComponent={() => {
-                    const groups = groupMessagesByDate(messages);
-                    return Object.keys(groups).map(date => (
-                        <View key={date}>
-                            {renderDateSeparator(date)}
-                            {groups[date].map(message => (
-                                <MessageBubble
-                                    key={`${message.id}-${message.sentAt}`}
-                                    message={message}
-                                    isOwn={message.sender.id === user?.id}
-                                />
-                            ))}
-                        </View>
-                    ));
-                }}
             />
 
             {/* Поле ввода */}

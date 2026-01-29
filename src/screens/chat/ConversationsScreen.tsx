@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
     View,
     Text,
@@ -13,6 +13,8 @@ import { BackButton } from '@/components/ui/BackButton';
 import { COLORS } from '@/shared/constants/colors';
 import {useChat} from "@hooks/chat/useChat";
 import {useAuth} from "@hooks/auth/useAuth";
+import { socketService } from '@/services/socketService';
+import {Conversation} from "@/types/chat";
 
 type ChatStackParamList = {
     Chat: { conversationId: number };
@@ -24,8 +26,13 @@ type NavigationProp = StackNavigationProp<ChatStackParamList>;
 export const ConversationsScreen: React.FC = () => {
     const navigation = useNavigation<NavigationProp>();
     const { user, isAuthenticated } = useAuth();
-    const { conversations, loading, error, fetchConversations, deleteConversation } = useChat();
+    const { conversations, loading, error, fetchConversations, deleteConversation, setConversations } = useChat();
     const [refreshing, setRefreshing] = useState(false);
+    const conversationsRef = useRef<Conversation[]>([]);
+
+    useEffect(() => {
+        conversationsRef.current = conversations;
+    }, [conversations]);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -41,9 +48,114 @@ export const ConversationsScreen: React.FC = () => {
         }
     };
 
+    useEffect(() => {
+        if (!isAuthenticated || !user) return;
+
+        const handleNewMessage = (data: {
+            conversationId: number;
+            message: any;
+        }) => {
+
+            setConversations(prev => {
+                const updated = prev.map(conv => {
+                    if (conv.id === data.conversationId) {
+                        const isOwnMessage = data.message.sender.id === user.id;
+                        return {
+                            ...conv,
+                            lastMessageAt: new Date().toISOString(),
+                            lastMessage: {
+                                text: data.message.text,
+                                senderId: data.message.sender.id
+                            },
+                            unreadCount: isOwnMessage
+                                ? conv.unreadCount
+                                : (conv.unreadCount || 0) + 1
+                        };
+                    }
+                    return conv;
+                });
+
+                return updated.sort((a, b) =>
+                    new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
+                );
+            });
+        };
+
+        const handleMessageReadUpdate = (data: {
+            conversationId: number;
+            userId: number;
+            messageIds: number[];
+        }) => {
+            if (data.userId === user.id) {
+                setConversations(prev => {
+                    return prev.map(conv => {
+                        if (conv.id === data.conversationId) {
+                            // Уменьшаем счетчик на количество прочитанных сообщений
+                            const messagesRead = Math.min(data.messageIds.length, conv.unreadCount || 0);
+                            return {
+                                ...conv,
+                                unreadCount: Math.max(0, (conv.unreadCount || 0) - messagesRead)
+                            };
+                        }
+                        return conv;
+                    });
+                });
+            }
+        };
+
+        const handleUnreadsCount = (data: {
+            conversationId: number;
+            unreadMessagesCount: number;
+        }) => {
+
+            setConversations(prev =>
+                prev.map(conv =>
+                    conv.id === data.conversationId
+                        ? { ...conv, unreadCount: data.unreadMessagesCount }
+                        : conv
+                )
+            );
+        };
+
+        const handleLastMessage = (data: {
+            conversationId: number;
+            lastMessage: any;
+        }) => {
+
+            setConversations(prev => {
+                return prev.map(conv => {
+                    if (conv.id === data.conversationId) {
+                        return {
+                            ...conv,
+                            lastMessageAt: data.lastMessage?.sentAt || conv.lastMessageAt,
+                            lastMessage: data.lastMessage ? {
+                                text: data.lastMessage.text,
+                                senderId: data.lastMessage.sender.id
+                            } : conv.lastMessage
+                        };
+                    }
+                    return conv;
+                });
+            });
+        };
+
+        socketService.on('message:new', handleNewMessage);
+        socketService.on('message:read-update', handleMessageReadUpdate);
+        socketService.on('unreads', handleUnreadsCount);
+        socketService.on('last-message', handleLastMessage);
+
+        return () => {
+            socketService.off('message:new', handleNewMessage);
+            socketService.off('message:read-update', handleMessageReadUpdate);
+            socketService.off('unreads', handleUnreadsCount);
+            socketService.off('last-message', handleLastMessage);
+        };
+    }, [isAuthenticated, user, setConversations]);
+
     const handleRefresh = async () => {
         if (!isAuthenticated) return;
 
+        console.log('🔄 Manual refresh triggered');
         setRefreshing(true);
         await loadConversations();
         setRefreshing(false);

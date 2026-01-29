@@ -11,7 +11,6 @@ class SocketService {
     private connectionPromise: Promise<boolean> | null = null;
 
     async connect(): Promise<boolean> {
-        // Если уже есть promise подключения, возвращаем его
         if (this.connectionPromise) {
             return this.connectionPromise;
         }
@@ -23,7 +22,6 @@ class SocketService {
     private async internalConnect(): Promise<boolean> {
         try {
             const token = await tokenService.getToken();
-            console.log('🔑 Token for WebSocket:', token ? 'Present' : 'Missing');
 
             if (!token) {
                 console.error('❌ No token available');
@@ -61,7 +59,6 @@ class SocketService {
 
             return new Promise((resolve) => {
                 const connectTimeout = setTimeout(() => {
-                    console.error('⏰ WebSocket connection timeout');
                     resolve(false);
                 }, 10000);
 
@@ -115,9 +112,12 @@ class SocketService {
             console.error('❌ Socket.IO error:', error);
         });
 
+        this.socket.on('message:read-confirm', (data: any) => {
+            this.handleMessage('message:read-confirm', data);
+        });
+
         // Обработка всех входящих сообщений
         this.socket.onAny((eventName: string, ...args: any[]) => {
-            console.log('📥 WebSocket event:', eventName, args[0]);
             this.handleMessage(eventName, args[0]);
         });
     }
@@ -126,7 +126,6 @@ class SocketService {
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
             const delay = 1000 * this.reconnectAttempts;
-            console.log(`🔄 Reconnecting attempt ${this.reconnectAttempts} in ${delay}ms`);
 
             setTimeout(async () => {
                 await this.connect();
@@ -135,8 +134,6 @@ class SocketService {
     }
 
     private handleMessage(event: string, data: any) {
-        console.log(`📥 Processing WebSocket event "${event}":`, JSON.stringify(data));
-
         const handlers = this.messageHandlers.get(event) || [];
         handlers.forEach(handler => {
             try {
@@ -149,7 +146,6 @@ class SocketService {
 
     async joinRoom(conversationId: number): Promise<void> {
         if (!this.isConnected) {
-            console.log('🔄 Socket not connected, attempting to connect first...');
             const connected = await this.connect();
             if (!connected) {
                 console.error('❌ Failed to connect, cannot join room');
@@ -158,7 +154,6 @@ class SocketService {
         }
 
         if (this.socket) {
-            console.log(`🔗 Joining room: chat:${conversationId}`);
             this.socket.emit('chat:join', { conversationId });
         } else {
             console.error('❌ Socket is null, cannot join room');
@@ -173,7 +168,6 @@ class SocketService {
 
     async sendMessage(conversationId: number, text: string): Promise<void> {
         if (!this.isConnected) {
-            console.log('🔄 Socket not connected, attempting to connect first...');
             const connected = await this.connect();
             if (!connected) {
                 console.error('❌ Failed to connect, cannot send message');
@@ -182,7 +176,6 @@ class SocketService {
         }
 
         if (this.socket && this.isConnected) {
-            console.log('📤 Sending message:', { conversationId, text });
             this.socket.emit('message:send', { conversationId, text });
         } else {
             console.error('❌ WebSocket not connected!');
@@ -196,7 +189,6 @@ class SocketService {
         }
 
         if (this.socket && this.isConnected) {
-            console.log('✅ Marking as read:', { conversationId, messageIds });
             this.socket.emit('message:read', {
                 conversationId,
                 messageIds: messageIds || []
@@ -254,7 +246,6 @@ class SocketService {
 
     disconnect() {
         if (this.socket) {
-            console.log('🔌 Disconnecting WebSocket');
             this.socket.disconnect();
             this.socket = null;
             this.isConnected = false;

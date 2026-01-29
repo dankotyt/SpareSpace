@@ -6,91 +6,114 @@ import { COLORS } from '@/shared/constants/colors';
 interface MessageBubbleProps {
     message: Message;
     isOwn: boolean;
+    showReadStatus?: boolean;
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
                                                                 message,
-                                                                isOwn
+                                                                isOwn,
+                                                                showReadStatus = false
                                                             }) => {
-    const formatTime = (dateString: string) => {
-        return new Date(dateString).toLocaleTimeString('ru-RU', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
+    const showDoubleCheck = isOwn && message.isRead;
 
     return (
         <View style={[
-            styles.messageContainer,
-            isOwn ? styles.ownMessageContainer : styles.otherMessageContainer
+            styles.container,
+            isOwn ? styles.ownContainer : styles.otherContainer
         ]}>
             <View style={[
                 styles.bubble,
                 isOwn ? styles.ownBubble : styles.otherBubble
             ]}>
-                <Text style={[
-                    styles.messageText,
-                    isOwn ? styles.ownMessageText : styles.otherMessageText
-                ]}>
+                <Text style={isOwn ? styles.ownText : styles.otherText}>
                     {message.text}
                 </Text>
-                <Text style={[
-                    styles.timeText,
-                    isOwn ? styles.ownTimeText : styles.otherTimeText
-                ]}>
-                    {formatTime(message.sentAt)}
-                </Text>
+
+                {/* Время и статус прочтения */}
+                <View style={styles.footer}>
+                    <Text style={[
+                        styles.time,
+                        isOwn ? styles.ownTime : styles.otherTime
+                    ]}>
+                        {new Date(message.sentAt).toLocaleTimeString('ru-RU', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })}
+                    </Text>
+
+                    {/* Чекмарки для своих сообщений */}
+                    {isOwn && (
+                        <View style={styles.readStatus}>
+                            {showDoubleCheck ? (
+                                <Text style={styles.doubleCheckmark}>✓✓</Text>
+                            ) : (
+                                <Text style={styles.singleCheckmark}>✓</Text>
+                            )}
+                        </View>
+                    )}
+                </View>
             </View>
         </View>
     );
 };
 
 const styles = StyleSheet.create({
-    messageContainer: {
+    container: {
         marginVertical: 4,
-        paddingHorizontal: 16,
+        marginHorizontal: 16,
     },
-    ownMessageContainer: {
+    ownContainer: {
         alignItems: 'flex-end',
     },
-    otherMessageContainer: {
+    otherContainer: {
         alignItems: 'flex-start',
     },
     bubble: {
         maxWidth: '80%',
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 20,
+        padding: 12,
+        borderRadius: 18,
     },
     ownBubble: {
         backgroundColor: COLORS.primary,
         borderBottomRightRadius: 4,
     },
     otherBubble: {
-        backgroundColor: COLORS.primaryLight,
+        backgroundColor: COLORS.gray[200],
         borderBottomLeftRadius: 4,
     },
-    messageText: {
+    ownText: {
         fontSize: 16,
-        lineHeight: 20,
-    },
-    ownMessageText: {
         color: COLORS.white,
     },
-    otherMessageText: {
-        color: COLORS.text,
+    otherText: {
+        fontSize: 16,
+        color: COLORS.gray[900],
     },
-    timeText: {
-        fontSize: 11,
+    footer: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
         marginTop: 4,
-        opacity: 0.7,
     },
-    ownTimeText: {
+    time: {
+        fontSize: 11,
+    },
+    ownTime: {
+        color: 'rgba(255, 255, 255, 0.7)',
+    },
+    otherTime: {
+        color: 'rgba(0, 0, 0, 0.5)',
+    },
+    readStatus: {
+        marginLeft: 4,
+    },
+    singleCheckmark: {
+        fontSize: 12,
+        color: 'rgba(255, 255, 255, 0.7)',
+    },
+    doubleCheckmark: {
+        fontSize: 12,
         color: COLORS.white,
-        textAlign: 'right',
-    },
-    otherTimeText: {
-        color: COLORS.text,
-        textAlign: 'left',
+        fontWeight: 'bold',
     },
 });

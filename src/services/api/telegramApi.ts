@@ -56,6 +56,7 @@ class TelegramApiService {
         });
     }
 
+    //todo таких эндпоинтов еще нет в бэкенде
     async getTelegramProfile(): Promise<TelegramProfile | null> {
         try {
             const response = await this.request<{ data: TelegramProfile }>('/telegram/profile', {

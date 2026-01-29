@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {
     View,
     Text,
@@ -12,6 +12,8 @@ import { Conversation } from '@/types/chat';
 import { NotificationBubble } from '@/components/chat/NotificationBubble';
 import { COLORS } from '@/shared/constants/colors';
 import {formatChatDate} from "@shared/utils/dateUtils";
+import { socketService } from '@/services/socketService';
+import { useAuth } from '@hooks/auth/useAuth';
 
 interface ConversationListProps {
     conversations: Conversation[];
@@ -30,6 +32,115 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                                                                       onDeleteConversation,
                                                                       onRefresh,
                                                                   }) => {
+    const { user } = useAuth();
+    const [localConversations, setLocalConversations] = useState<Conversation[]>(conversations);
+
+    useEffect(() => {
+        setLocalConversations(conversations);
+    }, [conversations]);
+
+    useEffect(() => {
+        if (!user) return;
+
+        const handleNewMessage = (data: {
+            conversationId: number;
+            message: any;
+        }) => {
+            setLocalConversations(prev =>
+                prev.map(conv => {
+                    if (conv.id === data.conversationId) {
+                        const isOwnMessage = data.message.sender.id === user.id;
+
+                        return {
+                            ...conv,
+                            lastMessageAt: new Date().toISOString(),
+                            lastMessage: {
+                                text: data.message.text,
+                                senderId: data.message.sender.id
+                            },
+                            // Увеличиваем счетчик только если сообщение не наше
+                            unreadCount: isOwnMessage
+                                ? (conv.unreadCount || 0)
+                                : (conv.unreadCount || 0) + 1
+                        };
+                    }
+                    return conv;
+                })
+            );
+        };
+
+        const handleMessageReadUpdate = (data: {
+            conversationId: number;
+            userId: number;
+            messageIds: number[];
+        }) => {
+            setLocalConversations(prev =>
+                prev.map(conv => {
+                    if (conv.id === data.conversationId && data.userId === user.id) {
+                        const messagesRead = Math.min(data.messageIds.length, conv.unreadCount || 0);
+                        return {
+                            ...conv,
+                            unreadCount: Math.max(0, (conv.unreadCount || 0) - messagesRead)
+                        };
+                    }
+                    return conv;
+                })
+            );
+        };
+
+        const handleLastMessage = (data: {
+            conversationId: number;
+            lastMessage: any;
+        }) => {
+            setLocalConversations(prev =>
+                prev.map(conv => {
+                    if (conv.id === data.conversationId) {
+                        const isOwnMessage = data.lastMessage?.sender?.id === user.id;
+                        return {
+                            ...conv,
+                            lastMessageAt: data.lastMessage?.sentAt || conv.lastMessageAt,
+                            lastMessage: data.lastMessage ? {
+                                text: data.lastMessage.text,
+                                senderId: data.lastMessage.sender.id
+                            } : conv.lastMessage
+                        };
+                    }
+                    return conv;
+                })
+            );
+        };
+
+        const handleUnreadsCount = (data: {
+            conversationId: number;
+            unreadMessagesCount: number;
+        }) => {
+            setLocalConversations(prev =>
+                prev.map(conv => {
+                    if (conv.id === data.conversationId) {
+                        return {
+                            ...conv,
+                            unreadCount: data.unreadMessagesCount
+                        };
+                    }
+                    return conv;
+                })
+            );
+        };
+
+        socketService.on('message:new', handleNewMessage);
+        socketService.on('message:read-update', handleMessageReadUpdate);
+        socketService.on('last-message', handleLastMessage);
+        socketService.on('unreads', handleUnreadsCount);
+
+        return () => {
+            socketService.off('message:new', handleNewMessage);
+            socketService.off('message:read-update', handleMessageReadUpdate);
+            socketService.off('last-message', handleLastMessage);
+            socketService.off('unreads', handleUnreadsCount);
+        };
+    }, [user]);
+
+    // Остальные функции остаются без изменений...
     const getOtherParticipant = (conversation: Conversation) => {
         return conversation.participant1.id === currentUserId
             ? conversation.participant2
@@ -44,11 +155,24 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     const renderConversationItem = ({ item }: { item: Conversation }) => {
         const participantName = getParticipantName(item);
         const otherParticipant = getOtherParticipant(item);
+        const hasUnread = (item.unreadCount || 0) > 0;
+
+        // Безопасное получение текста последнего сообщения
+        const lastMessageText = item.lastMessage?.text || 'Нет сообщений';
+        const isOwnLastMessage = item.lastMessage?.senderId === currentUserId;
+
+        // Форматируем текст для отображения
+        const displayText = isOwnLastMessage
+            ? `Вы: ${lastMessageText}`
+            : lastMessageText;
 
         return (
             <TouchableOpacity
                 style={styles.conversationItem}
-                onPress={() => onConversationPress(item.id)}
+                onPress={() => {
+                    // При клике открываем чат и обновляем счетчик
+                    onConversationPress(item.id);
+                }}
                 onLongPress={() => {
                     if (onDeleteConversation) {
                         onDeleteConversation(item.id);
@@ -73,21 +197,23 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                         </View>
                     )}
 
-                    {/* Уведомления о новых сообщениях */}
-                    {item.unreadCount && item.unreadCount > 0 ? (
+                    {/* NotificationBubble - показываем только если есть непрочитанные */}
+                    {hasUnread && (
                         <NotificationBubble
-                            count={item.unreadCount}
+                            count={item.unreadCount || 0}
                             color={COLORS.primary}
                             enabled={true}
-                            onPress={() => onConversationPress(item.id)}
                         />
-                    ) : null}
+                    )}
                 </View>
 
                 {/* Контент */}
                 <View style={styles.content}>
                     <View style={styles.topRow}>
-                        <Text style={styles.userName} numberOfLines={1}>
+                        <Text style={[
+                            styles.userName,
+                            hasUnread ? styles.unreadUserName : null
+                        ]} numberOfLines={1}>
                             {participantName}
                         </Text>
                         <Text style={styles.dateText}>
@@ -98,13 +224,11 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                     <Text
                         style={[
                             styles.lastMessage,
-                            ...(item.unreadCount && item.unreadCount > 0 ? [styles.unreadMessage] : [])
+                            hasUnread ? styles.unreadMessage : styles.readMessage
                         ]}
                         numberOfLines={2}
                     >
-                        {item.lastMessage && item.lastMessage.senderId === currentUserId
-                            ? `Вы: ${item.lastMessage.text}`
-                            : item.lastMessage?.text || 'Нет сообщений'}
+                        {displayText}
                     </Text>
 
                     {item.listing && (
@@ -117,7 +241,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
         );
     };
 
-    if (loading && conversations.length === 0) {
+    if (loading && localConversations.length === 0) {
         return (
             <View style={styles.centered}>
                 <ActivityIndicator size="large" color={COLORS.primary} />
@@ -126,7 +250,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
         );
     }
 
-    if (conversations.length === 0) {
+    if (localConversations.length === 0) {
         return (
             <View style={styles.centered}>
                 <Text style={styles.emptyText}>Нет сообщений</Text>
@@ -139,7 +263,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
 
     return (
         <FlatList
-            data={conversations}
+            data={localConversations}
             renderItem={renderConversationItem}
             keyExtractor={(item) => item.id.toString()}
             contentContainerStyle={styles.listContent}
@@ -193,6 +317,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 4,
     },
+    unreadUserName: {
+        fontWeight: '700',
+        color: COLORS.gray[900],
+    },
+    unreadMessage: {
+        fontWeight: '600',
+        color: COLORS.gray[900],
+    },
+    readMessage: {
+        fontWeight: '400',
+        color: COLORS.gray[600],
+    },
     userName: {
         fontSize: 16,
         fontWeight: '600',
@@ -209,10 +345,6 @@ const styles = StyleSheet.create({
         color: COLORS.gray[600],
         lineHeight: 18,
         marginBottom: 4,
-    },
-    unreadMessage: {
-        fontWeight: '600',
-        color: COLORS.gray[900],
     },
     listingText: {
         fontSize: 12,

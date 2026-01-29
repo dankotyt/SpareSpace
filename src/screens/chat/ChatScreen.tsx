@@ -212,6 +212,54 @@ export const ChatScreen: React.FC = () => {
         }
     }, [conversationId, isAuthenticated, user]);
 
+    useEffect(() => {
+        if (isAuthenticated && user && conversationId && messages.length > 0 && wsConnected) {
+            const unreadMessageIds = messages
+                .filter(msg =>
+                    msg.sender.id !== user.id &&
+                    !msg.isRead
+                )
+                .map(msg => msg.id)
+                .filter(id => id > 0);
+            if (unreadMessageIds.length > 0) {
+                socketService.markAsRead(conversationId, unreadMessageIds);
+
+                setMessages(prev =>
+                    prev.map(msg =>
+                        unreadMessageIds.includes(msg.id)
+                            ? { ...msg, isRead: true, readAt: new Date().toISOString() }
+                            : msg
+                    )
+                );
+            }
+        }
+    }, [messages, user, conversationId, wsConnected, isAuthenticated]);
+
+    useEffect(() => {
+        const handleMessageReadUpdate = (data: {
+            conversationId: number;
+            userId: number;
+            messageIds: number[];
+        }) => {
+            if (data.userId !== user?.id && data.conversationId === conversationId) {
+
+                setMessages(prev =>
+                    prev.map(msg =>
+                        data.messageIds.includes(msg.id) && msg.sender.id === user?.id
+                            ? { ...msg, isRead: true, readAt: new Date().toISOString() }
+                            : msg
+                    )
+                );
+            }
+        };
+
+        socketService.on('message:read-update', handleMessageReadUpdate);
+
+        return () => {
+            socketService.off('message:read-update', handleMessageReadUpdate);
+        };
+    }, [conversationId, user]);
+
     const handleSendMessage = async (text: string) => {
         if (!user) {
             Alert.alert('Ошибка', 'Пользователь не авторизован');
@@ -312,6 +360,20 @@ export const ChatScreen: React.FC = () => {
         await loadConversationData();
     };
 
+    const groupMessagesByDate = (messages: Message[]) => {
+        const groups: { [key: string]: Message[] } = {};
+
+        messages.forEach(message => {
+            const date = new Date(message.sentAt).toDateString();
+            if (!groups[date]) {
+                groups[date] = [];
+            }
+            groups[date].push(message);
+        });
+
+        return groups;
+    };
+
     const renderDateSeparator = (dateString: string) => {
         const displayDate = formatChatSeparatorDate(dateString);
 
@@ -326,12 +388,17 @@ export const ChatScreen: React.FC = () => {
 
     const renderMessage = ({ item, index }: { item: Message; index: number }) => {
         const isOwn = item.sender.id === user?.id;
+
         const showDateSeparator = shouldShowDateSeparator(index);
 
         return (
-            <View key={`${item.id}-${item.sentAt}`}>
+            <View>
                 {showDateSeparator && renderDateSeparator(item.sentAt)}
-                <MessageBubble message={item} isOwn={isOwn} />
+                <MessageBubble
+                    message={item}
+                    isOwn={isOwn}
+                    showReadStatus={isOwn}
+                />
             </View>
         );
     };

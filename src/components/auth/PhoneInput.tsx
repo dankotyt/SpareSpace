@@ -19,6 +19,10 @@ interface PhoneInputProps {
     onBlur: () => void;
 }
 
+/**
+ * React-компонент для ввода номера телефона с автоматическим форматированием
+ * Форматирует номер по маске +7 (XXX) XXX-XX-XX
+ */
 export const PhoneInput: React.FC<PhoneInputProps> = ({
                                                           value,
                                                           isFocused,
@@ -27,6 +31,10 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
                                                           onFocus,
                                                           onBlur,
                                                       }) => {
+    /**
+     * Обрабатывает ввод текста с автоматическим форматированием номера
+     * @param text - введенный пользователем текст
+     */
     const handleTextChange = (text: string) => {
         const formatted = formatPhoneNumber(text);
         onChangeText(formatted);

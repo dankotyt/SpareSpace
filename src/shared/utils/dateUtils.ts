@@ -1,3 +1,8 @@
+/**
+ * Форматирует дату для отображения в списке чатов
+ * @param dateString - строка с датой в формате ISO или null/undefined
+ * @returns Отформатированную строку с датой (сегодня, вчера, день недели, или полная дата)
+ */
 export const formatChatDate = (dateString: string | null | undefined): string => {
     if (!dateString) return '';
 
@@ -41,6 +46,11 @@ export const formatChatDate = (dateString: string | null | undefined): string =>
     }
 };
 
+/**
+ * Форматирует дату для отображения в сообщениях чата
+ * @param dateString - строка с датой в формате ISO
+ * @returns Отформатированную строку с датой (сегодня, вчера, день недели и дата, или полная дата)
+ */
 export const formatMessageDate = (dateString: string): string => {
     const date = new Date(dateString);
     const now = new Date();
@@ -77,6 +87,11 @@ export const formatMessageDate = (dateString: string): string => {
     }
 };
 
+/**
+ * Форматирует дату для разделителей между сообщениями в чате
+ * @param dateString - строка с датой в формате ISO
+ * @returns Отформатированную строку с датой для заголовков разделов
+ */
 export const formatChatSeparatorDate = (dateString: string): string => {
     const date = new Date(dateString);
     const now = new Date();

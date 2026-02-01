@@ -4,6 +4,9 @@ import {Listing} from "@/types/profile";
 import {authApiService} from "@services/api/authApi";
 import {formatListingForDisplay} from '@shared/utils/listingFormatter';
 
+/**
+ * Интерфейс запроса для создания объявления
+ */
 export interface CreateListingRequest {
     type: string;
     title: string;
@@ -25,9 +28,24 @@ export interface CreateListingRequest {
     }>;
 }
 
+/**
+ * Тип ответа API для объявления
+ */
 export type ListingResponse = Listing;
 
+/**
+ * Сервис для работы с API объявлений (листингов)
+ * Предоставляет операции CRUD для парковочных мест, гаражей и кладовых
+ */
 class ListingApiService {
+
+    /**
+     * Базовый метод для выполнения авторизованных HTTP запросов
+     * @param endpoint - конечная точка API
+     * @param options - опции запроса fetch
+     * @returns Промис с данными ответа
+     * @throws Error при отсутствии токена или ошибке сервера
+     */
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
         const url = `${API_BASE_URL}${endpoint}`;
         const token = await tokenService.getToken();
@@ -55,6 +73,11 @@ class ListingApiService {
         return responseData;
     }
 
+    /**
+     * Создает новое объявление (парковочное место, гараж или кладовую)
+     * @param listingData - данные для создания объявления
+     * @returns Промис с созданным объявлением в формате для отображения
+     */
     async createListing(listingData: CreateListingRequest): Promise<ListingResponse> {
         const result = await this.request<ListingResponse>('/listings', {
             method: 'POST',
@@ -63,6 +86,10 @@ class ListingApiService {
         return formatListingForDisplay(result);
     }
 
+    /**
+     * Получает список всех объявлений
+     * @returns Промис с массивом объявлений в формате для отображения
+     */
     async getListings(): Promise<ListingResponse[]> {
         try {
             const url = `${API_BASE_URL}/listings`;
@@ -89,6 +116,10 @@ class ListingApiService {
         }
     }
 
+    /**
+     * Получает объявления текущего пользователя
+     * @returns Промис с массивом объявлений пользователя
+     */
     async getMyListings(): Promise<ListingResponse[]> {
         try {
             const profileResponse = await authApiService.getProfile();
@@ -108,12 +139,23 @@ class ListingApiService {
         }
     }
 
+    /**
+     * Получает конкретное объявление по ID
+     * @param id - ID объявления
+     * @returns Промис с данными объявления в формате для отображения
+     */
     async getListingById(id: number): Promise<ListingResponse> {
         const listing = await this.request<ListingResponse>(`/listings/${id}`);
 
         return formatListingForDisplay(listing);
     }
 
+    /**
+     * Обновляет существующее объявление
+     * @param id - ID объявления для обновления
+     * @param listingData - частичные данные для обновления
+     * @returns Промис с обновленным объявлением
+     */
     async updateListing(id: number, listingData: Partial<CreateListingRequest>): Promise<ListingResponse> {
         const listing = await this.request<ListingResponse>(`/listings/${id}`, {
             method: 'PATCH',
@@ -123,6 +165,10 @@ class ListingApiService {
         return formatListingForDisplay(listing);
     }
 
+    /**
+     * Удаляет объявление
+     * @param id - ID объявления для удаления
+     */
     async deleteListing(id: number): Promise<void> {
         await this.request(`/listings/${id}`, {
             method: 'DELETE',

@@ -2,10 +2,20 @@ import {useCallback, useState} from 'react';
 import {CreateListingRequest, listingApiService} from '@/services/api/listingApi';
 import {AdvertisementFormData, PricePeriodType} from '@/types/advertisement';
 
+/**
+ * Хук для управления объявлениями (листингами)
+ * Обрабатывает создание и трансформацию данных объявлений
+ */
 export const useListing = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    /**
+     * Преобразует данные формы в формат API для создания объявления
+     * @param formData - данные из формы создания объявления
+     * @returns Объект CreateListingRequest для отправки на сервер
+     * @throws Error при отсутствии типа или цены
+     */
     const transformFormDataToApi = (formData: AdvertisementFormData): CreateListingRequest => {
         if (!formData.type) {
             throw new Error('Тип объявления не выбран');
@@ -105,6 +115,12 @@ export const useListing = () => {
         };
     };
 
+    /**
+     * Безопасно парсит дату из различных форматов
+     * @param dateValue - значение даты для парсинга
+     * @returns Объект Date
+     * @throws Error при некорректном формате даты
+     */
     const parseDateSafely = (dateValue: any): Date => {
         console.log('🔍 Parsing date value:', dateValue, 'type:', typeof dateValue);
 
@@ -144,6 +160,12 @@ export const useListing = () => {
         throw new Error(`Неверный формат даты: ${dateValue}`);
     };
 
+    /**
+     * Создает новое объявление на сервере
+     * @param formData - данные формы объявления
+     * @returns Промис с результатом создания
+     * @throws Error при ошибках валидации или сети
+     */
     const createListing = useCallback(async (formData: any) => {
         if (!formData.type) {
             throw new Error('Тип объявления не выбран');
@@ -167,6 +189,9 @@ export const useListing = () => {
         }
     }, []);
 
+    /**
+     * Очищает ошибки хука
+     */
     const clearError = useCallback(() => {
         setError(null);
     }, []);

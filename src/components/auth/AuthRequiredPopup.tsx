@@ -8,12 +8,20 @@ import {
 } from 'react-native';
 import { COLORS } from '@/shared/constants/colors';
 
+/**
+ * Пропсы для модального окна, требующего авторизации
+ */
 interface AuthRequiredPopupProps {
     visible: boolean;
     onClose: () => void;
     onNavigateToAuth: () => void;
 }
 
+/**
+ * Модальное окно, которое появляется при попытке выполнить действие,
+ * требующее авторизации.
+ * Предлагает пользователю войти или зарегистрироваться
+ */
 export const AuthRequiredPopup: React.FC<AuthRequiredPopupProps> = ({
                                                                         visible,
                                                                         onClose,

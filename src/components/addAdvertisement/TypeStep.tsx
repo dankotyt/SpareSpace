@@ -7,7 +7,15 @@ interface TypeStepProps {
     onTypeSelect: (type: 'PARKING' | 'STORAGE' | 'GARAGE') => void;
 }
 
+/**
+ * Компонент шага "Тип помещения" для формы создания объявления
+ * Предоставляет выбор между парковочным местом, кладовкой и гаражом
+ */
 export const TypeStep: React.FC<TypeStepProps> = ({ selectedType, onTypeSelect }) => {
+
+    /**
+     * Массив доступных типов помещений с описаниями
+     */
     const types = [
         {
             id: 'PARKING' as const,

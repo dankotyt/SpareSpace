@@ -20,6 +20,10 @@ import {TelegramAuthScreen} from "@screens/auth/TelegramAuthScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
+/**
+ * Главный навигатор приложения на основе Stack Navigator
+ * Определяет структуру экранов и навигацию между ними
+ */
 export const AppNavigator: React.FC = () => {
     return (
         <Stack.Navigator

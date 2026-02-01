@@ -16,11 +16,21 @@ interface AdvertisementPhotosProps {
     onIndexChange: (index: number) => void;
 }
 
+/**
+ * Компонент галереи фотографий объявления
+ * Отображает горизонтальный скроллируемый список фотографий с индикатором
+ * @todo подключить S3-хранилище для отображения фото
+ */
 export const AdvertisementPhotos: React.FC<AdvertisementPhotosProps> = ({
                                                                             photos,
                                                                             currentIndex,
                                                                             onIndexChange,
                                                                         }) => {
+    /**
+     * Рендерит отдельную фотографию в галерее
+     * @param param0 - объект с данными фотографии
+     * @returns JSX элемент фотографии
+     */
     const renderPhoto = ({ item }: { item: string }) => (
         <View style={styles.photoContainer}>
             <Image source={{ uri: item }} style={styles.photo} resizeMode="cover" />

@@ -1,7 +1,18 @@
 import { bookingsApiService, CreateBookingDto, Booking, BookingsResponse } from '@/services/api/bookingsApi';
 import { Alert } from 'react-native';
 
+/**
+ * Сервис-обертка для работы с бронированиями
+ * Добавляет обработку ошибок и пользовательские уведомления к базовому API
+ */
 class BookingsService {
+
+    /**
+     * Создает новое бронирование
+     * @param bookingData - DTO с данными бронирования
+     * @returns Промис с созданным бронированием
+     * @throws Error с пользовательским сообщением при ошибке
+     */
     async createBooking(bookingData: CreateBookingDto): Promise<Booking> {
         try {
             return await bookingsApiService.create(bookingData);
@@ -22,6 +33,12 @@ class BookingsService {
         }
     }
 
+    /**
+     * Получает информацию о конкретном бронировании по ID
+     * @param id - ID бронирования
+     * @returns Промис с данными бронирования
+     * @throws Error с пользовательским сообщением при ошибке
+     */
     async getBookingById(id: number): Promise<Booking> {
         try {
             return await bookingsApiService.findOne(id);
@@ -32,6 +49,11 @@ class BookingsService {
         }
     }
 
+    /**
+     * Отменяет существующее бронирование
+     * @param id - ID бронирования для отмены
+     * @throws Error с пользовательским сообщением при ошибке
+     */
     async cancelBooking(id: number): Promise<void> {
         try {
             return await bookingsApiService.remove(id);
@@ -42,6 +64,13 @@ class BookingsService {
         }
     }
 
+    /**
+     * Обновляет данные существующего бронирования
+     * @param id - ID бронирования для обновления
+     * @param bookingData - частичные данные для обновления
+     * @returns Промис с обновленным бронированием
+     * @throws Error с пользовательским сообщением при ошибке
+     */
     async updateBooking(id: number, bookingData: Partial<CreateBookingDto>): Promise<Booking> {
         try {
             return await bookingsApiService.update(id, bookingData);
@@ -52,6 +81,13 @@ class BookingsService {
         }
     }
 
+    /**
+     * Изменяет статус бронирования (подтвердить/отменить)
+     * @param id - ID бронирования
+     * @param status - новый статус
+     * @returns Промис с обновленным бронированием
+     * @throws Error с пользовательским сообщением при ошибке
+     */
     async changeBookingStatus(id: number, status: 'CONFIRMED' | 'CANCELLED'): Promise<Booking> {
         try {
             return await bookingsApiService.changeStatus(id, status);
@@ -62,6 +98,13 @@ class BookingsService {
         }
     }
 
+    /**
+     * Проверяет доступность парковочного места на указанный период
+     * @param listingId - ID парковочного места
+     * @param startDate - дата начала бронирования
+     * @param endDate - дата окончания бронирования
+     * @returns Промис с булевым значением доступности
+     */
     async checkAvailability(listingId: number, startDate: Date, endDate: Date): Promise<boolean> {
         try {
             const response = await bookingsApiService.checkAvailability(listingId, startDate, endDate);

@@ -1,4 +1,3 @@
-// В существующий Header.tsx добавляем обработчик нажатия на поле поиска
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -9,11 +8,19 @@ import { RootStackParamList } from "@/navigation/types";
 import { AuthRequiredPopup } from '@/components/auth/AuthRequiredPopup';
 import { useAuthCheck } from '@hooks/auth/useAuthCheck';
 
+/**
+ * Определяет тип объявления для отображения
+ * @returns Локализованное название типа
+ */
 export const Header: React.FC = () => {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const { checkAuth, isChecking } = useAuthCheck();
     const [showAuthPopup, setShowAuthPopup] = useState(false);
 
+    /**
+     * Обрабатывает нажатие на кнопку добавления объявления
+     * Проверяет аутентификацию перед переходом
+     */
     const handleAddAdvertisement = async () => {
         const isAuthenticated = await checkAuth();
 
@@ -24,15 +31,24 @@ export const Header: React.FC = () => {
         }
     };
 
+    /**
+     * Навигация к экрану аутентификации
+     */
     const handleNavigateToAuth = () => {
         setShowAuthPopup(false);
         navigation.navigate('PhoneAuth');
     };
 
+    /**
+     * Закрывает попап требования аутентификации
+     */
     const handleClosePopup = () => {
         setShowAuthPopup(false);
     };
 
+    /**
+     * Переход на экран поиска при клике на поле поиска
+     */
     const handleSearchPress = () => {
         navigation.navigate('SearchScreen');
     };

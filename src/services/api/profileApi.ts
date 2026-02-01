@@ -4,37 +4,64 @@ import { API_BASE_URL } from '@/config/env';
 import {listingApiService} from "@services/api/listingApi";
 import {Booking, bookingsApiService} from "@services/api/bookingsApi";
 
+/**
+ * Интерфейс ответа API для профиля
+ */
 export interface ProfileResponse {
     success: boolean;
     data?: UserProfile;
     message?: string;
 }
 
+/**
+ * Интерфейс ответа API для отзывов
+ */
 export interface ReviewsResponse {
     success: boolean;
     data?: Review[];
     message?: string;
 }
 
+/**
+ * Интерфейс ответа API для объявлений
+ */
 export interface ListingsResponse {
     success: boolean;
     data?: Listing[];
     message?: string;
 }
 
+/**
+ * Интерфейс ответа API для бронирований
+ */
 export interface BookingsResponse {
     success: boolean;
     data?: Booking[];
     message?: string;
 }
 
+/**
+ * Интерфейс ответа API для статистики
+ */
 export interface StatsResponse {
     success: boolean;
     data?: UserStats;
     message?: string;
 }
 
+/**
+ * Сервис для работы с API профиля пользователя
+ * Предоставляет комплексные методы для получения всех данных пользователя
+ */
 class ProfileApiService {
+
+    /**
+     * Базовый метод для выполнения авторизованных HTTP запросов
+     * @param endpoint - конечная точка API
+     * @param options - опции запроса fetch
+     * @returns Промис с данными ответа
+     * @throws Error при отсутствии токена или ошибке сервера
+     */
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
         const url = `${API_BASE_URL}${endpoint}`;
         const token = await tokenService.getToken();
@@ -62,6 +89,10 @@ class ProfileApiService {
         return responseData;
     }
 
+    /**
+     * Получает профиль текущего аутентифицированного пользователя
+     * @returns Промис с данными профиля
+     */
     async getProfile(): Promise<ProfileResponse> {
         const response = await this.request<any>('/users/profile/me');
         return {
@@ -70,6 +101,11 @@ class ProfileApiService {
         };
     }
 
+    /**
+     * Получает публичный профиль пользователя по ID
+     * @param userId - ID пользователя
+     * @returns Промис с публичными данными профиля
+     */
     async getPublicUserProfile(userId: number): Promise<ProfileResponse> {
         const response = await this.request<any>(`/users/${userId}`);
         return {
@@ -78,6 +114,11 @@ class ProfileApiService {
         };
     }
 
+    /**
+     * Получает отзывы о пользователе
+     * @param userId - ID пользователя
+     * @returns Промис с отзывами
+     */
     async getUserReviews(userId: number): Promise<ReviewsResponse> {
         try {
             const response = await this.request<any>('/reviews');
@@ -108,6 +149,12 @@ class ProfileApiService {
         }
     }
 
+    /**
+     * Получает объявления пользователя
+     * @param userId - ID пользователя
+     * @param currentUserId - ID текущего пользователя (для проверки прав)
+     * @returns Промис с объявлениями пользователя
+     */
     async getUserListings(userId: number, currentUserId?: number): Promise<ListingsResponse> {
         try {
             try {
@@ -192,6 +239,10 @@ class ProfileApiService {
         }
     }
 
+    /**
+     * Получает бронирования текущего пользователя
+     * @returns Промис с активными бронированиями
+     */
     async getUserBookings(): Promise<BookingsResponse> {
         try {
             const response = await bookingsApiService.findAll({});
@@ -211,6 +262,11 @@ class ProfileApiService {
         }
     }
 
+    /**
+     * Получает статистику пользователя
+     * @param userId - ID пользователя
+     * @returns Промис со статистикой (кол-во объявлений, бронирований и т.д.)
+     */
     async getUserStats(userId: number): Promise<StatsResponse> {
         try {
             const [listingsResponse, bookingsResponse, reviewsResponse] = await Promise.all([
@@ -253,6 +309,12 @@ class ProfileApiService {
         }
     }
 
+    /**
+     * Получает все данные пользователя за один запрос
+     * @param userId - ID пользователя
+     * @param currentUserId - ID текущего пользователя (опционально)
+     * @returns Промис со всеми данными пользователя
+     */
     async getFullUserData(userId: number, currentUserId?: number) {
         const [
             profileResponse,
@@ -284,6 +346,11 @@ class ProfileApiService {
         };
     }
 
+    /**
+     * Обновляет профиль пользователя
+     * @param profileData - данные для обновления
+     * @returns Промис с обновленным профилем
+     */
     async updateProfile(profileData: Partial<UserProfile>): Promise<ProfileResponse> {
         const userId = await this.getCurrentUserId();
         const response = await this.request<any>(`/users/${userId}`, {
@@ -297,6 +364,11 @@ class ProfileApiService {
         };
     }
 
+    /**
+     * Получает ID текущего пользователя из токена
+     * @returns Промис с ID пользователя
+     * @private
+     */
     private async getCurrentUserId(): Promise<number> {
         const token = await tokenService.getToken();
         if (!token) {

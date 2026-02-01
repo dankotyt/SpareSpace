@@ -10,17 +10,28 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/shared/constants/colors';
 
+/**
+ * Пропсы компонента ввода сообщения
+ */
 interface MessageInputProps {
     onSendMessage: (text: string) => void;
     disabled?: boolean;
 }
 
+/**
+ * Компонент для ввода и отправки сообщений в чате
+ * Поддерживает многострочный ввод и адаптивную высоту
+ */
 export const MessageInput: React.FC<MessageInputProps> = ({
                                                               onSendMessage,
                                                               disabled = false,
                                                           }) => {
     const [message, setMessage] = useState('');
 
+    /**
+     * Обрабатывает отправку сообщения
+     * Проверяет непустой текст и состояние disabled
+     */
     const handleSend = () => {
         if (message.trim() && !disabled) {
             onSendMessage(message.trim());

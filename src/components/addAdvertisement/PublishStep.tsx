@@ -7,7 +7,17 @@ interface PublishStepProps {
     formData: any;
 }
 
+/**
+ * Компонент шага "Публикация" для формы создания объявления
+ * Отображает сводную информацию перед публикацией объявления
+ */
 export const PublishStep: React.FC<PublishStepProps> = ({ formData }) => {
+
+    /**
+     * Преобразует тип помещения в читаемый формат
+     * @param type - тип помещения из данных формы
+     * @returns локализованное название типа помещения
+     */
     const getTypeLabel = (type: string) => {
         switch (type) {
             case 'PARKING': return 'Парковочное место';
@@ -17,6 +27,10 @@ export const PublishStep: React.FC<PublishStepProps> = ({ formData }) => {
         }
     };
 
+    /**
+     * Форматирует цену для отображения с учетом выбранного периода
+     * @returns отформатированная строка с ценой и периодом
+     */
     const getPriceText = () => {
         if (formData.price?.hourly && formData.price.hourly !== '') {
             return `${formatPrice(formData.price.hourly)} ₽/час`;
@@ -33,6 +47,11 @@ export const PublishStep: React.FC<PublishStepProps> = ({ formData }) => {
         return 'Не указана';
     };
 
+    /**
+     * Форматирует информацию о доступности помещения
+     * Преобразует даты в читаемый формат
+     * @returns строку с информацией о доступности
+     */
     const getAvailabilityText = () => {
         if (formData.availability && Array.isArray(formData.availability) && formData.availability.length > 0) {
             const firstAvailability = formData.availability[0];
@@ -78,6 +97,10 @@ export const PublishStep: React.FC<PublishStepProps> = ({ formData }) => {
         return 'Не указан';
     };
 
+    /**
+     * Массив элементов для проверки перед публикацией
+     * Каждый элемент содержит метку, значение и статус заполнения
+     */
     const checklistItems = [
         {
             label: 'Тип помещения',

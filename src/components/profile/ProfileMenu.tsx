@@ -12,11 +12,18 @@ import { COLORS } from '@/shared/constants/colors';
 import { useAuth } from '@hooks/auth/useAuth';
 import { Linking } from 'react-native';
 
+/**
+ * Интерфейс пропсов меню профиля
+ */
 interface ProfileMenuProps {
     onMenuItemPress: (itemId: string) => void;
     onLogout: () => void;
 }
 
+/**
+ * React-компонент меню навигации в профиле пользователя
+ * Содержит ссылки на основные разделы и управление Telegram аккаунтом
+ */
 export const ProfileMenu: React.FC<ProfileMenuProps> = ({
                                                             onMenuItemPress,
                                                             onLogout
@@ -28,6 +35,9 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
         isLoading
     } = useAuth();
 
+    /**
+     * Обрабатывает действие привязки/отвязки Telegram аккаунта
+     */
     const handleTelegramAction = async () => {
         if (telegramLinked) {
             Alert.alert(
@@ -79,6 +89,9 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({
         },
     ];
 
+    /**
+     * Обрабатывает нажатие на кнопку выхода с подтверждением
+     */
     const handleLogoutPress = () => {
         Alert.alert(
             'Выход',

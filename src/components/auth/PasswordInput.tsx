@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/shared/constants/colors';
 import { getInputColors } from '@/shared/utils/inputColors';
 
+
 interface PasswordInputProps {
     value: string;
     isFocused: boolean;
@@ -20,6 +21,10 @@ interface PasswordInputProps {
     onBlur: () => void;
 }
 
+/**
+ * React-компонент для ввода пароля с переключением видимости
+ * Обеспечивает безопасный ввод чувствительных данных
+ */
 export const PasswordInput: React.FC<PasswordInputProps> = ({
                                                                 value,
                                                                 isFocused,
@@ -32,15 +37,26 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
 
     const { borderColor, textColor, labelColor } = getInputColors(value, isFocused, error);
 
+    /**
+     * Переключает видимость текста пароля
+     */
     const togglePasswordVisibility = () => {
         setIsPasswordVisible(!isPasswordVisible);
     };
 
+    /**
+     * Определяет цвет иконки глаза в зависимости от состояния
+     * @returns HEX цвет для иконки
+     */
     const getEyeIconColor = () => {
         if (error) return COLORS.red[500];
         return isPasswordVisible ? COLORS.primary : COLORS.borderEmpty;
     };
 
+    /**
+     * Определяет имя иконки глаза в зависимости от видимости пароля
+     * @returns Имя иконки из Ionicons
+     */
     const getEyeIconName = () => {
         return isPasswordVisible ? 'eye-off-outline' : 'eye-outline';
     };

@@ -3,17 +3,29 @@ import {Image, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
 import {COLORS} from '@/shared/constants/colors';
 import {formatPriceWithCurrency} from "@shared/utils/listingFormatter";
 
+/**
+ * Пропсы компонента закрепленного объявления
+ */
 interface PinnedAdProps {
     listingData: any;
     onPress?: (listingId: number) => void;
 }
 
+/**
+ * Компонент для отображения закрепленного/привязанного объявления
+ * Используется в чатах для быстрого доступа к деталям объявления
+ */
 export const PinnedAd: React.FC<PinnedAdProps> = ({ listingData, onPress }) => {
 
     if (!listingData) {
         return null;
     }
 
+    /**
+     * Преобразует период аренды в читаемый текст
+     * @param period - строковый идентификатор периода
+     * @returns Локализованное название периода
+     */
     const getPeriodText = (period?: string) => {
         return {
             'HOUR': 'час',
@@ -23,6 +35,10 @@ export const PinnedAd: React.FC<PinnedAdProps> = ({ listingData, onPress }) => {
         }[period || 'DAY'] || 'день';
     };
 
+    /**
+     * Извлекает первую доступную фотографию из различных полей данных
+     * @returns URL фотографии или null
+     */
     const getFirstPhoto = () => {
         if (!listingData) return null;
 
@@ -43,6 +59,10 @@ export const PinnedAd: React.FC<PinnedAdProps> = ({ listingData, onPress }) => {
 
     const firstPhoto = getFirstPhoto();
 
+    /**
+     * Определяет тип объявления для отображения
+     * @returns Локализованное название типа
+     */
     const getListingType = () => {
         switch (listingData.type) {
             case 'PARKING': return 'Парковочное место';

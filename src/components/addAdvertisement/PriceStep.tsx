@@ -19,15 +19,33 @@ interface PriceStepProps {
     onAvailabilityChange: (availability: { start: string; end: string }[] | undefined) => void;
 }
 
+/**
+ * Компонент шага "Цена и доступность" для формы создания объявления
+ * Позволяет установить тип цены (час/день/неделя/месяц) и период доступности помещения
+ */
 export const PriceStep: React.FC<PriceStepProps> = ({
                                                         price,
                                                         availability,
                                                         onPriceChange,
                                                         onAvailabilityChange,
                                                     }) => {
+
+    /**
+     * Тип выбранной цены (час/день/неделя/месяц)
+     */
     const [selectedPriceType, setSelectedPriceType] = useState<'hourly' | 'daily' | 'weekly' | 'monthly' | null>(null);
+
+    /**
+     * Отформатированное значение цены для отображения
+     */
     const [formattedPrice, setFormattedPrice] = useState('');
 
+    /**
+     * Обрабатывает выбор диапазона дат доступности помещения
+     * Сохраняет выбранный период в формате ISO строк
+     * @param start - начальная дата периода
+     * @param end - конечная дата периода
+     */
     const handleDateRangeSelected = (start: Date, end: Date) => {
         const availabilityData = [{
             start: start.toISOString(),
@@ -38,6 +56,9 @@ export const PriceStep: React.FC<PriceStepProps> = ({
         onAvailabilityChange(availabilityData);
     };
 
+    /**
+     * Массив типов цен с метками и плейсхолдерами
+     */
     const priceTypes = [
         { key: 'hourly', label: 'Цена в час', placeholder: 'руб./час' },
         { key: 'daily', label: 'Цена за день', placeholder: 'руб./день' },
@@ -45,6 +66,11 @@ export const PriceStep: React.FC<PriceStepProps> = ({
         { key: 'monthly', label: 'Цена за месяц', placeholder: 'руб./месяц' },
     ];
 
+    /**
+     * Обрабатывает выбор типа цены
+     * Сбрасывает другие типы цен и устанавливает выбранный тип как активный
+     * @param priceType - выбранный тип цены
+     */
     const handlePriceTypeSelect = (priceType: 'hourly' | 'daily' | 'weekly' | 'monthly') => {
         const newPrice = {
             hourly: '',
@@ -64,6 +90,11 @@ export const PriceStep: React.FC<PriceStepProps> = ({
         }
     };
 
+    /**
+     * Обрабатывает ввод значения цены
+     * Очищает ввод от нечисловых символов и форматирует цену
+     * @param value - введенное значение цены
+     */
     const handlePriceInputChange = (value: string) => {
         const cleanedValue = value.replace(/[^\d.]/g, '');
 
@@ -81,16 +112,18 @@ export const PriceStep: React.FC<PriceStepProps> = ({
         }
     };
 
-    const getFormattedPrice = (priceType: string): string => {
-        const priceValue = price[priceType as keyof typeof price];
-        if (!priceValue) return '';
-        return formatPrice(priceValue);
-    };
-
+    /**
+     * Возвращает текущее значение цены для выбранного типа
+     * @returns строковое значение цены
+     */
     const getCurrentPriceValue = () => {
         return selectedPriceType ? price[selectedPriceType] || '' : '';
     };
 
+    /**
+     * Определяет выбранный тип цены на основе заполненных полей
+     * @returns выбранный тип цены или null если ничего не выбрано
+     */
     const getSelectedPriceType = () => {
         const filledTypes = Object.entries(price).filter(([_, value]) => value && value !== '');
         if (filledTypes.length > 0) {
@@ -99,11 +132,20 @@ export const PriceStep: React.FC<PriceStepProps> = ({
         return selectedPriceType;
     };
 
+    /**
+     * Проверяет, выбран ли указанный тип цены
+     * @param priceType - тип цены для проверки
+     * @returns true если тип выбран
+     */
     const isPriceSelected = (priceType: string) => {
         const currentSelectedType = getSelectedPriceType();
         return currentSelectedType === priceType;
     };
 
+    /**
+     * Возвращает информацию о текущей выбранной цене для отображения
+     * @returns объект с типом и значением цены или null
+     */
     const getCurrentPriceDisplay = () => {
         const currentSelectedType = getSelectedPriceType();
         if (currentSelectedType && price[currentSelectedType]) {
@@ -114,27 +156,6 @@ export const PriceStep: React.FC<PriceStepProps> = ({
             };
         }
         return null;
-    };
-
-    const renderCurrentPrices = () => {
-        const filledPrices = Object.entries(price).filter(([_, value]) => value && value !== '');
-
-        if (filledPrices.length === 0) return null;
-
-        return (
-            <View style={styles.currentPrices}>
-                <Text style={styles.currentPricesTitle}>Установленные цены:</Text>
-                {filledPrices.map(([key, value]) => {
-                    const priceLabel = priceTypes.find(type => type.key === key)?.label || key;
-                    return (
-                        <View key={key} style={styles.priceItem}>
-                            <Text style={styles.priceItemLabel}>{priceLabel}:</Text>
-                            <Text style={styles.priceItemValue}>{formatPrice(value)} руб.</Text>
-                        </View>
-                    );
-                })}
-            </View>
-        );
     };
 
     return (

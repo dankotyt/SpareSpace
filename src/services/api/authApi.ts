@@ -4,6 +4,9 @@ import { API_BASE_URL } from '@/config/env';
 
 console.log('🔗 Using API URL:', API_BASE_URL);
 
+/**
+ * Интерфейс стандартного ответа API
+ */
 export interface ApiResponse {
     success: boolean;
     message?: string;
@@ -13,13 +16,19 @@ export interface ApiResponse {
     refreshToken?: string;
 }
 
-export interface ErrorResponse {
-    error: string;
-    message: string;
-    statusCode: number;
-}
-
+/**
+ * Сервис для работы с API аутентификации
+ * Инкапсулирует логику запросов связанных с авторизацией и регистрацией
+ */
 class AuthApiService {
+
+    /**
+     * Базовый метод для выполнения HTTP запросов к API
+     * @param endpoint - конечная точка API
+     * @param options - опции запроса fetch
+     * @returns Промис с данными ответа
+     * @throws Error при ошибке сети или невалидном ответе
+     */
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
         const url = `${API_BASE_URL}${endpoint}`;
 
@@ -48,6 +57,11 @@ class AuthApiService {
         }
     }
 
+    /**
+     * Проверяет существование телефона в системе
+     * @param phoneData - объект с номером телефона
+     * @returns Промис с информацией о существовании телефона
+     */
     async checkPhone(phoneData: { phone: string }): Promise<{ exists: boolean }> {
         return this.request<{ exists: boolean }>('/auth/check-phone-login', {
             method: 'POST',
@@ -55,6 +69,11 @@ class AuthApiService {
         });
     }
 
+    /**
+     * Регистрирует нового пользователя в системе
+     * @param userData - данные пользователя для регистрации
+     * @returns Промис с результатом регистрации
+     */
     async register(userData: RegistrationData): Promise<ApiResponse> {
         const { confirmPassword, firstName, lastName, patronymic, ...restData } = userData;
 
@@ -87,6 +106,11 @@ class AuthApiService {
         };
     }
 
+    /**
+     * Выполняет вход пользователя по email и паролю
+     * @param credentials - объект с email и паролем
+     * @returns Промис с результатом входа
+     */
     async login(credentials: { email: string; password: string }): Promise<ApiResponse> {
         console.log('📤 Sending login data to backend:', credentials);
 
@@ -110,6 +134,11 @@ class AuthApiService {
         };
     }
 
+    /**
+     * Получает профиль текущего аутентифицированного пользователя
+     * @returns Промис с данными профиля
+     * @throws Error при отсутствии токена или ошибке сервера
+     */
     async getProfile(): Promise<ApiResponse> {
         const token = await tokenService.getToken();
 

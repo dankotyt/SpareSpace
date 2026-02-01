@@ -9,6 +9,10 @@ interface MessageBubbleProps {
     showReadStatus?: boolean;
 }
 
+/**
+ * React-компонент кнопки для авторизации через Telegram
+ * Отображает логотип Telegram и состояние загрузки
+ */
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
                                                                 message,
                                                                 isOwn,

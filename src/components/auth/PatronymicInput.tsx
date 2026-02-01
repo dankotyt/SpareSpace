@@ -9,6 +9,9 @@ import {
 import { COLORS } from '@/shared/constants/colors';
 import { getInputColors } from '@/shared/utils/inputColors';
 
+/**
+ * Интерфейс пропсов компонента ввода отчества
+ */
 interface PatronymicInputProps {
     value: string;
     isFocused: boolean;
@@ -18,6 +21,10 @@ interface PatronymicInputProps {
     onBlur: () => void;
 }
 
+/**
+ * React-компонент для ввода отчества (опционального поля)
+ * Отображает метку с указанием необязательности поля
+ */
 export const PatronymicInput: React.FC<PatronymicInputProps> = ({
                                                                     value,
                                                                     isFocused,

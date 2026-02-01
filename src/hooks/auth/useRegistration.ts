@@ -1,6 +1,10 @@
 import { useState, useCallback } from 'react';
 import { authApiService } from '@services/api/authApi';
 
+/**
+ * Хук для управления логикой регистрации пользователя
+ * Обрабатывает валидацию формы и отправку данных на сервер
+ */
 export const useRegistration = () => {
     const [registrationData, setRegistrationData] = useState({
         firstName: '',
@@ -17,6 +21,11 @@ export const useRegistration = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
+    /**
+     * Обновляет значение поля формы регистрации
+     * @param field - имя поля для обновления
+     * @param value - новое значение поля
+     */
     const updateField = useCallback((field: string, value: string) => {
         setRegistrationData(prev => ({ ...prev, [field]: value }));
 
@@ -25,11 +34,20 @@ export const useRegistration = () => {
         }
     }, [errors]);
 
+    /**
+     * Управляет состоянием фокуса для полей формы
+     * @param focused - состояние фокуса (true/false)
+     * @param field - имя поля (опционально)
+     */
     const setFocus = useCallback((focused: boolean, field?: string) => {
         setIsFocused(focused);
         setCurrentField(focused ? field || null : null);
     }, []);
 
+    /**
+     * Очищает ошибку для конкретного поля или все ошибки
+     * @param field - имя поля для очистки (опционально)
+     */
     const clearError = useCallback((field?: string) => {
         if (field) {
             setErrors(prev => ({ ...prev, [field]: '' }));
@@ -38,6 +56,12 @@ export const useRegistration = () => {
         }
     }, []);
 
+    /**
+     * Валидирует значение конкретного поля формы
+     * @param field - имя поля для валидации
+     * @param value - значение для проверки
+     * @returns Строку с ошибкой или пустую строку при успехе
+     */
     const validateField = useCallback((field: string, value: string): string => {
         switch (field) {
             case 'firstName':
@@ -78,6 +102,10 @@ export const useRegistration = () => {
         }
     }, [registrationData.password]);
 
+    /**
+     * Проверяет валидность всей формы регистрации
+     * @returns Булево значение валидности формы
+     */
     const isValid = useCallback(() => {
         const requiredFields = ['firstName', 'lastName', 'phone', 'email', 'password', 'confirmPassword'];
 
@@ -89,6 +117,11 @@ export const useRegistration = () => {
         return registrationData.password === registrationData.confirmPassword;
     }, [registrationData, validateField]);
 
+    /**
+     * Отправляет данные регистрации на сервер
+     * @returns Промис с результатом регистрации
+     * @throws Error при ошибках валидации или сети
+     */
     const register = useCallback(async () => {
         setErrors({});
 

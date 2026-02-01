@@ -6,6 +6,10 @@ interface SupportLinkProps {
     onPress: () => void;
 }
 
+/**
+ * React-компонент кликабельной ссылки для связи с техподдержкой
+ * Используется на экранах входа и регистрации
+ */
 export const SupportLink: React.FC<SupportLinkProps> = ({ onPress }) => {
     return (
         <TouchableOpacity style={styles.container} onPress={onPress}>

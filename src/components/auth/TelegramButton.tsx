@@ -9,12 +9,19 @@ import {
 } from 'react-native';
 import { COLORS } from '@/shared/constants/colors';
 
+/**
+ * Интерфейс пропсов кнопки Telegram для OAuth авторизации
+ */
 interface TelegramIconButtonProps {
     onPress: () => void;
     isLoading?: boolean;
     size?: number;
 }
 
+/**
+ * React-компонент кнопки для авторизации через Telegram
+ * Отображает логотип Telegram и состояние загрузки
+ */
 export const TelegramButton: React.FC<TelegramIconButtonProps> = ({
                                                                           onPress,
                                                                           isLoading = false,

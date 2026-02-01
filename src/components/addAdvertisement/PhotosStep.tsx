@@ -21,6 +21,10 @@ interface PhotosStepProps {
     onDescriptionChange: (description: string) => void;
 }
 
+/**
+ * Компонент шага "Фотографии и описание" для формы создания объявления
+ * Предоставляет функционал загрузки фотографий и ввода описания помещения
+ */
 export const PhotosStep: React.FC<PhotosStepProps> = ({
                                                           photos,
                                                           description,
@@ -28,9 +32,20 @@ export const PhotosStep: React.FC<PhotosStepProps> = ({
                                                           onDescriptionChange,
                                                       }) => {
 
+    /**
+     * Реф для ScrollView для программного скроллинга
+     */
     const scrollViewRef = useRef<ScrollView>(null);
+
+    /**
+     * Реф для TextInput описания для фокусировки
+     */
     const descriptionInputRef = useRef<TextInput>(null);
 
+    /**
+     * Фокусируется на поле ввода описания и скроллит к нему
+     * Используется для улучшения UX при добавлении фотографий
+     */
     const focusOnDescription = () => {
         setTimeout(() => {
             descriptionInputRef.current?.focus();
@@ -38,6 +53,10 @@ export const PhotosStep: React.FC<PhotosStepProps> = ({
         }, 100);
     };
 
+    /**
+     * Запускает процесс выбора фотографий из галереи устройства
+     * Проверяет разрешения, ограничения по количеству фото и обрабатывает результат выбора
+     */
     const pickImage = async () => {
         try {
             if (photos.length >= 10) {
@@ -91,6 +110,9 @@ export const PhotosStep: React.FC<PhotosStepProps> = ({
                         [{ text: 'OK' }]
                     );
                 }
+                if (newPhotos.length > 0) {
+                    focusOnDescription();
+                }
             } else {
                 console.log('ImagePicker canceled or no assets');
             }
@@ -100,6 +122,10 @@ export const PhotosStep: React.FC<PhotosStepProps> = ({
         }
     };
 
+    /**
+     * Удаляет выбранную фотографию из списка
+     * @param index - индекс фотографии для удаления
+     */
     const removePhoto = (index: number) => {
         const newPhotos = photos.filter((_, i) => i !== index);
         onPhotosChange(newPhotos);

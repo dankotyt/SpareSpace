@@ -3,11 +3,18 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { UserStats } from '@/types/profile';
 import { COLORS } from '@/shared/constants/colors';
 
+/**
+ * Интерфейс пропсов секции статистики пользователя
+ */
 interface StatsSectionProps {
     stats: UserStats;
     onPress: () => void;
 }
 
+/**
+ * React-компонент для отображения статистики пользователя
+ * Показывает количество объявлений, бронирований и отзывов
+ */
 export const StatsSection: React.FC<StatsSectionProps> = ({ stats, onPress }) => {
     return (
         <TouchableOpacity style={styles.container} onPress={onPress}>

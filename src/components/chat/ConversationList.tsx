@@ -15,6 +15,9 @@ import {formatChatDate} from "@shared/utils/dateUtils";
 import { socketService } from '@/services/socketService';
 import { useAuth } from '@hooks/auth/useAuth';
 
+/**
+ * Пропсы для списка чатов
+ */
 interface ConversationListProps {
     conversations: Conversation[];
     currentUserId: number;
@@ -24,6 +27,10 @@ interface ConversationListProps {
     onRefresh?: () => void;
 }
 
+/**
+ * Основной компонент списка чатов с real-time обновлениями через WebSocket
+ * Управляет локальным состоянием чатов и подписывается на события сервера
+ */
 export const ConversationList: React.FC<ConversationListProps> = ({
                                                                       conversations,
                                                                       currentUserId,
@@ -42,6 +49,10 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     useEffect(() => {
         if (!user) return;
 
+        /**
+         * Основной компонент списка чатов с real-time обновлениями через WebSocket
+         * Управляет локальным состоянием чатов и подписывается на события сервера
+         */
         const handleNewMessage = (data: {
             conversationId: number;
             message: any;
@@ -69,6 +80,11 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             );
         };
 
+        /**
+         * Обрабатывает обновление статуса прочтения сообщений
+         * Уменьшает счетчик непрочитанных для текущего пользователя
+         * @param data - данные о прочитанных сообщениях
+         */
         const handleMessageReadUpdate = (data: {
             conversationId: number;
             userId: number;
@@ -88,6 +104,10 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             );
         };
 
+        /**
+         * Обновляет последнее сообщение в чате
+         * @param data - данные последнего сообщения
+         */
         const handleLastMessage = (data: {
             conversationId: number;
             lastMessage: any;
@@ -110,6 +130,10 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             );
         };
 
+        /**
+         * Обновляет счетчик непрочитанных сообщений
+         * @param data - данные о количестве непрочитанных
+         */
         const handleUnreadsCount = (data: {
             conversationId: number;
             unreadMessagesCount: number;
@@ -140,18 +164,32 @@ export const ConversationList: React.FC<ConversationListProps> = ({
         };
     }, [user]);
 
-    // Остальные функции остаются без изменений...
+    /**
+     * Получает другого участника чата (не текущего пользователя)
+     * @param conversation - объект чата
+     * @returns Объект пользователя-собеседника
+     */
     const getOtherParticipant = (conversation: Conversation) => {
         return conversation.participant1.id === currentUserId
             ? conversation.participant2
             : conversation.participant1;
     };
 
+    /**
+     * Формирует полное имя собеседника
+     * @param conversation - объект чата
+     * @returns Строку с именем и фамилией
+     */
     const getParticipantName = (conversation: Conversation) => {
         const otherParticipant = getOtherParticipant(conversation);
         return `${otherParticipant.firstName} ${otherParticipant.lastName}`.trim();
     };
 
+    /**
+     * Рендерит элемент списка чатов
+     * @param param0 - объект с данными чата
+     * @returns React-элемент для FlatList
+     */
     const renderConversationItem = ({ item }: { item: Conversation }) => {
         const participantName = getParticipantName(item);
         const otherParticipant = getOtherParticipant(item);

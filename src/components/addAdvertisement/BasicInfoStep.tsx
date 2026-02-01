@@ -20,6 +20,10 @@ interface BasicInfoStepProps {
     navigation: any;
 }
 
+/**
+ * Компонент шага "Основная информация" для формы создания объявления
+ * Отображает поля для ввода адреса, площади, выбора особенностей помещения и выбора местоположения на карте
+ */
 export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
                                                                 address,
                                                                 area,
@@ -31,8 +35,17 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
                                                                 onLocationSelect,
                                                                 navigation
                                                             }) => {
+
+    /**
+     * Список стандартных особенностей помещений для выбора пользователем
+     */
     const commonFeatures = ['Охрана', 'Видеонаблюдение', 'Отопление', 'Электричество', 'Водоснабжение'];
 
+    /**
+     * Переключает выбранную особенность помещения
+     * Добавляет или удаляет особенность из списка выбранных
+     * @param feature - название особенности для переключения
+     */
     const toggleFeature = (feature: string) => {
         const newFeatures = features.includes(feature)
             ? features.filter(f => f !== feature)
@@ -40,6 +53,10 @@ export const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
         onFeaturesChange(newFeatures);
     };
 
+    /**
+     * Обрабатывает переход на экран выбора местоположения на карте
+     * Передает текущее местоположение и коллбэк для обработки выбранного местоположения
+     */
     const handleSelectOnMap = () => {
         navigation.navigate('SelectLocationScreen', {
             initialLocation: location,

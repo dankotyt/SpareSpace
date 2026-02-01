@@ -13,6 +13,10 @@ import FavoritesScreen from "@screens/favorites/FavoritesScreen";
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 const ChatStack = createStackNavigator<ChatStackParamList>();
 
+/**
+ * Вложенный навигатор для экранов чата
+ * Создает стек экранов для сообщений
+ */
 const ChatNavigator: React.FC = () => {
     return (
         <ChatStack.Navigator screenOptions={{ headerShown: false }}>
@@ -23,6 +27,10 @@ const ChatNavigator: React.FC = () => {
     );
 };
 
+/**
+ * Основной нижний таб-навигатор приложения
+ * Содержит главные разделы приложения с возможностью скрытия таб-бара
+ */
 export const BottomTabNavigator: React.FC = () => {
     return (
         <Tab.Navigator

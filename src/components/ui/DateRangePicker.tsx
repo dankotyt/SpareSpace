@@ -4,6 +4,9 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import {COLORS} from '@/shared/constants/colors';
 import {Ionicons} from '@expo/vector-icons';
 
+/**
+ * Интерфейс пропсов компонента выбора диапазона дат
+ */
 interface DateRangePickerProps {
     onDateRangeSelected: (start: Date, end: Date) => void;
     initialStartDate?: Date;
@@ -17,6 +20,10 @@ interface DateRangePickerProps {
     bookedDates?: Array<{start: string, end: string}>;
 }
 
+/**
+ * React-компонент для выбора диапазона дат с учетом доступности и занятости
+ * Предоставляет календарь с возможностью выбора периода и времени
+ */
 export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                                                                     onDateRangeSelected,
                                                                     initialStartDate,
@@ -52,10 +59,13 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     const startTime = externalStartTime || internalStartTime;
     const endTime = externalEndTime || internalEndTime;
 
+    /**
+     * Проверяет доступность даты для бронирования
+     * @param date - проверяемая дата
+     * @returns true если дата доступна
+     */
     const isDateAvailable = (date: Date): boolean => {
         if (availableDates.length === 0) return true;
-
-        const dateStr = date.toISOString().split('T')[0]; // Получаем дату в формате YYYY-MM-DD
 
         return availableDates.some(slot => {
             const slotStart = new Date(slot.start);
@@ -67,10 +77,13 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         });
     };
 
+    /**
+     * Проверяет забронированность даты
+     * @param date - проверяемая дата
+     * @returns true если дата уже забронирована
+     */
     const isDateBooked = (date: Date): boolean => {
         if (bookedDates.length === 0) return false;
-
-        const dateStr = date.toISOString().split('T')[0];
 
         return bookedDates.some(booking => {
             const bookingStart = new Date(booking.start);
@@ -83,6 +96,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         });
     };
 
+    /**
+     * Генерирует календарь на 6 месяцев вперед
+     * @returns Массив объектов месяцев с данными недель
+     */
     const generateCalendar = () => {
         const today = new Date();
         const months = [];
@@ -120,6 +137,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         return months;
     };
 
+    /**
+     * Генерирует календарь на 6 месяцев вперед
+     * @returns Массив объектов месяцев с данными недель
+     */
     const handleDateSelect = (date: Date) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -173,6 +194,9 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         }
     };
 
+    /**
+     * Обрабатывает изменение времени начала
+     */
     const handleStartTimeChange = (event: any, selectedDate?: Date) => {
 
         if (selectedDate) {
@@ -182,6 +206,9 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         }
     };
 
+    /**
+     * Обрабатывает изменение времени окончания
+     */
     const handleEndTimeChange = (event: any, selectedDate?: Date) => {
         setShowEndTimePicker(false);
         if (selectedDate) {
@@ -191,6 +218,9 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         }
     };
 
+    /**
+     * Сохраняет выбранный диапазон дат
+     */
     const handleSave = () => {
         if (selectedStartDate && selectedEndDate) {
             const startDate = selectedStartDate < selectedEndDate ? selectedStartDate : selectedEndDate;
@@ -226,11 +256,19 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         }
     };
 
+    /**
+     * Сбрасывает текущий выбор дат
+     */
     const clearSelection = () => {
         setSelectedStartDate(null);
         setSelectedEndDate(null);
     };
 
+    /**
+     * Проверяет находится ли дата в выбранном диапазоне
+     * @param date - проверяемая дата
+     * @returns true если дата в диапазоне
+     */
     const isDateInRange = (date: Date) => {
         if (!selectedStartDate || !selectedEndDate) return false;
         const start = selectedStartDate < selectedEndDate ? selectedStartDate : selectedEndDate;
@@ -238,17 +276,32 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         return date >= start && date <= end;
     };
 
+    /**
+     * Проверяет является ли дата границей выбранного диапазона
+     * @param date - проверяемая дата
+     * @returns true если дата является началом или концом диапазона
+     */
     const isDateSelected = (date: Date) => {
         return date.getTime() === selectedStartDate?.getTime() ||
             date.getTime() === selectedEndDate?.getTime();
     };
 
+    /**
+     * Проверяет является ли дата прошедшей, недоступной или занятой
+     * @param date - проверяемая дата
+     * @returns true если дата недоступна для выбора
+     */
     const isDatePast = (date: Date) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return date < today || !isDateAvailable(date) || isDateBooked(date);
     };
 
+    /**
+     * Форматирует время в читаемый формат
+     * @param date - объект Date
+     * @returns Отформатированную строку времени
+     */
     const formatTime = (date: Date) => {
         return date.toLocaleTimeString('ru-RU', {
             hour: '2-digit',
@@ -256,6 +309,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         });
     };
 
+    /**
+     * Форматирует выбранный диапазон дат для отображения
+     * @returns Строку с отформатированным диапазоном или null
+     */
     const formatDateRange = () => {
         if (selectedStartDate && selectedEndDate) {
             const startDate = selectedStartDate.toLocaleDateString('ru-RU');
@@ -265,6 +322,10 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
         return null;
     };
 
+    /**
+     * Генерирует текст инструкций в зависимости от доступности дат
+     * @returns Строку с инструкциями по выбору дат
+     */
     const getInstructionsText = () => {
         if (availableDates.length > 0 && bookedDates.length > 0) {
             return '• Зеленым отмечены доступные даты\n• Серым - недоступные владельцем\n• Красным - забронированные';

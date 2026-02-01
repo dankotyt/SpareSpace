@@ -1,5 +1,8 @@
 import {listingApiService} from './listingApi';
 
+/**
+ * DTO для поиска объявлений с фильтрами
+ */
 export interface SearchListingsDto {
     type?: string;
     minPrice?: number;
@@ -10,7 +13,17 @@ export interface SearchListingsDto {
     offset?: number;
 }
 
+/**
+ * Сервис для работы с главным API приложения
+ * Предоставляет агрегированные методы для работы с объявлениями на главной странице
+ */
 class MainApiService {
+
+    /**
+     * Получает список объявлений с возможностью фильтрации и пагинации
+     * @param searchParams - параметры поиска и фильтрации
+     * @returns Промис с отфильтрованными объявлениями и общим количеством
+     */
     async getListings(searchParams?: SearchListingsDto): Promise<{ listings: any[]; total: number }> {
         try {
             let filteredListings = await listingApiService.getListings();
@@ -36,6 +49,11 @@ class MainApiService {
         }
     }
 
+    /**
+     * Получает объявления по типу (парковка, гараж, кладовая)
+     * @param type - тип объявления для фильтрации
+     * @returns Промис с отфильтрованными объявлениями
+     */
     async getListingsByType(type: string): Promise<{ listings: any[]; total: number }> {
         return this.getListings({ type, limit: 20 });
     }

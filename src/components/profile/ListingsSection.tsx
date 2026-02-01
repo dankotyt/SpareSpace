@@ -7,6 +7,9 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@/navigation/types';
 
+/**
+ * Интерфейс пропсов секции объявлений пользователя
+ */
 interface ListingsSectionProps {
     listings: Listing[];
     onAllAdsPress: () => void;
@@ -14,6 +17,10 @@ interface ListingsSectionProps {
     showAllListings: boolean;
 }
 
+/**
+ * React-компонент для отображения списка объявлений пользователя
+ * Показывает активные и черновые объявления с иконками типов
+ */
 export const ListingsSection: React.FC<ListingsSectionProps> = ({
                                                                     listings,
                                                                     onAllAdsPress,
@@ -22,10 +29,19 @@ export const ListingsSection: React.FC<ListingsSectionProps> = ({
                                                                 }) => {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
+    /**
+     * Обрабатывает нажатие на объявление для перехода к деталям
+     * @param asset - объект объявления
+     */
     const handleAssetPress = useCallback((asset: Listing) => {
         navigation.navigate('Advertisement', { listingId: asset.id });
     }, [navigation]);
 
+    /**
+     * Определяет иконку для типа объявления
+     * @param type - тип объявления (PARKING/GARAGE/STORAGE)
+     * @returns Имя иконки из Ionicons
+     */
     const getAssetIcon = (type: string) => {
         switch (type) {
             case 'PARKING': return 'car';
@@ -35,6 +51,11 @@ export const ListingsSection: React.FC<ListingsSectionProps> = ({
         }
     };
 
+    /**
+     * Определяет цвет статуса объявления
+     * @param status - статус объявления
+     * @returns HEX цвет для отображения статуса
+     */
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'ACTIVE': return COLORS.green[500];

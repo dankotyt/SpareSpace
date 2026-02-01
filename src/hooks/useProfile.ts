@@ -5,6 +5,15 @@ import { useAuth } from '@hooks/auth/useAuth';
 import { tokenService } from '@/services/tokenService';
 import { authApiService } from "@services/api/authApi";
 
+/**
+ * Форматирует полный профиль пользователя из разрозненных данных
+ * @param profile - базовые данные профиля
+ * @param reviews - отзывы пользователя
+ * @param listings - объявления пользователя
+ * @param bookings - бронирования пользователя
+ * @param stats - статистика пользователя
+ * @returns Форматированный объект профиля
+ */
 const formatFullUserProfile = (
     profile: UserProfile,
     reviews: any,
@@ -37,6 +46,10 @@ const formatFullUserProfile = (
     };
 };
 
+/**
+ * Хук для управления профилем пользователя
+ * Объединяет данные профиля, отзывы, объявления и бронирования
+ */
 export const useProfile = () => {
     const { isAuthenticated, logout: authLogout, isCheckingAuth, user: currentUser } = useAuth();
     const [userProfile, setUserProfile] = useState<FormattedUserProfile | null>(null);
@@ -44,6 +57,10 @@ export const useProfile = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    /**
+     * Загружает полный профиль пользователя с сервера
+     * @param forceLoad - флаг принудительной загрузки (даже если не аутентифицирован)
+     */
     const loadProfile = useCallback(async (forceLoad = false) => {
         if (!isAuthenticated && !forceLoad) {
             setUserProfile(null);
@@ -90,15 +107,25 @@ export const useProfile = () => {
         }
     }, [isAuthenticated, currentUser]);
 
+    /**
+     * Обновляет локальное состояние профиля пользователя
+     * @param updatedProfile - обновленный профиль
+     */
     const updateUserProfile = useCallback((updatedProfile: FormattedUserProfile) => {
         setUserProfile(updatedProfile);
     }, []);
 
+    /**
+     * Обновляет данные профиля (pull-to-refresh)
+     */
     const handleRefresh = useCallback(() => {
         setRefreshing(true);
         loadProfile(true);
     }, [loadProfile]);
 
+    /**
+     * Выполняет выход пользователя, очищая профиль и токен
+     */
     const logout = useCallback(async () => {
         try {
             await tokenService.removeToken();

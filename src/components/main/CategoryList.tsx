@@ -3,24 +3,40 @@ import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-nati
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS } from '@/shared/constants/colors';
 
+/**
+ * React-компонент для отображения счетчика уведомлений в виде пузыря
+ * Используется для непрочитанных сообщений и других уведомлений
+ */
 interface Category {
     id: string;
     title: string;
     type: string;
 }
 
+/**
+ * Интерфейс пропсов компонента списка категорий
+ */
 interface CategoryListProps {
     categories: Category[];
     selectedCategory: string;
     onCategorySelect: (id: string) => void;
 }
 
+/**
+ * React-компонент горизонтального списка категорий для фильтрации объявлений
+ * Отображает иконки и названия типов парковочных мест
+ */
 export const CategoryList: React.FC<CategoryListProps> = ({
                                                               categories,
                                                               // selectedCategory,
                                                               onCategorySelect,
                                                           }) => {
 
+    /**
+     * Определяет иконку для типа категории
+     * @param type - строковый идентификатор типа категории
+     * @returns React-элемент иконки MaterialIcons
+     */
     const getCategoryIcon = (type: string) => {
         switch (type) {
             case 'PARKING':

@@ -2,6 +2,9 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { COLORS } from '@/shared/constants/colors';
 
+/**
+ * Интерфейс пропсов секции баланса пользователя
+ */
 interface BalanceSectionProps {
     balance: number;
     onTopUp: () => void;
@@ -10,6 +13,10 @@ interface BalanceSectionProps {
     operations: () => void;
 }
 
+/**
+ * React-компонент для отображения баланса пользователя с возможностью пополнения и вывода
+ * Форматирует сумму баланса в читаемый формат с разделителями тысяч
+ */
 export const BalanceSection: React.FC<BalanceSectionProps> = ({
                                                                   balance,
                                                                   onTopUp,
@@ -17,6 +24,11 @@ export const BalanceSection: React.FC<BalanceSectionProps> = ({
                                                                   onPromoCode,
                                                                   operations,
                                                               }) => {
+    /**
+     * Форматирует сумму баланса в читаемый формат
+     * @param amount - сумма баланса
+     * @returns Отформатированная строка с разделителями тысяч
+     */
     const formatBalance = (amount: number) => {
         return amount.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$& ').replace('.', ',');
     };

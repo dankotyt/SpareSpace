@@ -4,6 +4,9 @@ import { BackButton } from '@components/ui/BackButton';
 import { FormattedUserProfile } from '@/types/profile';
 import { COLORS } from '@/shared/constants/colors';
 
+/**
+ * Интерфейс пропсов заголовка профиля пользователя
+ */
 interface ProfileHeaderProps {
     profile: FormattedUserProfile;
     onReviewsPress: () => void;
@@ -12,6 +15,10 @@ interface ProfileHeaderProps {
     onBackPress?: () => void;
 }
 
+/**
+ * React-компонент заголовка профиля с аватаром, именем и рейтингом
+ * Поддерживает режимы публичного и личного профиля
+ */
 export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                                                                 profile,
                                                                 onReviewsPress,
@@ -19,10 +26,22 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                                                                 isPublicProfile = false,
                                                                 onBackPress
                                                             }) => {
+    /**
+     * Генерирует инициалы пользователя для аватара
+     * @param name - имя пользователя
+     * @param surname - фамилия пользователя
+     * @param patronymic - отчество пользователя (опционально)
+     * @returns Строку с инициалами
+     */
     const getInitials = (name: string, surname: string, patronymic?: string) => {
         return `${name[0]}${surname[0]}`.toUpperCase();
     };
 
+    /**
+     * Форматирует дату присоединения пользователя в читаемый формат
+     * @param createdAt - строка с датой создания
+     * @returns Локализованную дату на русском языке
+     */
     const formatJoinDate = (createdAt: string) => {
         const date = new Date(createdAt);
         const months = [
@@ -32,7 +51,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
         return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
     };
 
-    const safeRating = typeof profile.rating === 'number' ? profile.rating : 0;
+    const safeRating = profile.rating;
     const safeReviewsCount = profile.stats?.totalReviews || 0;
 
     return (

@@ -18,6 +18,10 @@ interface SurnameInputProps {
     onBlur: () => void;
 }
 
+/**
+ * React-компонент для ввода фамилии пользователя
+ * Интегрируется с системным автодополнением фамилий
+ */
 export const SurnameInput: React.FC<SurnameInputProps> = ({
                                                                 value,
                                                                 isFocused,

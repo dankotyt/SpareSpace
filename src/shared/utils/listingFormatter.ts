@@ -15,6 +15,11 @@ const typeMap: Record<ListingType, string> = {
     'OTHER': 'Другое'
 };
 
+/**
+ * Форматирует строку с ценой, удаляя нецифровые символы и добавляя пробелы между тысячами
+ * @param price - строка с ценой для форматирования
+ * @returns Отформатированную строку с ценой
+ */
 export const formatPrice = (price: string): string => {
     if (!price || price === '') return '';
 
@@ -27,6 +32,8 @@ export const formatPrice = (price: string): string => {
 
 /**
  * Форматирует число с пробелами между тысячами
+ * @param num - число или строка для форматирования
+ * @returns Отформатированную строку с пробелами между тысячами
  */
 export const formatNumberWithSpaces = (num: number | string): string => {
     if (typeof num === 'string') {
@@ -39,14 +46,19 @@ export const formatNumberWithSpaces = (num: number | string): string => {
 };
 
 /**
- * Форматирует цену, убирая десятичные знаки
+ * Форматирует цену, убирая десятичные знаки и добавляя пробелы между тысячами
+ * @param price - число или строка с ценой
+ * @returns Отформатированную строку с ценой без десятичных знаков
  */
 export const formatDecimal = (price: number | string): string => {
     return formatNumberWithSpaces(price);
 };
 
 /**
- * Форматирует цену с валютой
+ * Форматирует цену с добавлением символа валюты
+ * @param price - число или строка с ценой
+ * @param currency - символ валюты (по умолчанию '₽')
+ * @returns Отформатированную строку с ценой и валютой
  */
 export const formatPriceWithCurrency = (price: number | string, currency: string = '₽'): string => {
     const formattedPrice = formatDecimal(price);
@@ -54,7 +66,11 @@ export const formatPriceWithCurrency = (price: number | string, currency: string
 };
 
 /**
- * Форматирует цену с периодом
+ * Форматирует цену с периодом аренды
+ * @param price - число или строка с ценой
+ * @param period - период аренды (час, день, неделя, месяц)
+ * @param currency - символ валюты (по умолчанию '₽')
+ * @returns Отформатированную строку с ценой, валютой и периодом
  */
 export const formatPriceWithPeriod = (
     price: number | string,
@@ -68,14 +84,18 @@ export const formatPriceWithPeriod = (
 };
 
 /**
- * Форматирует тип объявления
+ * Форматирует тип объявления в читаемый текст
+ * @param type - тип объявления
+ * @returns Локализованное название типа объявления
  */
 export const formatListingType = (type: ListingType): string => {
     return typeMap[type] || type;
 };
 
 /**
- * Форматирует объект listing для отображения
+ * Форматирует объект объявления для отображения в UI
+ * @param listing - объект объявления с сервера
+ * @returns Объект объявления с добавленными полями для отображения
  */
 export const formatListingForDisplay = (listing: any) => {
 

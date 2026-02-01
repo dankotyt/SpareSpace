@@ -7,6 +7,9 @@ import {
 } from 'react-native';
 import { COLORS } from '@/shared/constants/colors';
 
+/**
+ * Кнопка авторизации с поддержкой нескольких вариантов стилей и состояния загрузки
+ */
 interface AuthButtonProps {
     title: string;
     onPress: () => void;
@@ -15,6 +18,10 @@ interface AuthButtonProps {
     loading?: boolean;
 }
 
+/**
+ * Компонент кнопки для форм авторизации
+ * Поддерживает несколько визуальных вариантов и состояния загрузки
+ */
 export const AuthButton: React.FC<AuthButtonProps> = ({
                                                           title,
                                                           onPress,
@@ -22,6 +29,10 @@ export const AuthButton: React.FC<AuthButtonProps> = ({
                                                           variant = 'primary',
                                                           loading = false,
                                                       }) => {
+    /**
+     * Определяет стили кнопки в зависимости от состояния и варианта
+     * @returns Массив стилей для кнопки
+     */
     const getButtonStyle = () => {
         if (disabled || loading) {
             return [styles.button, styles.disabled];
@@ -42,6 +53,10 @@ export const AuthButton: React.FC<AuthButtonProps> = ({
         return [styles.button, styles.primary];
     };
 
+    /**
+     * Определяет стили текста кнопки в зависимости от состояния и варианта
+     * @returns Массив стилей для текста
+     */
     const getTextStyle = () => {
         if (disabled || loading) {
             return [styles.text, styles.textDisabled];
@@ -62,6 +77,10 @@ export const AuthButton: React.FC<AuthButtonProps> = ({
         return [styles.text, styles.textPrimary];
     };
 
+    /**
+     * Определяет цвет индикатора загрузки в зависимости от варианта кнопки
+     * @returns HEX-цвет для ActivityIndicator
+     */
     const getActivityIndicatorColor = () => {
         if (variant === 'outline' || variant === 'secondary') {
             return COLORS.primary;

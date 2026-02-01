@@ -11,6 +11,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/shared/constants/colors';
 import { getInputColors } from '@/shared/utils/inputColors';
 
+/**
+ * Пропсы для поля подтверждения пароля
+ */
 interface ConfirmPasswordInputProps {
     value: string;
     password: string;
@@ -21,6 +24,10 @@ interface ConfirmPasswordInputProps {
     onBlur: () => void;
 }
 
+/**
+ * Компонент для повторного ввода пароля с валидацией совпадения
+ * Отображает иконку видимости пароля и статус валидации
+ */
 export const ConfirmPasswordInput: React.FC<ConfirmPasswordInputProps> = ({
                                                                               value,
                                                                               password,
@@ -38,10 +45,17 @@ export const ConfirmPasswordInput: React.FC<ConfirmPasswordInputProps> = ({
 
     const isValid = value !== '' && value === password && !error;
 
+    /**
+     * Переключает видимость текста пароля
+     */
     const togglePasswordVisibility = () => {
         setIsPasswordVisible(!isPasswordVisible);
     };
 
+    /**
+     * Обрабатывает изменение текста с отметкой о касании
+     * @param text - введенный текст
+     */
     const handleChangeText = (text: string) => {
         if (!hasBeenTouched) {
             setHasBeenTouched(true);
@@ -49,16 +63,28 @@ export const ConfirmPasswordInput: React.FC<ConfirmPasswordInputProps> = ({
         onChangeText(text);
     };
 
+    /**
+     * Обрабатывает потерю фокуса с установкой флага касания
+     */
     const handleBlur = () => {
         setHasBeenTouched(true);
         onBlur();
     };
 
+    /**
+     * Определяет цвет иконки глаза в зависимости от состояния
+     * @returns HEX цвет для иконки
+     */
     const getEyeIconColor = () => {
         if (displayError) return COLORS.red[500];
         if (isValid) return COLORS.green[500];
         return isPasswordVisible ? COLORS.primary : COLORS.borderEmpty;
     };
+
+    /**
+     * Определяет имя иконки глаза в зависимости от видимости пароля
+     * @returns Имя иконки из Ionicons
+     */
 
     const getEyeIconName = () => {
         return isPasswordVisible ? 'eye-off-outline' : 'eye-outline';

@@ -7,6 +7,9 @@ import {Booking, bookingsApiService} from '@/services/api/bookingsApi';
 import {formatPriceWithCurrency} from "@shared/utils/listingFormatter";
 import {getRenterBookings} from "@shared/utils/bookingUtils";
 
+/**
+ * Интерфейс пропсов секции бронирований пользователя
+ */
 interface BookingsSectionProps {
     userId: number;
     stats: UserStats;
@@ -14,6 +17,10 @@ interface BookingsSectionProps {
     onBookingPress: (booking: Booking) => void;
 }
 
+/**
+ * React-компонент для отображения и управления бронированиями пользователя (арендатора)
+ * Загружает и отображает список бронирований с различными статусами
+ */
 export const BookingsSection: React.FC<BookingsSectionProps> = ({
                                                                     userId,
                                                                     stats,
@@ -35,6 +42,9 @@ export const BookingsSection: React.FC<BookingsSectionProps> = ({
         loadBookings();
     }, [userId]);
 
+    /**
+     * Загружает все бронирования пользователя с сервера
+     */
     const loadBookings = async () => {
         try {
             setLoading(true);
@@ -53,6 +63,9 @@ export const BookingsSection: React.FC<BookingsSectionProps> = ({
         }
     };
 
+    /**
+     * Загружает последние бронирования для отображения в предпросмотре
+     */
     const loadRecentBookings = async () => {
         try {
             setLoading(true);
@@ -80,6 +93,11 @@ export const BookingsSection: React.FC<BookingsSectionProps> = ({
         }
     };
 
+    /**
+     * Определяет цвет статуса бронирования
+     * @param status - статус бронирования
+     * @returns HEX цвет для отображения статуса
+     */
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'CONFIRMED': return COLORS.green[500];
@@ -90,6 +108,11 @@ export const BookingsSection: React.FC<BookingsSectionProps> = ({
         }
     };
 
+    /**
+     * Локализует статус бронирования на русский язык
+     * @param status - статус бронирования
+     * @returns Локализованный текст статуса
+     */
     const getStatusText = (status: string) => {
         switch (status) {
             case 'CONFIRMED': return 'Подтверждено';
@@ -100,6 +123,11 @@ export const BookingsSection: React.FC<BookingsSectionProps> = ({
         }
     };
 
+    /**
+     * Локализует статус бронирования на русский язык
+     * @param status - статус бронирования
+     * @returns Локализованный текст статуса
+     */
     const getBookingIcon = (status: string) => {
         switch (status) {
             case 'CONFIRMED': return 'checkmark-circle';
@@ -142,6 +170,10 @@ export const BookingsSection: React.FC<BookingsSectionProps> = ({
         );
     }
 
+    /**
+     * Рендерит элементы списка бронирований
+     * @returns Массив React-элементов или элемент пустого состояния
+     */
     const renderBookingItems = () => {
         if (renterBookings.length === 0) {
             return (

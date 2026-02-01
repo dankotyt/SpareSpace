@@ -33,6 +33,11 @@ interface AdvertisementDetailsProps {
     scrollEnabled?: boolean;
 }
 
+/**
+ * Компонент детальной информации объявления
+ * Отображает всю информацию об объекте: цены, описание, удобства, карту, контакты
+ * и функционал бронирования/чата
+ */
 export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
                                                                               listing,
                                                                               onContactPress,
@@ -43,14 +48,50 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const { user, isAuthenticated } = useAuth();
     const { createConversation } = useChat();
+
+    /**
+     * Флаг статуса "в избранном" для текущего объявления
+     */
     const [isFavorite, setIsFavorite] = useState(false);
+
+    /**
+     * Флаг процесса создания чата
+     */
     const [isCreatingChat, setIsCreatingChat] = useState(false);
+
+    /**
+     * Флаг видимости модального окна бронирования
+     */
     const [showBookingModal, setShowBookingModal] = useState(false);
+
+    /**
+     * Выбранные даты для бронирования
+     */
     const [bookingDates, setBookingDates] = useState<{start: Date | null, end: Date | null}>({ start: null, end: null });
+
+    /**
+     * Флаг процесса бронирования
+     */
     const [isBooking, setIsBooking] = useState(false);
+
+    /**
+     * Доступные слоты для бронирования
+     */
     const [availableSlots, setAvailableSlots] = useState<Array<{start: string, end: string}>>([]);
+
+    /**
+     * Существующие бронирования объекта
+     */
     const [existingBookings, setExistingBookings] = useState<any[]>([]);
+
+    /**
+     * Флаг загрузки существующих бронирований
+     */
     const [loadingBookings, setLoadingBookings] = useState(false);
+
+    /**
+     * Отформатированные данные объявления для отображения
+     */
     const formattedListing = formatListingForDisplay(listing);
     const { fetchConversations } = useChat();
 
@@ -64,6 +105,10 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         }
     }, [showBookingModal]);
 
+    /**
+     * Загружает существующие бронирования объекта
+     * Используется для проверки доступности дат
+     */
     const loadExistingBookings = async () => {
         try {
             setLoadingBookings(true);
@@ -87,11 +132,18 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         }
     };
 
+    /**
+     * Проверяет статус объявления в избранном пользователя
+     */
     const checkFavoriteStatus = async () => {
         const favorite = await favoritesService.isListingFavorite(listing.id);
         setIsFavorite(favorite);
     };
 
+    /**
+     * Обрабатывает добавление/удаление объявления из избранного
+     * Синхронизирует состояние с локальным хранилищем и сервером
+     */
     const handleFavoritePress = async () => {
         try {
             if (isFavorite) {
@@ -115,10 +167,18 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         }
     };
 
+    /**
+     * Обрабатывает переход на экран карты
+     * Передает данные объявления для отображения на карте
+     */
     const handleMapPress = () => {
         navigation.navigate('MapScreen', { listing });
     };
 
+    /**
+     * Обрабатывает создание/открытие чата с владельцем объявления
+     * Проверяет авторизацию, ищет существующий чат или создает новый
+     */
     const handleChatPress = async () => {
         if (!isAuthenticated) {
             Alert.alert(
@@ -195,6 +255,10 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         }
     };
 
+    /**
+     * Обрабатывает начало процесса бронирования
+     * Загружает доступные слоты и открывает модальное окно
+     */
     const handleBookPress = async () => {
         if (!isAuthenticated) {
             Alert.alert(
@@ -232,10 +296,19 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         }
     };
 
+    /**
+     * Обрабатывает выбор диапазона дат для бронирования
+     * @param start - начальная дата
+     * @param end - конечная дата
+     */
     const handleDateRangeSelected = (start: Date, end: Date) => {
         setBookingDates({ start, end });
     };
 
+    /**
+     * Подтверждает бронирование с выбранными датами
+     * Проверяет корректность данных и отправляет запрос на сервер
+     */
     const confirmBooking = async () => {
         if (!bookingDates.start || !bookingDates.end) {
             Alert.alert('Ошибка', 'Пожалуйста, выберите даты бронирования');
@@ -302,6 +375,10 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         }
     };
 
+    /**
+     * Рассчитывает итоговую стоимость бронирования на основе выбранного периода
+     * @returns отформатированную строку с итоговой ценой
+     */
     const calculateTotalPrice = () => {
         if (!bookingDates.start || !bookingDates.end || !listing.price) return '0';
 
@@ -329,6 +406,10 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         return formatNumberWithSpaces(totalPrice);
     };
 
+    /**
+     * Преобразует тип помещения в читаемый формат
+     * @returns локализованное название типа помещения
+     */
     const getTypeLabel = () => {
         switch (listing.type) {
             case 'PARKING': return 'Парковочное место';
@@ -338,6 +419,11 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         }
     };
 
+    /**
+     * Извлекает список удобств из данных объявления
+     * Обрабатывает разные форматы хранения удобств (массив, объект)
+     * @returns массив удобств
+     */
     const getAmenitiesList = () => {
         if (!listing.amenities) return [];
 
@@ -354,6 +440,11 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         return [];
     };
 
+    /**
+     * Извлекает имя контактного лица из данных объявления
+     * Обрабатывает разные форматы хранения контактной информации
+     * @returns строку с именем контактного лица
+     */
     const getContactName = () => {
         if ((listing as any).user) {
             const user = (listing as any).user;
@@ -372,6 +463,11 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         return 'Не указано';
     };
 
+    /**
+     * Преобразует ключ удобства в читаемый формат
+     * @param amenity - ключ удобства
+     * @returns локализованное название удобства
+     */
     const getAmenityLabel = (amenity: string) => {
         const amenityLabels: Record<string, string> = {
             heating: 'Отопление',
@@ -387,10 +483,13 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         return amenityLabels[amenity] || amenity;
     };
 
+    /**
+     * Проверяет забронирована ли конкретная дата
+     * @param date - дата для проверки
+     * @returns true если дата забронирована
+     */
     const isDateBooked = (date: Date): boolean => {
         if (existingBookings.length === 0) return false;
-
-        const dateStr = date.toISOString().split('T')[0]; // Получаем только дату
 
         return existingBookings.some(booking => {
             const bookingStart = new Date(booking.startDate);
@@ -404,6 +503,12 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         });
     };
 
+    /**
+     * Проверяет забронирован ли весь диапазон дат
+     * @param start - начальная дата диапазона
+     * @param end - конечная дата диапазона
+     * @returns true если диапазон полностью или частично забронирован
+     */
     const isRangeBooked = (start: Date, end: Date): boolean => {
         if (existingBookings.length === 0) return false;
 
@@ -417,6 +522,12 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         return false;
     };
 
+    /**
+     * Парсит данные местоположения из разных форматов
+     * Поддерживает POINT строки, GeoJSON объекты
+     * @param location - данные местоположения
+     * @returns координаты или null
+     */
     const parseLocation = (location: any) => {
         if (!location) return null;
 
@@ -439,6 +550,11 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         return null;
     };
 
+    /**
+     * Возвращает начальный регион для карты
+     * Использует координаты объявления или значения по умолчанию
+     * @returns объект региона для MapView
+     */
     const getInitialRegion = () => {
         const coordinates = parseLocation(listing.location);
 
@@ -458,6 +574,11 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         };
     };
 
+    /**
+     * Форматирует дату в читаемый строковый формат
+     * @param dateString - строка с датой
+     * @returns отформатированную строку даты
+     */
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
         return date.toLocaleDateString('ru-RU') + ' ' + date.toLocaleTimeString('ru-RU', {
@@ -466,6 +587,10 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         });
     };
 
+    /**
+     * Формирует строку с деталями помещения (площадь и тип)
+     * @returns строку с деталями помещения
+     */
     const getPropertyDetails = () => {
         const details = [];
 
@@ -488,6 +613,10 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         return details.join(' • ');
     };
 
+    /**
+     * Преобразует период цены в читаемый формат
+     * @returns строку с периодом цены
+     */
     const getPricePeriodText = () => {
         switch (listing.pricePeriod) {
             case 'HOUR': return 'час';
@@ -782,8 +911,6 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
     </>
     );
 };
-
-const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
     container: {

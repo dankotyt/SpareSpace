@@ -2,9 +2,17 @@ import {useCallback, useState} from 'react';
 import {tokenService} from '@services/tokenService';
 import {authApiService} from "@services/api/authApi";
 
+/**
+ * Хук для проверки аутентификации пользователя
+ * Используется для защиты маршрутов и условного рендеринга
+ */
 export const useAuthCheck = () => {
     const [isChecking, setIsChecking] = useState(false);
 
+    /**
+     * Проверяет авторизацию пользователя через токен
+     * @returns Промис с булевым статусом аутентификации
+     */
     const checkAuth = useCallback(async (): Promise<boolean> => {
         setIsChecking(true);
         try {

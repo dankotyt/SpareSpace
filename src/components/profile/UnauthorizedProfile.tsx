@@ -3,10 +3,17 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/shared/constants/colors';
 
+/**
+ * Интерфейс пропсов компонента для неавторизованного пользователя
+ */
 interface UnauthorizedProfileProps {
     onLoginPress: () => void;
 }
 
+/**
+ * React-компонент для отображения состояния профиля неавторизованного пользователя
+ * Предлагает войти в аккаунт для доступа к функциям профиля
+ */
 export const UnauthorizedProfile: React.FC<UnauthorizedProfileProps> = ({ onLoginPress }) => {
     return (
         <View style={styles.container}>

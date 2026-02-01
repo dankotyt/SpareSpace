@@ -2,6 +2,10 @@ import { io, Socket } from 'socket.io-client';
 import { tokenService } from './tokenService';
 import { API_BASE_URL } from '@/config/env';
 
+/**
+ * Сервис управления WebSocket соединением для real-time коммуникации
+ * Обрабатывает подключение к чатам, подписки на события и управление соединением
+ */
 class SocketService {
     private socket: Socket | null = null;
     private isConnected = false;
@@ -10,6 +14,11 @@ class SocketService {
     private maxReconnectAttempts = 5;
     private connectionPromise: Promise<boolean> | null = null;
 
+    /**
+     * Устанавливает соединение с WebSocket сервером
+     * @returns Промис с булевым статусом успешности подключения
+     * @throws Error при отсутствии токена или ошибке сети
+     */
     async connect(): Promise<boolean> {
         if (this.connectionPromise) {
             return this.connectionPromise;
@@ -19,6 +28,10 @@ class SocketService {
         return this.connectionPromise;
     }
 
+    /**
+     * Внутренний метод для установки соединения
+     * @private
+     */
     private async internalConnect(): Promise<boolean> {
         try {
             const token = await tokenService.getToken();
@@ -91,6 +104,10 @@ class SocketService {
         }
     }
 
+    /**
+     * Настраивает обработчики событий WebSocket
+     * @private
+     */
     private setupSocketListeners() {
         if (!this.socket) return;
 
@@ -122,6 +139,10 @@ class SocketService {
         });
     }
 
+    /**
+     * Обрабатывает автоматическое переподключение при разрыве соединения
+     * @private
+     */
     private handleReconnect() {
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
@@ -133,6 +154,12 @@ class SocketService {
         }
     }
 
+    /**
+     * Распределяет входящие сообщения по зарегистрированным обработчикам
+     * @param event - имя события WebSocket
+     * @param data - данные события
+     * @private
+     */
     private handleMessage(event: string, data: any) {
         const handlers = this.messageHandlers.get(event) || [];
         handlers.forEach(handler => {
@@ -144,6 +171,10 @@ class SocketService {
         });
     }
 
+    /**
+     * Подключает сокет к комнате конкретного чата
+     * @param conversationId - ID беседы для подключения
+     */
     async joinRoom(conversationId: number): Promise<void> {
         if (!this.isConnected) {
             const connected = await this.connect();
@@ -160,12 +191,20 @@ class SocketService {
         }
     }
 
+    /**
+     * Отключает сокет от комнаты чата
+     * @param conversationId - ID беседы для отключения
+     */
     leaveRoom(conversationId: number) {
         if (this.socket && this.isConnected) {
             this.socket.emit('chat:leave', { conversationId });
         }
     }
 
+    /**
+     * Отключает сокет от комнаты чата
+     * @param conversationId - ID беседы для отключения
+     */
     async sendMessage(conversationId: number, text: string): Promise<void> {
         if (!this.isConnected) {
             const connected = await this.connect();
@@ -183,6 +222,11 @@ class SocketService {
         }
     }
 
+    /**
+     * Отмечает сообщения как прочитанные
+     * @param conversationId - ID беседы
+     * @param messageIds - массив ID сообщений (опционально)
+     */
     async markAsRead(conversationId: number, messageIds?: number[]): Promise<void> {
         if (!this.isConnected) {
             await this.connect();
@@ -196,6 +240,12 @@ class SocketService {
         }
     }
 
+    /**
+     * Редактирует существующее сообщение
+     * @param conversationId - ID беседы
+     * @param messageId - ID сообщения для редактирования
+     * @param newText - новый текст сообщения
+     */
     editMessage(conversationId: number, messageId: number, newText: string) {
         if (this.socket && this.isConnected) {
             this.socket.emit('message:edit', {
@@ -206,6 +256,11 @@ class SocketService {
         }
     }
 
+    /**
+     * Удаляет сообщения из чата
+     * @param conversationId - ID беседы
+     * @param messageIds - массив ID сообщений для удаления
+     */
     deleteMessages(conversationId: number, messageIds: number[]) {
         if (this.socket && this.isConnected) {
             this.socket.emit('message:delete', {
@@ -215,18 +270,31 @@ class SocketService {
         }
     }
 
+    /**
+     * Подписывается на обновления статуса пользователя (онлайн/офлайн)
+     * @param userId - ID пользователя для отслеживания
+     */
     subscribeToUserStatus(userId: number) {
         if (this.socket && this.isConnected) {
             this.socket.emit('user:status:subscribe', { userId });
         }
     }
 
+    /**
+     * Отписывается от обновлений статуса пользователя
+     * @param userId - ID пользователя
+     */
     unsubscribeFromUserStatus(userId: number) {
         if (this.socket && this.isConnected) {
             this.socket.emit('user:status:unsubscribe', { userId });
         }
     }
 
+    /**
+     * Регистрирует обработчик для события WebSocket
+     * @param event - имя события
+     * @param handler - функция-обработчик
+     */
     on(event: string, handler: Function) {
         if (!this.messageHandlers.has(event)) {
             this.messageHandlers.set(event, []);
@@ -234,6 +302,11 @@ class SocketService {
         this.messageHandlers.get(event)!.push(handler);
     }
 
+    /**
+     * Удаляет обработчик события WebSocket
+     * @param event - имя события
+     * @param handler - функция-обработчик (опционально, если не указан - удаляются все обработчики события)
+     */
     off(event: string, handler?: Function) {
         if (!handler) {
             this.messageHandlers.delete(event);
@@ -244,6 +317,9 @@ class SocketService {
         }
     }
 
+    /**
+     * Разрывает WebSocket соединение и очищает состояние
+     */
     disconnect() {
         if (this.socket) {
             this.socket.disconnect();
@@ -254,6 +330,10 @@ class SocketService {
         }
     }
 
+    /**
+     * Проверяет состояние подключения WebSocket
+     * @returns Булево значение подключения
+     */
     get connected(): boolean {
         return this.isConnected;
     }

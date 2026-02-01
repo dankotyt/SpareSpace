@@ -1,6 +1,9 @@
 import {tokenService} from '@/services/tokenService';
 import {API_BASE_URL} from '@/config/env';
 
+/**
+ * DTO для создания бронирования
+ */
 export interface CreateBookingDto {
     listingId: number;
     period: {
@@ -9,6 +12,9 @@ export interface CreateBookingDto {
     };
 }
 
+/**
+ * Интерфейс данных бронирования
+ */
 export interface Booking {
     id: number;
     listingTitle: string;
@@ -43,6 +49,9 @@ export interface Booking {
     period?: string;
 }
 
+/**
+ * Расширенный интерфейс бронирования с информацией о периоде
+ */
 export interface BookingWithPeriod extends Booking {
     periodStart?: string;
     periodEnd?: string;
@@ -51,6 +60,9 @@ export interface BookingWithPeriod extends Booking {
     durationDays?: number;
 }
 
+/**
+ * Ответ API для списка бронирований
+ */
 export interface BookingsResponse {
     bookings: Booking[];
     total: number;
@@ -58,13 +70,28 @@ export interface BookingsResponse {
     offset: number;
 }
 
+/**
+ * DTO для поиска бронирований
+ */
 export interface SearchBookingsDto {
     limit?: number;
     offset?: number;
     status?: string;
 }
 
+/**
+ * Сервис для работы с API бронирований
+ * Предоставляет CRUD операции для управления бронированиями парковочных мест
+ */
 class BookingsApiService {
+
+    /**
+     * Базовый метод для выполнения авторизованных HTTP запросов
+     * @param endpoint - конечная точка API
+     * @param options - опции запроса fetch
+     * @returns Промис с данными ответа
+     * @throws Error при отсутствии токена или ошибке сервера
+     */
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
         const url = `${API_BASE_URL}${endpoint}`;
         const token = await tokenService.getToken();
@@ -92,7 +119,11 @@ class BookingsApiService {
         return responseData;
     }
 
-    // Создание бронирования
+    /**
+     * Создает новое бронирование
+     * @param dto - DTO с данными бронирования
+     * @returns Промис с созданным бронированием
+     */
     async create(dto: CreateBookingDto): Promise<Booking> {
         const requestBody = {
             listingId: dto.listingId,
@@ -108,7 +139,11 @@ class BookingsApiService {
         });
     }
 
-    // Получение списка бронирований
+    /**
+     * Получает список бронирований с пагинацией и фильтрацией
+     * @param dto - DTO с параметрами поиска
+     * @returns Промис с ответом содержащим бронирования
+     */
     async findAll(dto: SearchBookingsDto = {}): Promise<BookingsResponse> {
         const params = new URLSearchParams();
 
@@ -122,7 +157,11 @@ class BookingsApiService {
         return this.request<BookingsResponse>(endpoint);
     }
 
-    // Получение одного бронирования
+    /**
+     * Получает конкретное бронирование по ID
+     * @param id - ID бронирования
+     * @returns Промис с данными бронирования
+     */
     async findOne(id: number): Promise<Booking> {
         const booking = await this.request<any>(`/bookings/${id}`);
 
@@ -142,7 +181,12 @@ class BookingsApiService {
         };
     }
 
-    // Обновление бронирования
+    /**
+     * Обновляет существующее бронирование
+     * @param id - ID бронирования для обновления
+     * @param dto - DTO с обновленными данными
+     * @returns Промис с обновленным бронированием
+     */
     async update(id: number, dto: Partial<CreateBookingDto>): Promise<Booking> {
         const body: any = { ...dto };
         if (dto.period?.start) body.startDate = dto.period.start.toString();
@@ -154,7 +198,12 @@ class BookingsApiService {
         });
     }
 
-    // Изменение статуса
+    /**
+     * Изменяет статус бронирования
+     * @param id - ID бронирования
+     * @param status - новый статус
+     * @returns Промис с обновленным бронированием
+     */
     async changeStatus(id: number, status: Booking['status']): Promise<Booking> {
         return this.request<Booking>(`/bookings/${id}/status`, {
             method: 'PATCH',
@@ -162,7 +211,10 @@ class BookingsApiService {
         });
     }
 
-    // Удаление/отмена бронирования
+    /**
+     * Удаляет или отменяет бронирование
+     * @param id - ID бронирования для удаления
+     */
     async remove(id: number): Promise<void> {
         const url = `${API_BASE_URL}/bookings/${id}`;
         const token = await tokenService.getToken();
@@ -203,7 +255,13 @@ class BookingsApiService {
         return;
     }
 
-    // Проверка доступности
+    /**
+     * Проверяет доступность парковочного места на указанный период
+     * @param listingId - ID парковочного места
+     * @param startDate - дата начала бронирования
+     * @param endDate - дата окончания бронирования
+     * @returns Промис с информацией о доступности
+     */
     async checkAvailability(
         listingId: number,
         startDate: Date,

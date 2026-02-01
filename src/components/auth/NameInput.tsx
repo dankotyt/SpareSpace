@@ -9,6 +9,9 @@ import {
 import { COLORS } from '@/shared/constants/colors';
 import { getInputColors } from '@/shared/utils/inputColors';
 
+/**
+ * Интерфейс пропсов компонента ввода имени
+ */
 interface NameInputProps {
     value: string;
     isFocused: boolean;
@@ -18,6 +21,10 @@ interface NameInputProps {
     onBlur: () => void;
 }
 
+/**
+ * React-компонент для ввода имени пользователя
+ * Поддерживает автодополнение и корректную капитализацию
+ */
 export const NameInput: React.FC<NameInputProps> = ({
                                                                   value,
                                                                   isFocused,

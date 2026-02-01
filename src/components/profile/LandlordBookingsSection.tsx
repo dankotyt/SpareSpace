@@ -22,6 +22,9 @@ import {StackNavigationProp} from "@react-navigation/stack";
 import {RootStackParamList} from "@navigation/types";
 import {useAuth} from "@hooks/auth/useAuth";
 
+/**
+ * Интерфейс пропсов секции бронирований для арендодателя
+ */
 interface LandlordBookingsSectionProps {
     userId: number;
     stats: UserStats;
@@ -30,6 +33,10 @@ interface LandlordBookingsSectionProps {
     onPendingBookingsPress?: () => void;
 }
 
+/**
+ * React-компонент для управления бронированиями объектов арендодателя
+ * Позволяет подтверждать/отклонять заявки и показывает счетчик ожидающих
+ */
 export const LandlordBookingsSection: React.FC<LandlordBookingsSectionProps> = ({
                                                                                     userId,
                                                                                     stats,
@@ -57,6 +64,9 @@ export const LandlordBookingsSection: React.FC<LandlordBookingsSectionProps> = (
         loadAllBookings();
     }, [userId]);
 
+    /**
+     * Загружает все бронирования для объектов арендодателя
+     */
     const loadAllBookings = async () => {
         try {
             setLoading(true);
@@ -79,6 +89,10 @@ export const LandlordBookingsSection: React.FC<LandlordBookingsSectionProps> = (
         }
     };
 
+    /**
+     * Переходит на экран профиля арендатора
+     * @param profileUserId - ID пользователя для навигации
+     */
     const navigateToProfile = (profileUserId: number) => {
         const isOwnProfile = profileUserId === currentUser?.id;
         navigation.navigate('Profile', {
@@ -86,6 +100,11 @@ export const LandlordBookingsSection: React.FC<LandlordBookingsSectionProps> = (
         });
     };
 
+    /**
+     * Определяет цвет статуса бронирования
+     * @param status - статус бронирования
+     * @returns HEX цвет для отображения статуса
+     */
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'CONFIRMED': return COLORS.green[500];
@@ -96,6 +115,11 @@ export const LandlordBookingsSection: React.FC<LandlordBookingsSectionProps> = (
         }
     };
 
+    /**
+     * Локализует статус бронирования на русский язык
+     * @param status - статус бронирования
+     * @returns Локализованный текст статуса
+     */
     const getStatusText = (status: string) => {
         switch (status) {
             case 'CONFIRMED': return 'Подтверждено';
@@ -106,6 +130,11 @@ export const LandlordBookingsSection: React.FC<LandlordBookingsSectionProps> = (
         }
     };
 
+    /**
+     * Определяет иконку для статуса бронирования
+     * @param status - статус бронирования
+     * @returns Имя иконки из Ionicons
+     */
     const getBookingIcon = (status: string) => {
         switch (status) {
             case 'CONFIRMED': return 'checkmark-circle';
@@ -116,6 +145,11 @@ export const LandlordBookingsSection: React.FC<LandlordBookingsSectionProps> = (
         }
     };
 
+    /**
+     * Обрабатывает действие подтверждения или отклонения бронирования
+     * @param booking - объект бронирования
+     * @param action - тип действия ('confirm' или 'reject')
+     */
     const handleBookingAction = async (booking: Booking, action: 'confirm' | 'reject') => {
         const actionText = action === 'confirm' ? 'подтвердить' : 'отклонить';
 
@@ -147,6 +181,10 @@ export const LandlordBookingsSection: React.FC<LandlordBookingsSectionProps> = (
         );
     };
 
+    /**
+     * Рендерит элементы списка бронирований объектов арендодателя
+     * @returns Массив React-элементов или элемент пустого состояния
+     */
     const renderBookingItems = () => {
         if (landlordBookings.length === 0) {
             return (

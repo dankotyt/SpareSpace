@@ -9,6 +9,9 @@ import {
 import { COLORS } from '@/shared/constants/colors';
 import { getInputColors } from '@/shared/utils/inputColors';
 
+/**
+ * Интерфейс пропсов компонента ввода email
+ */
 interface EmailInputProps {
     value: string;
     isFocused: boolean;
@@ -18,6 +21,10 @@ interface EmailInputProps {
     onBlur: () => void;
 }
 
+/**
+ * React-компонент для ввода электронной почты
+ * Поддерживает валидацию и автоматическое форматирование
+ */
 export const EmailInput: React.FC<EmailInputProps> = ({
                                                           value,
                                                           isFocused,

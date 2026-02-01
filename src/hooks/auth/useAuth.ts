@@ -5,6 +5,12 @@ import {authApiService} from '@services/api/authApi';
 import {tokenService} from '@services/tokenService';
 import {telegramApiService, TelegramProfile} from "@services/api/telegramApi";
 
+/**
+ * React-хук для получения контекста аутентификации
+ * Должен использоваться только внутри AuthProvider
+ * @returns Контекст аутентификации
+ * @throws Error если используется вне AuthProvider
+ */
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (context === undefined) {
@@ -13,6 +19,10 @@ export const useAuth = () => {
     return context;
 };
 
+/**
+ * Основной хук для логики аутентификации приложения
+ * Управляет состоянием пользователя, токенами и интеграцией с Telegram
+ */
 export const useAuthLogic = () => {
     const [phone, setPhone] = useState('+7');
     const [email, setEmail] = useState('');
@@ -28,6 +38,10 @@ export const useAuthLogic = () => {
     const [telegramLinked, setTelegramLinked] = useState(false);
     const [telegramProfile, setTelegramProfile] = useState<TelegramProfile | null>(null);
 
+    /**
+     * Проверяет соединение с Telegram аккаунтом пользователя
+     * @returns Промис без возвращаемого значения
+     */
     const checkTelegramConnection = useCallback(async () => {
         try {
             if (user?.id) {
@@ -42,6 +56,10 @@ export const useAuthLogic = () => {
         }
     }, [user?.id]);
 
+    /**
+     * Проверяет валидность токена и загружает профиль пользователя
+     * @returns Промис с булевым значением валидности токена
+     */
     const checkTokenValidity = useCallback(async (): Promise<boolean> => {
         try {
             const token = await tokenService.getToken();
@@ -90,25 +108,48 @@ export const useAuthLogic = () => {
         initializeAuth();
     }, [checkTokenValidity]);
 
+    /**
+     * Валидирует номер телефона по формату
+     * @param phoneNumber - номер телефона для валидации
+     * @returns Булево значение валидности телефона
+     */
     const validatePhone = useCallback((phoneNumber: string): boolean => {
         return isCompletePhoneNumber(phoneNumber);
     }, []);
 
+    /**
+     * Валидирует email адрес по регулярному выражению
+     * @param email - email для валидации
+     * @returns Булево значение валидности email
+     */
     const validateEmail = useCallback((email: string): boolean => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
     }, []);
 
+    /**
+     * Валидирует пароль по минимальной длине
+     * @param password - пароль для валидации
+     * @returns Булево значение валидности пароля
+     */
     const validatePassword = useCallback((password: string): boolean => {
         return password.length >= 8;
     }, []);
 
+    /**
+     * Устанавливает номер телефона с автоматической валидацией
+     * @param newPhone - новый номер телефона
+     */
     const handleSetPhone = useCallback((newPhone: string) => {
         setPhone(newPhone);
         setValid(validatePhone(newPhone));
         setError(null);
     }, [validatePhone]);
 
+    /**
+     * Устанавливает email с автоматической валидацией
+     * @param newEmail - новый email
+     */
     const handleSetEmail = useCallback((newEmail: string) => {
         setEmail(newEmail);
         const isEmailValid = validateEmail(newEmail);
@@ -117,6 +158,10 @@ export const useAuthLogic = () => {
         setError(null);
     }, [validateEmail, validatePassword, password]);
 
+    /**
+     * Устанавливает пароль с автоматической валидацией
+     * @param newPassword - новый пароль
+     */
     const handleSetPassword = useCallback((newPassword: string) => {
         setPassword(newPassword);
         const isEmailValid = validateEmail(email);
@@ -125,10 +170,18 @@ export const useAuthLogic = () => {
         setError(null);
     }, [validateEmail, validatePassword, email]);
 
+    /**
+     * Устанавливает фокус на поле ввода
+     * @param focused - состояние фокуса
+     */
     const handleSetFocus = useCallback((focused: boolean) => {
         setFocus(focused);
     }, []);
 
+    /**
+     * Переключает между экранами входа по телефону и email
+     * @param screen - целевой экран ('phone' | 'email')
+     */
     const switchScreen = useCallback((screen: 'phone' | 'email') => {
         setCurrentScreen(screen);
         setFocus(false);
@@ -143,6 +196,11 @@ export const useAuthLogic = () => {
         }
     }, [phone, email, password, validatePhone, validateEmail, validatePassword]);
 
+    /**
+     * Проверяет существование телефона в системе через API
+     * @returns Промис с информацией о существовании телефона
+     * @throws Error при некорректном телефоне или ошибке сети
+     */
     const checkPhone = useCallback(async (): Promise<{ exists: boolean; message: string }> => {
         if (!validatePhone(phone)) {
             throw new Error('Некорректный номер телефона');
@@ -175,6 +233,11 @@ export const useAuthLogic = () => {
         }
     }, [phone, validatePhone]);
 
+    /**
+     * Выполняет вход пользователя по email и паролю
+     * @returns Промис с результатом входа
+     * @throws Error при некорректных данных или ошибке сети
+     */
     const login = useCallback(async () => {
         if (!email || !password) {
             throw new Error('Заполните email и пароль');
@@ -212,6 +275,9 @@ export const useAuthLogic = () => {
         }
     }, [email, password, validateEmail, validatePassword]);
 
+    /**
+     * Выполняет выход пользователя, очищая токен и состояние
+     */
     const logout = useCallback(async () => {
         try {
             await tokenService.removeToken();
@@ -227,10 +293,19 @@ export const useAuthLogic = () => {
         setError(null);
     }, []);
 
+    /**
+     * Очищает текущую ошибку аутентификации
+     */
     const clearError = useCallback(() => {
         setError(null);
     }, []);
 
+    /**
+     * Обновляет токен после успешной аутентификации через Telegram
+     * @param token - JWT токен от сервера
+     * @param telegramId - ID Telegram аккаунта (опционально)
+     * @returns Промис с булевым результатом операции
+     */
     const updateTelegramToken = useCallback(async (token: string, telegramId?: string) => {
         try {
             await tokenService.saveToken(token);
@@ -254,6 +329,11 @@ export const useAuthLogic = () => {
         }
     }, [checkTelegramConnection]);
 
+    /**
+     * Генерирует ссылку для привязки Telegram аккаунта
+     * @returns Промис с URL ссылкой
+     * @throws Error при ошибке генерации ссылки
+     */
     const generateTelegramLink = useCallback(async (): Promise<string> => {
         setIsLoading(true);
         setError(null);
@@ -270,6 +350,10 @@ export const useAuthLogic = () => {
         }
     }, []);
 
+    /**
+     * Инициирует процесс привязки Telegram аккаунта
+     * @returns Промис с URL ссылкой для Telegram
+     */
     const linkTelegramAccount = useCallback(async (): Promise<string> => {
         try {
             return await generateTelegramLink();
@@ -278,6 +362,11 @@ export const useAuthLogic = () => {
         }
     }, [generateTelegramLink]);
 
+    /**
+     * Отвязывает Telegram аккаунт от профиля пользователя
+     * @returns Промис без возвращаемого значения
+     * @throws Error если аккаунт не привязан или при ошибке сети
+     */
     const unlinkTelegramAccount = useCallback(async () => {
         if (!telegramProfile?.id) {
             throw new Error('Telegram аккаунт не привязан');
@@ -299,6 +388,10 @@ export const useAuthLogic = () => {
         }
     }, [telegramProfile?.id]);
 
+    /**
+     * Обновляет статус аутентификации, проверяя токен
+     * @returns Промис с булевым статусом валидности
+     */
     const refreshAuthStatus = useCallback(async (): Promise<boolean> => {
         try {
             const isValid = await checkTokenValidity();

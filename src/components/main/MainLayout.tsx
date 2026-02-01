@@ -12,13 +12,16 @@ import {
     Image, TouchableOpacity,
 } from 'react-native';
 import { Header } from '@/components/main/Header';
-import { CategoryHints } from '@/components/main/CategoryHints';
 import { BottomToolbar } from '@/components/ui/BottomToolbar';
 import {StackNavigationProp} from "@react-navigation/stack";
 import {RootStackParamList} from "@navigation/types";
 import {useNavigation} from "@react-navigation/native";
 import {AdItem} from "@/types/main";
+import {CategoryList} from "@components/main/CategoryList";
 
+/**
+ * Пропсы для главного лейаута приложения
+ */
 interface MainLayoutProps {
     categories: any[];
     ads: AdItem[];
@@ -28,6 +31,10 @@ interface MainLayoutProps {
     isRefreshing: boolean;
 }
 
+/**
+ * Главный лейаут приложения с анимированным скроллом и адаптивным интерфейсом
+ * Управляет позиционированием элементов при прокрутке
+ */
 export const MainLayout: React.FC<MainLayoutProps> = ({
                                                           categories,
                                                           ads,
@@ -48,22 +55,42 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 
     const maxTranslateY = categoriesHeight + 15;
 
+    /**
+     * Коллбэк для измерения высоты хедера
+     * @param event - событие layout
+     */
     const onHeaderLayout = useCallback((event: LayoutChangeEvent) => {
         setHeaderHeight(event.nativeEvent.layout.height);
     }, []);
 
+    /**
+     * Коллбэк для измерения высоты категорий
+     * @param event - событие layout
+     */
     const onCategoriesLayout = useCallback((event: LayoutChangeEvent) => {
         setCategoriesHeight(event.nativeEvent.layout.height);
     }, []);
 
+    /**
+     * Коллбэк для измерения высоты нижней панели
+     * @param event - событие layout
+     */
     const onBottomToolbarLayout = useCallback((event: LayoutChangeEvent) => {
         setBottomToolbarHeight(event.nativeEvent.layout.height);
     }, []);
 
+    /**
+     * Коллбэк для измерения высоты контейнера
+     * @param event - событие layout
+     */
     const onContainerLayout = useCallback((event: LayoutChangeEvent) => {
         setScreenHeight(event.nativeEvent.layout.height);
     }, []);
 
+    /**
+     * Обработчик pull-to-refresh
+     * Вызывает перезагрузку данных и логирует состояние
+     */
     const handleRefresh = useCallback(() => {
         console.log('Refresh started - state:', {
             headerHeight,
@@ -78,6 +105,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         onRefresh();
     }, [onRefresh, headerHeight, categoriesHeight, bottomToolbarHeight, screenHeight, maxTranslateY, ads, isRefreshing]);
 
+    /**
+     * Создает компонент RefreshControl для FlatList
+     * @returns React-элемент RefreshControl
+     */
     const renderRefreshControl = () => (
         <RefreshControl
             refreshing={isRefreshing}
@@ -87,18 +118,31 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         />
     );
 
+    /**
+     * Рендерит заголовок секции
+     * @returns React-элемент с заголовком
+     */
     const renderHeader = () => (
         <View>
             <Text style={styles.sectionTitle}>Вам может быть интересно</Text>
         </View>
     );
 
+    /**
+     * Обрабатывает нажатие на объявление
+     * Переходит на экран детальной информации об объявлении
+     * @param item - объект объявления
+     */
     const handleAdPress = useCallback((item: AdItem) => {
         navigation.navigate('Advertisement', {
             listingId: item.originalData.id
         });
     }, [navigation]);
 
+    /**
+     * Рендерит заголовок секции
+     * @returns React-элемент с заголовком
+     */
     const renderAdItem: ListRenderItem<AdItem> = ({ item }) => (
         <TouchableOpacity
             style={styles.adItem}
@@ -129,7 +173,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             </View>
 
             <View onLayout={onCategoriesLayout}>
-                <CategoryHints
+                <CategoryList
                     categories={categories}
                     selectedCategory={selectedCategory}
                     onCategorySelect={onCategorySelect}

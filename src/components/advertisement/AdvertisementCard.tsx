@@ -1,11 +1,10 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     View,
     StyleSheet,
     Dimensions,
     Animated,
     PanResponder,
-    FlatList,
     TouchableOpacity,
     Text,
 } from 'react-native';
@@ -36,22 +35,53 @@ interface AdvertisementCardProps {
     onBackPress: () => void;
 }
 
+/**
+ * Основной компонент карточки объявления с интерактивной галереей фотографий
+ * и выдвижной панелью с деталями объявления. Поддерживает свайп-жесты
+ * для раскрытия/закрытия деталей и вертикальную галерею фотографий.
+ */
 export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
                                                                         listing,
                                                                         onContactPress,
                                                                         onFavoritePress, onBackPress,
                                                                     }) => {
     const navigation = useNavigation();
+
+    /**
+     * Индекс текущей отображаемой фотографии
+     */
     const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+
+    /**
+     * Флаг раскрытого состояния панели деталей
+     */
     const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
+
+    /**
+     * Флаг разрешения скролла деталей (в раскрытом состоянии)
+     */
     const [canScrollDetails, setCanScrollDetails] = useState(false);
 
     // Анимации
+    /**
+     * Анимация позиции панели деталей по оси Y
+     */
     const detailsTranslateY = useRef(new Animated.Value(MIN_DETAILS_TRANSLATE)).current;
+
+    /**
+     * Анимация прозрачности фона хедера
+     */
     const headerBackgroundOpacity = useRef(new Animated.Value(0)).current;
 
     // Refs для отслеживания состояния
+    /**
+     * Текущая позиция панели деталей (реф для синхронизации)
+     */
     const currentDetailsTranslate = useRef(MIN_DETAILS_TRANSLATE);
+
+    /**
+     * Флаг активного скролла деталей (реф)
+     */
     const isScrollingDetails = useRef(false);
 
     // Слушаем изменения позиции деталей
@@ -72,7 +102,10 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
         }
     });
 
-    // PanResponder для деталей
+    /**
+     * PanResponder для обработки свайп-жестов на панели деталей
+     * Отвечает за вертикальное перетаскивание и инерционный скролл
+     */
     const detailsPanResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
@@ -147,7 +180,11 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
         })
     ).current;
 
-    // Обработчик скролла деталей
+    /**
+     * Обрабатывает скролл панели деталей
+     * При достижении верха панели возвращает её в закрытое состояние
+     * @param event - событие скролла
+     */
     const handleDetailsScroll = (event: any) => {
         if (!canScrollDetails) return;
 
@@ -168,12 +205,22 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
         }
     };
 
+    /**
+     * Обрабатывает завершение скролла галереи фотографий
+     * Обновляет индекс текущей фотографии на основе позиции скролла
+     * @param event - событие скролла
+     */
     const handlePhotosScrollEnd = (event: any) => {
         const offsetY = event.nativeEvent.contentOffset.y;
         const newIndex = Math.floor(offsetY / SCREEN_WIDTH);
         setCurrentPhotoIndex(newIndex);
     };
 
+    /**
+     * Рендерит отдельную фотографию в галерее
+     * @param param0 - объект с данными фотографии и индексом
+     * @returns JSX элемент фотографии
+     */
     const renderPhoto = ({ item, index }: { item: string; index: number }) => (
         <View style={styles.photoContainer}>
             <Image
@@ -187,14 +234,26 @@ export const AdvertisementCard: React.FC<AdvertisementCardProps> = ({
         </View>
     );
 
+    /**
+     * Обрабатывает нажатие кнопки "Назад"
+     * Возвращает на предыдущий экран
+     */
     const handleBackPress = () => {
         navigation.goBack();
     };
 
+    /**
+     * Обрабатывает нажатие кнопки "Поделиться"
+     * @todo реализовать функционал шаринга
+     */
     const handleSharePress = () => {
         console.log('Share pressed');
     };
 
+    /**
+     * Обрабатывает нажатие кнопки меню
+     * @todo реализовать контекстное меню
+     */
     const handleMenuPress = () => {
         console.log('Menu pressed');
     };

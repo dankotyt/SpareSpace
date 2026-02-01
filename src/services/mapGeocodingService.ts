@@ -1,14 +1,27 @@
 import {YANDEX_MAP_GEOCODER_CONFIG} from '@/config/mapConfig';
 
+/**
+ * Интерфейс результата геокодирования
+ */
 export interface GeocodingResult {
     address: string;
     latitude: number;
     longitude: number;
 }
 
+/**
+ * Сервис геокодирования на основе Yandex Maps API
+ * Преобразует координаты в адреса и адреса в координаты
+ */
 class GeocodingService {
     private baseUrl = 'https://geocode-maps.yandex.ru/v1';
 
+    /**
+     * Преобразует координаты в читаемый адрес (обратное геокодирование)
+     * @param location - объект с широтой и долготой
+     * @returns Промис с текстовым адресом или координатами в формате строки
+     * @throws Error при ошибке сети или некорректном ответе API
+     */
     async reverseGeocode(location: { latitude: number; longitude: number }): Promise<string> {
         try {
             const response = await fetch(
@@ -33,6 +46,12 @@ class GeocodingService {
         }
     }
 
+    /**
+     * Преобразует адрес в координаты (прямое геокодирование)
+     * @param address - текстовый адрес для поиска
+     * @returns Промис с результатом геокодирования или null если адрес не найден
+     * @throws Error при ошибке сети или некорректном ответе API
+     */
     async geocode(address: string): Promise<GeocodingResult | null> {
         try {
             const response = await fetch(

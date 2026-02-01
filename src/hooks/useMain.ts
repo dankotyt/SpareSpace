@@ -2,6 +2,11 @@ import { useState, useCallback, useEffect } from 'react';
 import { CategoryItem } from '@/types/main';
 import { mainApiService } from '@/services/api/mainApi';
 
+/**
+ * Преобразует данные листинга с сервера в формат для UI
+ * @param listing - объект листинга с сервера
+ * @returns Объект AdItem для отображения
+ */
 const transformListingToAdItem = (listing: any) => {
     return {
         id: listing.id.toString(),
@@ -13,6 +18,10 @@ const transformListingToAdItem = (listing: any) => {
     };
 };
 
+/**
+ * Хук для главной страницы приложения
+ * Управляет категориями, объявлениями и фильтрацией
+ */
 export const useMain = () => {
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -26,6 +35,10 @@ export const useMain = () => {
         { id: 'storage', title: 'Кладовая', type: 'STORAGE' },
     ];
 
+    /**
+     * Загружает объявления с сервера с учетом фильтрации по категории
+     * @param categoryType - тип категории для фильтрации (опционально)
+     */
     const loadAds = useCallback(async (categoryType?: string) => {
         try {
             setLoading(true);
@@ -46,12 +59,19 @@ export const useMain = () => {
         }
     }, []);
 
+    /**
+     * Обрабатывает выбор категории для фильтрации объявлений
+     * @param categoryId - ID выбранной категории
+     */
     const handleCategorySelect = useCallback((categoryId: string) => {
         setSelectedCategory(categoryId);
         const category = categories.find(cat => cat.id === categoryId);
         loadAds(category?.type);
     }, [categories, loadAds]);
 
+    /**
+     * Обновляет список объявлений (pull-to-refresh)
+     */
     const handleRefresh = useCallback(() => {
         setIsRefreshing(true);
         loadAds(selectedCategory === 'all' ? undefined : selectedCategory)

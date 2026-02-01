@@ -9,6 +9,10 @@ interface NotificationBubbleProps {
     enabled?: boolean;
 }
 
+/**
+ * React-компонент для отображения счетчика уведомлений в виде пузыря
+ * Используется для непрочитанных сообщений и других уведомлений
+ */
 export const NotificationBubble: React.FC<NotificationBubbleProps> = ({
                                                                           count,
                                                                           onPress,

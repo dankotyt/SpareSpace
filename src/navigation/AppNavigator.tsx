@@ -17,6 +17,7 @@ import {BookingsScreen} from "@screens/bookings/BookingsScreen";
 import { BookingDetailsScreen } from '@/screens/bookings/BookingDetailsScreen';
 import {LandlordBookingsScreen} from "@screens/bookings/LandlordBookingsScreen";
 import {TelegramAuthScreen} from "@screens/auth/TelegramAuthScreen";
+import {ListingsScreen} from "@screens/listings/ListingsScreen";
 
 const Stack = createStackNavigator<RootStackParamList>();
 
@@ -41,6 +42,7 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen name="Registration" component={RegistrationScreen} />
             <Stack.Screen name="MapScreen" component={MapScreen} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="Listings" component={ListingsScreen} />
             <Stack.Screen name="SelectLocationScreen" component={SelectLocationScreen} />
             <Stack.Screen
                 name="AddAdvertisement"

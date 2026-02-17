@@ -222,8 +222,8 @@ export const ProfileScreen: React.FC = () => {
     }, []);
 
     const handleAllAdsPress = useCallback(() => {
-        Alert.alert('Мои объявления', 'Открытие экрана со всеми объявлениями');
-    }, []);
+        navigation.navigate('Listings');
+    }, [navigation]);
 
     const handleAssetPress = useCallback((asset: any) => {
         Alert.alert('Объявление', `Открытие: ${asset.title}`);

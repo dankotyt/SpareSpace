@@ -156,10 +156,6 @@ export const EmailAuthScreen: React.FC = () => {
                                 onPress={handleRegister}
                                 variant="outline"
                             />
-                            <TelegramButton
-                                onPress={handleTelegramLogin}
-                                isLoading={isLoading}
-                            />
                         </View>
                     </ScrollView>
                 </View>

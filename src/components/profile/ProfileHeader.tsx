@@ -101,7 +101,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
 
                 <TouchableOpacity onPress={onReviewsPress}>
                     <View style={styles.ratingContainer}>
-                        <Text style={styles.rating}>{safeRating.toFixed(1)}</Text>
+                        <Text style={styles.rating}>{safeRating}</Text>
                         <Text style={styles.reviews}>({safeReviewsCount} отзывов)</Text>
                     </View>
                 </TouchableOpacity>

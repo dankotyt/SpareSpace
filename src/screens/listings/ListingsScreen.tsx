@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useState, useCallback, useRef, useEffect, useMemo} from 'react';
 import {
     View,
     Text,
@@ -10,7 +10,7 @@ import {
     ActivityIndicator,
     Image,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@navigation/types';
 import { COLORS } from '@/shared/constants/colors';
@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from "@hooks/auth/useAuth";
 import { useFocusEffect } from "@react-navigation/core";
 import { listingApiService, ListingResponse } from "@services/api/listingApi";
+import { profileApiService } from "@/services/api/profileApi";
 import { formatPriceWithCurrency } from "@shared/utils/listingFormatter";
 
 /**
@@ -69,45 +70,61 @@ const TABS: TabConfig[] = [
     { key: 'pending', label: 'На проверке', statuses: STATUS_GROUPS.pending },
 ];
 
+/**
+ * Тип параметров маршрута
+ */
+type ListingsScreenRouteProp = RouteProp<RootStackParamList, 'Listings'>;
+
 export const ListingsScreen: React.FC = () => {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+    const route = useRoute<ListingsScreenRouteProp>();
     const { user } = useAuth();
+
+    // Получаем userId из параметров маршрута
+    const targetUserId = route.params?.userId;
+    const isOwnListings = !targetUserId || (user && targetUserId === user.id);
+    const effectiveUserId = targetUserId || user?.id;
+
     const [listings, setListings] = useState<ListingResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [activeTab, setActiveTab] = useState<TabType>('all');
 
-    /**
-     * Загрузка объявлений с сервера
-     */
     const loadListings = useCallback(async () => {
-        if (!user?.id) return;
+        if (!effectiveUserId) return;
 
         try {
             setLoading(true);
-            const response = await listingApiService.getMyListings();
+            let response: ListingResponse[];
+
+            if (isOwnListings) {
+                response = await listingApiService.getMyListings();
+            } else {
+                const profileResponse = await profileApiService.getUserListings(targetUserId!);
+                response = profileResponse.data || [];
+            }
+
             setListings(response);
         } catch (error) {
-            console.error('❌ Error loading listings:', error);
-            Alert.alert('Ошибка', 'Не удалось загрузить объявления');
+            // обработка ошибки
         } finally {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [user?.id]);
+    }, [effectiveUserId, isOwnListings, targetUserId]);
 
-    /**
-     * Загрузка при фокусе экрана
-     */
+    // Загружаем при изменении целевого пользователя
+    useEffect(() => {
+        loadListings();
+    }, [loadListings]);
+
+    // Также при фокусе экрана (например, после возврата)
     useFocusEffect(
         useCallback(() => {
             loadListings();
         }, [loadListings])
     );
 
-    /**
-     * Обработчик обновления списка
-     */
     const handleRefresh = () => {
         setRefreshing(true);
         loadListings();
@@ -121,10 +138,12 @@ export const ListingsScreen: React.FC = () => {
     };
 
     /**
-     * Обработчик создания нового объявления
+     * Обработчик создания нового объявления (только для своих)
      */
     const handleCreateListing = () => {
-        navigation.navigate('AddAdvertisement');
+        if (isOwnListings) {
+            navigation.navigate('AddAdvertisement');
+        }
     };
 
     /**
@@ -207,6 +226,12 @@ export const ListingsScreen: React.FC = () => {
      * Фильтрация объявлений по активной вкладке
      */
     const filteredListings = listings.filter(listing => {
+        // Для чужих объявлений показываем только ACTIVE
+        if (!isOwnListings) {
+            return listing.status === 'ACTIVE';
+        }
+
+        // Для своих - фильтруем по выбранной вкладке
         const activeTabConfig = TABS.find(tab => tab.key === activeTab);
         return activeTabConfig?.statuses.includes(listing.status as ListingStatus) ?? true;
     });
@@ -261,17 +286,19 @@ export const ListingsScreen: React.FC = () => {
                         <Text style={styles.listingPrice}>
                             {listing.price ? formatPriceWithCurrency(listing.price, listing.currency || '₽') : 'Цена не указана'}
                         </Text>
-                        <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
-                            <Ionicons name={statusIcon} size={12} color={COLORS.white} />
-                            <Text style={styles.statusText}>{statusText}</Text>
-                        </View>
+                        {isOwnListings && (
+                            <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+                                <Ionicons name={statusIcon} size={12} color={COLORS.white} />
+                                <Text style={styles.statusText}>{statusText}</Text>
+                            </View>
+                        )}
                     </View>
                 </View>
             </TouchableOpacity>
         );
     };
 
-    if (loading && !refreshing) {
+    if (loading && !refreshing && listings.length === 0) {
         return (
             <View style={styles.centered}>
                 <ActivityIndicator size="large" color={COLORS.primary} />
@@ -287,32 +314,39 @@ export const ListingsScreen: React.FC = () => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Ionicons name="arrow-back" size={24} color={COLORS.text} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Мои объявления</Text>
-                <TouchableOpacity onPress={handleCreateListing} style={styles.createButton}>
-                    <Ionicons name="add" size={24} color={COLORS.primary} />
-                </TouchableOpacity>
+                <Text style={styles.title}>
+                    {isOwnListings ? 'Мои объявления' : 'Объявления пользователя'}
+                </Text>
+                {isOwnListings && (
+                    <TouchableOpacity onPress={handleCreateListing} style={styles.createButton}>
+                        <Ionicons name="add" size={24} color={COLORS.primary} />
+                    </TouchableOpacity>
+                )}
+                {!isOwnListings && <View style={styles.placeholder} />}
             </View>
 
-            {/* Вкладки */}
-            <View style={styles.tabsContainer}>
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.tabsContent}
-                >
-                    {TABS.map((tab) => (
-                        <TouchableOpacity
-                            key={tab.key}
-                            style={[styles.tab, activeTab === tab.key && styles.activeTab]}
-                            onPress={() => setActiveTab(tab.key)}
-                        >
-                            <Text style={[styles.tabText, activeTab === tab.key && styles.activeTabText]}>
-                                {tab.label}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-            </View>
+            {/* Вкладки - показываем только для своих объявлений */}
+            {isOwnListings && (
+                <View style={styles.tabsContainer}>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.tabsContent}
+                    >
+                        {TABS.map((tab) => (
+                            <TouchableOpacity
+                                key={tab.key}
+                                style={[styles.tab, activeTab === tab.key && styles.activeTab]}
+                                onPress={() => setActiveTab(tab.key)}
+                            >
+                                <Text style={[styles.tabText, activeTab === tab.key && styles.activeTabText]}>
+                                    {tab.label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
 
             {/* Список объявлений */}
             <ScrollView
@@ -330,9 +364,11 @@ export const ListingsScreen: React.FC = () => {
                         <Ionicons name="business-outline" size={64} color={COLORS.gray[400]} />
                         <Text style={styles.emptyStateTitle}>Объявлений нет</Text>
                         <Text style={styles.emptyStateText}>
-                            {activeTab === 'all'
-                                ? 'У вас пока нет объявлений'
-                                : `Нет объявлений со статусом "${TABS.find(t => t.key === activeTab)?.label}"`}
+                            {isOwnListings
+                                ? activeTab === 'all'
+                                    ? 'У вас пока нет объявлений'
+                                    : `Нет объявлений со статусом "${TABS.find(t => t.key === activeTab)?.label}"`
+                                : 'У пользователя пока нет активных объявлений'}
                         </Text>
                     </View>
                 ) : (
@@ -368,6 +404,10 @@ const styles = StyleSheet.create({
     },
     createButton: {
         padding: 4,
+    },
+    placeholder: {
+        width: 32,
+        height: 32,
     },
     tabsContainer: {
         borderBottomWidth: 1,

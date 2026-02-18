@@ -1,33 +1,34 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
-    View,
-    ScrollView,
-    RefreshControl,
-    StyleSheet,
-    Alert,
     ActivityIndicator,
+    Alert,
+    Linking,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
     Text,
-    TouchableOpacity, Linking,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { ProfileHeader } from '@components/profile/ProfileHeader';
-import { ProfileMenu } from '@components/profile/ProfileMenu';
-import { ListingsSection } from '@components/profile/ListingsSection';
-import { BalanceSection } from '@components/profile/BalanceSection';
-import { BookingsSection } from '@components/profile/BookingsSection';
-import { StatsSection } from '@components/profile/StatsSection';
-import { BottomToolbar } from '@components/ui/BottomToolbar';
-import { UnauthorizedProfile } from '@components/profile/UnauthorizedProfile';
-import { COLORS } from '@shared/constants/colors';
-import { RootStackParamList } from '@navigation/types';
-import { useAuth } from '@hooks/auth/useAuth';
-import { useProfile } from '@hooks/useProfile';
-import { profileApiService } from '@/services/api/profileApi';
-import { FormattedUserProfile, UserProfile } from '@/types/profile';
+import {RouteProp, useNavigation, useRoute} from '@react-navigation/native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {StackNavigationProp} from '@react-navigation/stack';
+import {ProfileHeader} from '@components/profile/ProfileHeader';
+import {ProfileMenu} from '@components/profile/ProfileMenu';
+import {ListingsSection} from '@components/profile/ListingsSection';
+import {BalanceSection} from '@components/profile/BalanceSection';
+import {BookingsSection} from '@components/profile/BookingsSection';
+import {StatsSection} from '@components/profile/StatsSection';
+import {BottomToolbar} from '@components/ui/BottomToolbar';
+import {UnauthorizedProfile} from '@components/profile/UnauthorizedProfile';
+import {COLORS} from '@shared/constants/colors';
+import {RootStackParamList} from '@navigation/types';
+import {useAuth} from '@hooks/auth/useAuth';
+import {useProfile} from '@hooks/useProfile';
+import {profileApiService} from '@/services/api/profileApi';
+import {FormattedUserProfile, UserProfile} from '@/types/profile';
 import {LandlordBookingsSection} from "@components/profile/LandlordBookingsSection";
-import {telegramApiService, TelegramProfile} from "@services/api/telegramApi";
+import {telegramApiService} from "@services/api/telegramApi";
 
 type ProfileScreenRouteProp = RouteProp<RootStackParamList, 'Profile'>;
 type ProfileScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
@@ -43,7 +44,6 @@ export const ProfileScreen: React.FC = () => {
         error,
         handleRefresh,
         logout,
-        loadProfile,
         setUserProfile,
     } = useProfile();
 
@@ -53,8 +53,13 @@ export const ProfileScreen: React.FC = () => {
     const { userId } = route.params || {};
     const [isLandlord, setIsLandlord] = useState(false);
     // Определяем, чей профиль мы смотрим
-    const isViewingOwnProfile = !userId || (currentUser && userId === currentUser.id);
-    const targetUserId = userId || currentUser?.id;
+    const isViewingOwnProfile = React.useMemo(() => {
+        return !userId || (currentUser && userId === currentUser.id);
+    }, [userId, currentUser]);
+
+    const targetUserId = React.useMemo(() => {
+        return userId || currentUser?.id;
+    }, [userId, currentUser]);
 
     const [isTelegramLinked, setIsTelegramLinked] = useState(false);
     // const [telegramProfile, setTelegramProfile] = useState<TelegramProfile | null>(null);
@@ -198,8 +203,29 @@ export const ProfileScreen: React.FC = () => {
     };
 
     const handleMenuItemPress = useCallback((itemId: string) => {
-        Alert.alert('Menu Item Pressed', `You pressed: ${itemId}`);
-    }, []);
+        switch (itemId) {
+            case 'ads':
+                navigation.navigate('Listings');
+                break;
+            case 'reviews':
+                navigation.navigate('Reviews');
+                break;
+            case 'favorites':
+                Alert.alert('Информация', 'Раздел избранного находится в разработке');
+                break;
+            case 'balance':
+                Alert.alert('Баланс', 'Здесь будет информация о балансе');
+                break;
+            case 'notifications':
+                Alert.alert('Информация', 'Раздел уведомлений находится в разработке');
+                break;
+            case 'settings':
+                Alert.alert('Информация', 'Раздел настроек находится в разработке');
+                break;
+            default:
+                Alert.alert('Menu Item Pressed', `You pressed: ${itemId}`);
+        }
+    }, [navigation, isViewingOwnProfile, targetUserId]);
 
     const handleTopUp = useCallback(() => {
         Alert.alert('Пополнение', 'Пополнение баланса');
@@ -222,8 +248,12 @@ export const ProfileScreen: React.FC = () => {
     }, []);
 
     const handleAllAdsPress = useCallback(() => {
-        navigation.navigate('Listings');
-    }, [navigation]);
+        if (!isViewingOwnProfile && targetUserId) {
+            navigation.navigate('Listings', { userId: targetUserId });
+        } else {
+            navigation.navigate('Listings');
+        }
+    }, [navigation, targetUserId, isViewingOwnProfile]);
 
     const handleAssetPress = useCallback((asset: any) => {
         Alert.alert('Объявление', `Открытие: ${asset.title}`);
@@ -471,11 +501,11 @@ export const ProfileScreen: React.FC = () => {
         <View style={[styles.container, { paddingTop: insets.top }]} >
             {renderContent()}
 
-            {isViewingOwnProfile && (
+            <>{isViewingOwnProfile && (
                 <View style={styles.bottomToolbarWrapper}>
-                    <BottomToolbar />
+                    <BottomToolbar/>
                 </View>
-            )}
+            )}</>
         </View>
     );
 };

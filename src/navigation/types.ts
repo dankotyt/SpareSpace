@@ -16,7 +16,7 @@ export type RootStackParamList = {
 
     // Объявления
     Advertisement: { listingId: number };
-    Listings: undefined;
+    Listings: { userId?: number };
     AddAdvertisement: {
         selectedLocation?: {
             latitude: number;

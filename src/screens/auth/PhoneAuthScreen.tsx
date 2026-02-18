@@ -141,10 +141,6 @@ export const PhoneAuthScreen: React.FC = () => {
                                 onPress={handleSwitchToEmail}
                                 variant="outline"
                             />
-                            <TelegramButton
-                                onPress={handleTelegramLogin}
-                                isLoading={isLoading}
-                            />
                         </View>
                     </ScrollView>
                 </View>

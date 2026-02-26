@@ -3,7 +3,7 @@ import { ExpoConfig } from '@expo/config';
 const config: ExpoConfig = {
     owner: "dankotyt",
     name: "SpareSpaceExpo",
-    slug: "sparespace-expo",
+    slug: "sparespace",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
@@ -29,7 +29,7 @@ const config: ExpoConfig = {
         environment: process.env.NODE_ENV || "development",
         yandexMapGeocoderApiKey: process.env.YANDEX_MAP_GEOCODER_API_KEY,
         eas: {
-            projectId: "4c21cb46-a8de-43b9-b346-f257b4459209"
+            projectId: "9fe560bc-8e46-4abe-bae8-68a9aa65847f"
         }
     },
 };

@@ -84,7 +84,7 @@ export const useAuthLogic = () => {
             }
 
         } catch (error) {
-            await tokenService.removeToken();
+            await tokenService.clearTokens();
             setUser(null);
             setTelegramLinked(false);
             setTelegramProfile(null);
@@ -280,7 +280,7 @@ export const useAuthLogic = () => {
      */
     const logout = useCallback(async () => {
         try {
-            await tokenService.removeToken();
+            await tokenService.clearTokens();
         } catch (error) {
             console.error('Error removing token:', error);
         }

@@ -7,6 +7,7 @@ import { COLORS } from '@/shared/constants/colors';
 import { RootStackParamList } from "@/navigation/types";
 import { AuthRequiredPopup } from '@/components/auth/AuthRequiredPopup';
 import { useAuthCheck } from '@hooks/auth/useAuthCheck';
+import {normalize, wp} from "@shared/utils/scaling";
 
 /**
  * Определяет тип объявления для отображения
@@ -102,24 +103,24 @@ export const Header: React.FC = () => {
 const styles = StyleSheet.create({
     header: {
         backgroundColor: '#E9E5FF',
-        paddingHorizontal: 16,
-        paddingTop: 50,
-        paddingBottom: 16,
-        borderBottomLeftRadius: 32,
-        borderBottomRightRadius: 32,
+        paddingHorizontal: wp(4),
+        paddingTop: normalize(50),
+        paddingBottom: normalize(16),
+        borderBottomLeftRadius: normalize(32),
+        borderBottomRightRadius: normalize(32),
     },
     topRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: normalize(12),
     },
     addButtonText: {
         color: COLORS.primary,
-        fontSize: 16,
+        fontSize: normalize(16),
         fontWeight: '600',
-        marginTop: 20,
-        marginBottom: 15,
+        marginTop: normalize(20),
+        marginBottom: normalize(15),
     },
     addButtonTextDisabled: {
         opacity: 0.5,
@@ -129,10 +130,10 @@ const styles = StyleSheet.create({
     },
     searchInput: {
         backgroundColor: '#FFFFFF',
-        borderRadius: 32,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        fontSize: 16,
+        borderRadius: normalize(32),
+        paddingHorizontal: normalize(16),
+        paddingVertical: normalize(12),
+        fontSize: normalize(16),
     },
     iconsContainer: {
         flexDirection: 'row',
@@ -140,6 +141,6 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     iconButton: {
-        padding: 8,
+        padding: normalize(8),
     },
 });

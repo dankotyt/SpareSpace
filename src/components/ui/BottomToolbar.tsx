@@ -1,16 +1,23 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, LayoutChangeEvent } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { COLORS } from '@/shared/constants/colors';
 import { BottomTabParamList } from '@/navigation/types';
+import { normalize, wp } from '@/shared/utils/scaling';
 
 type NavigationProp = BottomTabNavigationProp<BottomTabParamList>;
 
-export const BottomToolbar: React.FC = () => {
+interface BottomToolbarProps {
+    onLayout?: (event: LayoutChangeEvent) => void;
+}
+
+export const BottomToolbar: React.FC<BottomToolbarProps> = ({ onLayout }) => {
     const navigation = useNavigation<NavigationProp>();
     const route = useRoute();
+    const insets = useSafeAreaInsets();
 
     const activeTab = route.name as keyof BottomTabParamList;
 
@@ -52,7 +59,13 @@ export const BottomToolbar: React.FC = () => {
     };
 
     return (
-        <View style={styles.container}>
+        <View
+            style={[
+                styles.container,
+                { paddingBottom: insets.bottom }
+            ]}
+            onLayout={onLayout}
+        >
             {tabs.map((tab) => {
                 const isActive = activeTab === tab.id;
                 const iconColor = isActive ? COLORS.primary : COLORS.borderEmpty;
@@ -65,10 +78,7 @@ export const BottomToolbar: React.FC = () => {
                         onPress={() => handleTabPress(tab.id)}
                     >
                         {isActive ? tab.iconActive(iconColor) : tab.icon(iconColor)}
-                        <Text style={[
-                            styles.tabLabel,
-                            { color: textColor }
-                        ]}>
+                        <Text style={[styles.tabLabel, { color: textColor }]}>
                             {tab.label}
                         </Text>
                     </TouchableOpacity>
@@ -81,28 +91,28 @@ export const BottomToolbar: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
-        bottom: 0,
         left: 0,
         right: 0,
-        height: 80,
+        bottom: 0,
+        zIndex: 20,
         backgroundColor: COLORS.white,
+        borderTopWidth: 1,
+        borderTopColor: COLORS.borderEmpty,
         flexDirection: 'row',
         justifyContent: 'space-around',
         alignItems: 'center',
-        paddingHorizontal: 8,
-        borderTopWidth: 1,
-        borderTopColor: COLORS.borderEmpty,
-        paddingBottom: 10,
+        paddingHorizontal: wp(2),
     },
     tab: {
+        marginTop: wp(2),
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: 4,
+        paddingVertical: normalize(4),
         flex: 1,
     },
     tabLabel: {
-        fontSize: 10,
+        fontSize: normalize(10),
         fontWeight: '500',
-        marginTop: 2,
+        marginTop: normalize(2),
     },
 });

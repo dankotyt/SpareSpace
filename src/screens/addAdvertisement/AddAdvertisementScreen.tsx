@@ -13,7 +13,8 @@ import {useNavigation, useRoute} from "@react-navigation/native";
 import {StackNavigationProp} from "@react-navigation/stack";
 import {RootStackParamList} from "@/navigation/types";
 import { useAdvertisement } from '@/services/AdvertisementContext';
-import { formatPrice } from '@shared/utils/listingFormatter';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { normalize, wp, hp } from '@/shared/utils/scaling';
 import { useListing } from '@/hooks/useListing';
 import {useProfile} from "@hooks/useProfile";
 
@@ -24,6 +25,7 @@ export const AddAdvertisementScreen: React.FC = () => {
     const route = useRoute();
     const params = route.params as any;
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+    const insets = useSafeAreaInsets();
     const [currentStep, setCurrentStep] = useState<AdvertisementStep>(params?.currentStep || 1);
     const [formData, setFormData] = useState<AdvertisementFormData>({
         type: null,
@@ -285,11 +287,13 @@ export const AddAdvertisementScreen: React.FC = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
+        <View style={[styles.container]}>
+            <View style={[styles.header, { paddingTop: insets.top + normalize(8) }]}>
                 <View style={styles.headerTop}>
                     <BackButton onPress={handleBack} backgroundColor={COLORS.transparent} />
-                    <Text style={styles.stepTitle}>{getStepTitle(currentStep)}</Text>
+                    <Text style={styles.stepTitle} numberOfLines={2} ellipsizeMode="tail">
+                        {getStepTitle(currentStep)}
+                    </Text>
                     <View style={styles.placeholder} />
                 </View>
                 <Text style={styles.stepIndicator}>
@@ -302,16 +306,10 @@ export const AddAdvertisementScreen: React.FC = () => {
                 {renderStep()}
             </View>
 
-            <View style={styles.footer}>
-                {createError && (
-                    <Text style={styles.errorText}>{createError}</Text>
-                )}
-
+            <View style={[styles.footer, { paddingBottom: insets.bottom + hp(3) }]}>
+                {createError && <Text style={styles.errorText}>{createError}</Text>}
                 <TouchableOpacity
-                    style={[
-                        styles.nextButton,
-                        isNextDisabled() && styles.nextButtonDisabled
-                    ]}
+                    style={[styles.nextButton, isNextDisabled() && styles.nextButtonDisabled]}
                     onPress={currentStep === 5 ? publishAdvertisement : handleNext}
                     disabled={isNextDisabled()}
                 >
@@ -330,8 +328,7 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.white,
     },
     header: {
-        padding: 16,
-        paddingTop: 8,
+        padding: wp(4),
         backgroundColor: COLORS.white,
         borderBottomWidth: 1,
         borderBottomColor: COLORS.gray[200],
@@ -340,42 +337,43 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 8,
-        marginTop: 10,
+        marginBottom: normalize(8),
     },
     stepTitle: {
-        fontSize: 20,
+        fontSize: normalize(20),
         fontWeight: 'bold',
         textAlign: 'center',
         color: COLORS.text,
-        marginTop: 8,
-        marginBottom: 20,
+        marginTop: normalize(8),
+        marginBottom: normalize(20),
+        flex: 1,
+        flexShrink: 1,
+        paddingHorizontal: wp(2),
     },
     placeholder: {
-        width: 40,
+        width: normalize(40),
     },
     stepIndicator: {
-        fontSize: 14,
+        fontSize: normalize(14),
         color: COLORS.primary,
         fontWeight: 'bold',
-        marginTop: 8,
-        marginBottom: 2,
+        marginTop: normalize(8),
+        marginBottom: normalize(2),
     },
     content: {
         flex: 1,
     },
     footer: {
-        padding: 16,
-        paddingBottom: 24,
+        padding: wp(4),
         backgroundColor: COLORS.white,
         borderTopWidth: 1,
         borderTopColor: COLORS.gray[200],
     },
     nextButton: {
         backgroundColor: COLORS.primary,
-        paddingVertical: 16,
-        paddingHorizontal: 24,
-        borderRadius: 8,
+        paddingVertical: normalize(16),
+        paddingHorizontal: normalize(24),
+        borderRadius: normalize(8),
         alignItems: 'center',
     },
     nextButtonDisabled: {
@@ -383,13 +381,13 @@ const styles = StyleSheet.create({
     },
     nextButtonText: {
         color: COLORS.white,
-        fontSize: 16,
+        fontSize: normalize(16),
         fontWeight: '600',
     },
     errorText: {
         color: COLORS.red[50],
-        fontSize: 14,
+        fontSize: normalize(14),
         textAlign: 'center',
-        marginBottom: 12,
+        marginBottom: normalize(12),
     },
 });

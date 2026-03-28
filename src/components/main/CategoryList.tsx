@@ -2,6 +2,7 @@ import React from 'react';
 import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { COLORS } from '@/shared/constants/colors';
+import { normalize, wp } from '@/shared/utils/scaling';
 
 /**
  * React-компонент для отображения счетчика уведомлений в виде пузыря
@@ -81,28 +82,25 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     scrollContent: {
-        paddingHorizontal: 16,
-        gap: 20,
+        paddingHorizontal: wp(4),
+        gap: wp(5),
         alignItems: 'center',
     },
     categoryItem: {
-        width: 120,
-        height: 80,
+        width: wp(32),               // 28% ширины (было 120px -> ~28% при базовой 430)
+        height: wp(24),               // 18% ширины (соотношение сторон)
         backgroundColor: '#E9E5FF',
-        borderRadius: 16,
-        padding: 12,
+        borderRadius: normalize(16),
+        padding: normalize(12),
         justifyContent: 'space-between',
-    },
-    categoryItemSelected: {
-        backgroundColor: COLORS.primary,
     },
     categoryText: {
         color: '#202020',
-        fontSize: 14,
+        fontSize: normalize(14),
         fontWeight: '500',
     },
     categoryIcon: {
-        fontSize: 20,
+        fontSize: normalize(20),
         color: COLORS.primary,
         alignSelf: 'flex-end',
     },

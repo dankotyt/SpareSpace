@@ -97,11 +97,7 @@ class AuthApiService {
             ...restData,
             firstName: firstName.trim(),
             lastName: lastName.trim(),
-            patronymic: patronymic?.trim() || undefined,
-            // Добавляем информацию об устройстве
-            deviceId: deviceInfo.deviceId,
-            fcmToken: deviceInfo.fcmToken,
-            platform: deviceInfo.platform,
+            patronymic: patronymic?.trim() || undefined
         };
 
         console.log('📤 Sending registration data to backend:', {
@@ -120,13 +116,17 @@ class AuthApiService {
                 await tokenService.saveRefreshToken(response.refreshToken);
             }
 
-            if (!deviceInfo.fcmToken && deviceInfo.deviceId) {
-                setTimeout(() => {
-                    expoNotificationService.sendTokenToBackend();
-                }, 1000);
-            } else if (!deviceInfo.deviceId) {
-                console.log('⚠️ Нет deviceId для отправки FCM токена');
-            }
+            this.registerDeviceAfterLogin().catch(err =>
+                console.error('Background device registration failed:', err)
+            );
+
+            // if (!deviceInfo.fcmToken && deviceInfo.deviceId) {
+            //     setTimeout(() => {
+            //         expoNotificationService.sendTokenToBackend();
+            //     }, 1000);
+            // } else if (!deviceInfo.deviceId) {
+            //     console.log('⚠️ Нет deviceId для отправки FCM токена');
+            // }
 
             console.log('✅ Registration token saved');
         }

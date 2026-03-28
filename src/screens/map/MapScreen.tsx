@@ -10,12 +10,15 @@ import {StackNavigationProp} from "@react-navigation/stack";
 import {RootStackParamList} from "@navigation/types";
 import {useAuth} from '@hooks/auth/useAuth';
 import {useAdvertisement} from '@services/AdvertisementContext';
+import { normalize, wp, hp } from '@/shared/utils/scaling';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type MapScreenRouteProp = RouteProp<RootStackParamList, 'MapScreen'>;
 
 export const MapScreen: React.FC = () => {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const route = useRoute<MapScreenRouteProp>();
+    const insets = useSafeAreaInsets();
     const { filterType, searchQuery, pricePeriod, listing } = route.params || {};
     const { isAuthenticated, user } = useAuth();
     const { userAds, refreshAds } = useAdvertisement();
@@ -66,7 +69,7 @@ export const MapScreen: React.FC = () => {
     }, [userAds, isAuthenticated]);
 
     const parseLocation = (location: string): { latitude: number; longitude: number } | null => {
-        if (!location || typeof location !== 'string') {
+        if (!location) {
             return null;
         }
 
@@ -314,10 +317,10 @@ export const MapScreen: React.FC = () => {
                     </View>
                 </View>
             )}
-            <View style={styles.header}>
-                <BackButton onPress={handleBack} filled={true}/>
+            <View style={[styles.header, { top: insets.top + normalize(10) }]}>
+                <BackButton onPress={handleBack} filled={true} />
                 <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
-                    <Ionicons name="refresh" size={24} color={COLORS.primary} />
+                    <Ionicons name="refresh" size={normalize(24)} color={COLORS.primary} />
                 </TouchableOpacity>
             </View>
 

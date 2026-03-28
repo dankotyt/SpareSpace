@@ -10,6 +10,7 @@ import {
     LayoutChangeEvent,
     RefreshControl,
     Image, TouchableOpacity,
+    useWindowDimensions
 } from 'react-native';
 import { Header } from '@/components/main/Header';
 import { BottomToolbar } from '@/components/ui/BottomToolbar';
@@ -18,6 +19,7 @@ import {RootStackParamList} from "@navigation/types";
 import {useNavigation} from "@react-navigation/native";
 import {AdItem} from "@/types/main";
 import {CategoryList} from "@components/main/CategoryList";
+import { normalize, wp, hp } from '@/shared/utils/scaling';
 
 /**
  * Пропсы для главного лейаута приложения
@@ -48,6 +50,9 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
     const [categoriesHeight, setCategoriesHeight] = useState(0);
     const [bottomToolbarHeight, setBottomToolbarHeight] = useState(0);
     const [screenHeight, setScreenHeight] = useState(Dimensions.get('window').height);
+
+    const { width: screenWidth } = useWindowDimensions();
+    const itemWidth = (screenWidth - wp(8)) / 2;
 
     const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<AdItem>);
     const scrollY = useRef(new Animated.Value(0)).current;
@@ -224,9 +229,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                     )}
                 />
             </Animated.View>
-            <View style={styles.bottomToolbarWrapper} onLayout={onBottomToolbarLayout}>
-                <BottomToolbar />
-            </View>
+            <BottomToolbar onLayout={onBottomToolbarLayout} />
         </View>
     );
 };
@@ -246,9 +249,9 @@ const styles = StyleSheet.create({
     },
     adImage: {
         width: '100%',
-        height: 120,
-        borderRadius: 12,
-        marginBottom: 8,
+        height: normalize(120),
+        borderRadius: normalize(12),
+        marginBottom: normalize(8),
     },
     swipeableContainer: {
         width: '100%',
@@ -281,10 +284,10 @@ const styles = StyleSheet.create({
         paddingBottom: 5,
     },
     homeIndicator: {
-        width: 40,
-        height: 4,
+        width: normalize(40),
+        height: normalize(4),
         backgroundColor: '#E5E7EB',
-        borderRadius: 2,
+        borderRadius: normalize(2),
     },
     refreshIndicator: {
         flexDirection: 'row',
@@ -297,48 +300,48 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     sectionTitle: {
-        fontSize: 18,
+        fontSize: normalize(18),
         fontWeight: 'bold',
         color: '#202020',
-        marginBottom: 10,
-        marginLeft: 10,
+        marginBottom: normalize(10),
+        marginLeft: wp(2.5),
     },
     adsGrid: {
-        paddingHorizontal: 16,
-        paddingBottom: 200,
-        paddingTop: 8,
+        paddingHorizontal: wp(4),
+        paddingBottom: hp(25),
+        paddingTop: normalize(8),
     },
     adItem: {
         width: itemWidth,
-        marginBottom: 16,
-        marginHorizontal: 4,
+        marginBottom: normalize(16),
+        marginHorizontal: wp(1)
     },
     imagePlaceholder: {
         width: '100%',
-        height: 120,
+        height: normalize(120),
         backgroundColor: '#F3F4F6',
-        borderRadius: 12,
+        borderRadius: normalize(12),
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 8,
+        marginBottom: normalize(8),
     },
     imageText: {
         fontSize: 24,
     },
     price: {
-        fontSize: 20,
+        fontSize: normalize(20),
         fontWeight: 'bold',
         color: '#202020',
-        marginBottom: 4,
+        marginBottom: normalize(4),
     },
     type: {
-        fontSize: 14,
+        fontSize: normalize(14),
         fontWeight: '500',
         color: '#202020',
-        marginBottom: 2,
+        marginBottom: normalize(2),
     },
     location: {
-        fontSize: 14,
+        fontSize: normalize(14),
         color: '#6B7280',
     },
 });

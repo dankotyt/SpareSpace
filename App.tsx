@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import { Linking, Platform } from 'react-native';
+import {Linking, Platform, TextInput, Text} from 'react-native';
 import { AppNavigator } from '@/navigation/AppNavigator';
 import { AuthProvider } from '@/services/AuthProvider';
 import { AdvertisementProvider } from '@/services/AdvertisementContext';
@@ -10,6 +10,13 @@ import { expoNotificationService } from '@services/expoNotificationService';
 import { tokenService } from '@services/tokenService';
 import * as Notifications from 'expo-notifications';
 
+if (Platform.OS === 'android') {
+    (Text as any).defaultProps = (Text as any).defaultProps || {};
+    (Text as any).defaultProps.allowFontScaling = false;
+
+    (TextInput as any).defaultProps = (TextInput as any).defaultProps || {};
+    (TextInput as any).defaultProps.allowFontScaling = false;
+}
 // Используем возвращаемый тип из методов Notifications
 const DeepLinkHandler: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { updateTelegramToken } = useAuth();

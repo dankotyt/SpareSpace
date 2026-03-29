@@ -13,7 +13,6 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import {
-    EmailInput,
     PasswordInput,
     AuthButton,
     SupportLink,
@@ -22,7 +21,6 @@ import {
     PatronymicInput,
     ConfirmPasswordInput,
 } from '@/components/auth';
-import { PhoneInput } from '@/components/auth/PhoneInput';
 import { BackButton } from '@/components/ui/BackButton';
 import { COLORS } from '@/shared/constants/colors';
 import { globalStyles } from '@/shared/constants/global';
@@ -69,9 +67,7 @@ export const RegistrationScreen: React.FC = () => {
                     ]
                 );
             } else {
-                if (!result.message?.includes('email') && !result.message?.includes('phone')) {
-                    Alert.alert('Ошибка', result.message || 'Произошла ошибка при регистрации');
-                }
+                Alert.alert('Ошибка', result.message || 'Произошла ошибка при регистрации');
             }
         } catch (err) {
             console.log('Registration error:', err);
@@ -135,24 +131,6 @@ export const RegistrationScreen: React.FC = () => {
                             error={errors.patronymic}
                             onChangeText={(text) => updateField('patronymic', text)}
                             onFocus={() => setFocus(true, 'patronymic')}
-                            onBlur={() => setFocus(false)}
-                        />
-
-                        <PhoneInput
-                            value={registrationData.phone}
-                            isFocused={isFocused && currentField === 'phone'}
-                            error={errors.phone}
-                            onChangeText={(text) => updateField('phone', text)}
-                            onFocus={() => setFocus(true, 'phone')}
-                            onBlur={() => setFocus(false)}
-                        />
-
-                        <EmailInput
-                            value={registrationData.email}
-                            isFocused={isFocused && currentField === 'email'}
-                            error={errors.email}
-                            onChangeText={(text) => updateField('email', text)}
-                            onFocus={() => setFocus(true, 'email')}
                             onBlur={() => setFocus(false)}
                         />
 

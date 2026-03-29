@@ -44,9 +44,16 @@ export const EmailAuthScreen: React.FC = () => {
         try {
             const result = await login();
 
-            if (result.success) {
-                console.log('Login successful with token:', result.accessToken);
-
+            if (result.requiresTwoFactor) {
+                // Если на бэкенде включена 2FA
+                Alert.alert(
+                    'Двухфакторная аутентификация', 
+                    'Для вашего аккаунта включена 2FA. (Экран ввода кода в разработке)'
+                );
+                // В будущем здесь будет: navigation.navigate('TwoFactorAuth');
+            } else if (result.accessToken) {
+                // Успешный вход без 2FA
+                console.log('Login successful');
                 navigation.reset({
                     index: 0,
                     routes: [{ name: 'MainTabs' }],

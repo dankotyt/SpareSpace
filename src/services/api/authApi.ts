@@ -1,25 +1,26 @@
 import { tokenService } from "@services/tokenService";
 import { fcmService } from "@services/fcmService";
-import { RegistrationData, LoginCredentials } from '@/types/auth';
 import { API_BASE_URL } from '@/config/env';
-import { Platform } from 'react-native';
+import { 
+    CompleteRegistrationData, 
+    LoginData, 
+    AuthTokens, 
+    LoginResponse, 
+    VerifySmsCodeData, 
+    VerifySmsCodeResponse,
+    VerifyTwoFactorData
+} from '@/types/auth';
 
 console.log('🔗 Using API URL:', API_BASE_URL);
 
-export interface ApiResponse {
-    success: boolean;
-    message?: string;
-    data?: any;
-    token?: string;
-    accessToken?: string;
-    refreshToken?: string;
-}
-
+/**
+ * Сервис для работы с API аутентификации
+ */
 class AuthApiService {
 
     private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
         const url = `${API_BASE_URL}${endpoint}`;
-
+        
         const config: RequestInit = {
             headers: {
                 'Content-Type': 'application/json',
@@ -31,6 +32,12 @@ class AuthApiService {
         try {
             console.log(`🌐 Making request to: ${url}`);
             const response = await fetch(url, config);
+            
+            // Для HttpCode(HttpStatus.NO_CONTENT) или пустых ответов
+            if (response.status === 204) {
+                return {} as T;
+            }
+
             const responseData = await response.json();
 
             if (!response.ok) {
@@ -45,190 +52,97 @@ class AuthApiService {
     }
 
     /**
-     * Получает FCM токен и информацию об устройстве
+     * 1. Запрашивает SMS-код на указанный номер
      */
-    private async getDeviceInfo() {
-        try {
-            const pushToken = await fcmService.getFCMToken();
-            return {
-                fcmToken: pushToken, // Отправляем как fcmToken для совместимости с бэкендом
-                deviceId: await this.getDeviceId(),
-                platform: Platform.OS,
-            };
-        } catch (error) {
-            console.error('Error getting device info:', error);
-            return {
-                fcmToken: null,
-                deviceId: null,
-                platform: Platform.OS,
-            };
-        }
+    async requestSmsCode(phone: string): Promise<void> {
+        return this.request<void>('/auth/request-sms-code', {
+            method: 'POST',
+            body: JSON.stringify({ phone }),
+        });
     }
 
     /**
-     * Получает или генерирует ID устройства
+     * 2. Подтверждает SMS-код
      */
-    private async getDeviceId(): Promise<string> {
-        const savedDeviceId = await tokenService.getDeviceId();
-        if (savedDeviceId) {
-            return savedDeviceId;
-        }
-        const newDeviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        await tokenService.saveDeviceId(newDeviceId);
-        return newDeviceId;
-    }
-
-    async checkPhone(phoneData: { phone: string }): Promise<{ exists: boolean }> {
-        return this.request<{ exists: boolean }>('/auth/check-phone-login', {
+    async verifySmsCode(data: VerifySmsCodeData): Promise<VerifySmsCodeResponse> {
+        const response = await this.request<VerifySmsCodeResponse>('/auth/verify-sms-code', {
             method: 'POST',
-            body: JSON.stringify(phoneData),
+            body: JSON.stringify(data),
         });
+
+        // Если пользователь уже зарегистрирован и нет 2FA, сохраняем токен
+        if (response.accessToken) {
+            await tokenService.saveToken(response.accessToken);
+        }
+
+        return response;
     }
 
-    async register(userData: RegistrationData): Promise<ApiResponse> {
-        const { confirmPassword, firstName, lastName, patronymic, ...restData } = userData;
+    /**
+     * 3. Завершает регистрацию (используя registerToken)
+     */
+    async completeRegistration(data: CompleteRegistrationData): Promise<AuthTokens> {
+        const { confirmPassword, ...apiData } = data; // confirmPassword бэкенду не нужен
 
-        const apiData = {
-            ...restData,
-            firstName: firstName.trim(),
-            lastName: lastName.trim(),
-            patronymic: patronymic?.trim() || undefined
-        };
-
-        console.log('📤 Sending registration data to backend:', {
-            ...apiData,
-            fcmToken: apiData.fcmToken ? '[FCM_TOKEN]' : null
-        });
-
-        const response = await this.request<any>('/auth/register', {
+        const response = await this.request<AuthTokens>('/auth/complete-registration', {
             method: 'POST',
             body: JSON.stringify(apiData),
         });
 
         if (response.accessToken) {
             await tokenService.saveToken(response.accessToken);
-            if (response.refreshToken) {
-                await tokenService.saveRefreshToken(response.refreshToken);
-            }
-
-            this.registerDeviceAfterLogin().catch(err =>
-                console.error('Background device registration failed:', err)
-            );
-
-            // if (!deviceInfo.fcmToken && deviceInfo.deviceId) {
-            //     setTimeout(() => {
-            //         expoNotificationService.sendTokenToBackend();
-            //     }, 1000);
-            // } else if (!deviceInfo.deviceId) {
-            //     console.log('⚠️ Нет deviceId для отправки FCM токена');
-            // }
-
-            console.log('✅ Registration token saved');
         }
 
-        return {
-            success: true,
-            message: 'Регистрация успешна',
-            data: response,
-            token: response.accessToken,
-            accessToken: response.accessToken,
-            refreshToken: response.refreshToken,
-        };
+        return response;
     }
 
-    async login(credentials: LoginCredentials): Promise<ApiResponse> {
-        console.log('📤 Sending login data to backend:', {
-            ...credentials,
-            password: '[HIDDEN]'
-        });
-
-        // ШАГ 1: Только email и пароль для логина
-        const response = await this.request<any>('/auth/login', {
+    /**
+     * 4. Классический логин по паролю (Email или Телефон)
+     */
+    async login(credentials: LoginData): Promise<LoginResponse> {
+        const response = await this.request<LoginResponse>('/auth/login', {
             method: 'POST',
-            body: JSON.stringify({
-                email: credentials.email,
-                password: credentials.password
-                // НИКАКИХ deviceId, fcmToken, platform!
-            }),
+            body: JSON.stringify(credentials),
         });
 
         if (response.accessToken) {
-            // Сохраняем токены
             await tokenService.saveToken(response.accessToken);
-            if (response.refreshToken) {
-                await tokenService.saveRefreshToken(response.refreshToken);
-            }
-
-            console.log('✅ Login successful, token saved');
-
-            // ШАГ 2: Отдельно отправляем push-токен на /devices
-            // Не блокируем ответ, делаем после логина
-            this.registerDeviceAfterLogin().catch(err =>
-                console.error('Background device registration failed:', err)
-            );
         }
 
-        return {
-            success: true,
-            message: 'Вход выполнен успешно',
-            data: response,
-            token: response.accessToken,
-            accessToken: response.accessToken,
-            refreshToken: response.refreshToken,
-        };
+        return response;
     }
 
-    private async registerDeviceAfterLogin(): Promise<void> {
-        try {
-            // Небольшая задержка, чтобы не нагружать сразу после логина
-            await new Promise(resolve => setTimeout(resolve, 1000));
+    /**
+     * 5. Подтверждение двухфакторной аутентификации (2FA)
+     */
+    async verifyTwoFactor(data: VerifyTwoFactorData): Promise<AuthTokens> {
+        const response = await this.request<AuthTokens>('/auth/verify-2fa', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
 
-            // Получаем информацию об устройстве
-            const deviceInfo = await this.getDeviceInfo();
-
-            if (!deviceInfo.fcmToken || !deviceInfo.deviceId) {
-                console.log('⚠️ No device info available');
-                return;
-            }
-
-            const authToken = await tokenService.getToken();
-            if (!authToken) {
-                console.log('⚠️ No auth token available');
-                return;
-            }
-
-            console.log('📤 Registering device with /devices:', {
-                deviceId: deviceInfo.deviceId,
-                platform: deviceInfo.platform,
-                hasToken: !!deviceInfo.fcmToken
-            });
-
-            // Отправляем на специальный эндпоинт /devices
-            const response = await fetch(`${API_BASE_URL}/devices`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`,
-                },
-                body: JSON.stringify({
-                    fcmToken: deviceInfo.fcmToken,
-                    deviceId: deviceInfo.deviceId,
-                    platform: deviceInfo.platform,
-                }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to register device');
-            }
-
-            console.log('✅ Device registered successfully');
-        } catch (error) {
-            console.error('❌ Failed to register device:', error);
+        if (response.accessToken) {
+            await tokenService.saveToken(response.accessToken);
         }
+
+        return response;
     }
 
-    async getProfile(): Promise<ApiResponse> {
+    /**
+     * 6. Выход из системы (инвалидация refresh-токена)
+     * В реальном проекте здесь нужно передавать refreshToken, но мы пока просто удаляем токены из памяти
+     */
+    async logout(): Promise<void> {
+        // Очищаем токен локально
+        await tokenService.clearTokens();
+        // Можно добавить запрос к бэкенду, если токен хранится где-то еще:
+        // await this.request<void>('/auth/logout', { method: 'POST', body: ...)
+    }
+
+    /**
+     * Получает профиль текущего пользователя
+     */
+    async getProfile(): Promise<{ success: boolean; data?: any }> {
         const token = await tokenService.getToken();
 
         if (!token) {
@@ -253,13 +167,6 @@ class AuthApiService {
             success: true,
             data: responseData,
         };
-    }
-
-    /**
-     * Обновляет FCM токен отдельно (если нужно)
-     */
-    async updateFCMToken(): Promise<boolean> {
-        return fcmService.sendTokenToBackend();
     }
 }
 

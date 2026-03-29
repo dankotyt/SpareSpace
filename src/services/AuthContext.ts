@@ -1,8 +1,8 @@
 import { createContext } from 'react';
-import {TelegramProfile} from "@services/api/telegramApi";
+import { TelegramProfile } from "@services/api/telegramApi";
+import { VerifySmsCodeResponse, LoginResponse } from '@/types/auth';
 
 export interface AuthContextType {
-    // Существующие свойства
     phone: string;
     email: string;
     password: string;
@@ -17,22 +17,32 @@ export interface AuthContextType {
     telegramLinked: boolean;
     telegramProfile: TelegramProfile | null;
 
-    // Существующие методы
+    // Новые токены для флоу авторизации
+    registerToken: string | null;
+    twoFactorToken: string | null;
+
     setPhone: (phone: string) => void;
     setEmail: (email: string) => void;
     setPassword: (password: string) => void;
     setFocus: (focused: boolean) => void;
+    setRegisterToken: (token: string | null) => void;
+    setTwoFactorToken: (token: string | null) => void;
+
     validatePhone: (phone: string) => boolean;
     validateEmail: (email: string) => boolean;
     validatePassword: (password: string) => boolean;
     switchScreen: (screen: 'phone' | 'email') => void;
-    checkPhone: () => Promise<{ exists: boolean; message: string }>;
-    login: () => Promise<any>;
+    
+    // Новые методы
+    requestSmsCode: () => Promise<void>;
+    verifySmsCode: (code: string) => Promise<VerifySmsCodeResponse>;
+    verifyTwoFactor: (code: string) => Promise<boolean>;
+    login: () => Promise<LoginResponse>;
+    
     logout: () => Promise<void>;
     clearError: () => void;
     refreshAuthStatus: () => Promise<boolean>;
 
-    // Telegram методы
     updateTelegramToken: (token: string, telegramId?: string) => Promise<boolean>;
     generateTelegramLink: () => Promise<string>;
     linkTelegramAccount: () => Promise<string>;

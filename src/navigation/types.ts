@@ -9,6 +9,7 @@ export type RootStackParamList = {
     PhoneAuth: undefined;
     EmailAuth: undefined;
     TelegramAuth: { link: string };
+    SmsVerification: { phone: string };
     Registration: undefined;
 
     // Профили

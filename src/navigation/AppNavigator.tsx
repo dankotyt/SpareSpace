@@ -3,6 +3,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { BottomTabNavigator } from './BottomTabNavigator';
 import { PhoneAuthScreen } from '@/screens/auth/PhoneAuthScreen';
 import { EmailAuthScreen } from '@/screens/auth/EmailAuthScreen';
+import { SmsVerificationScreen } from '@/screens/auth/SmsVerificationScreen';
 import { ProfileScreen } from '@screens/profile/ProfileScreen';
 import { MapScreen } from '@screens/map/MapScreen';
 import { RootStackParamList } from './types';
@@ -34,6 +35,7 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
             <Stack.Screen name="PhoneAuth" component={PhoneAuthScreen} />
             <Stack.Screen name="EmailAuth" component={EmailAuthScreen} />
+            <Stack.Screen name="SmsVerification" component={SmsVerificationScreen} />
             <Stack.Screen
                 name="TelegramAuth"
                 component={TelegramAuthScreen}

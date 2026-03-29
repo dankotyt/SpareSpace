@@ -1,17 +1,20 @@
 import { useState, useCallback } from 'react';
 import { authApiService } from '@services/api/authApi';
+import { useAuth } from '@hooks/auth/useAuth'; // Подключаем чтобы достать registerToken
 
 /**
  * Хук для управления логикой регистрации пользователя
  * Обрабатывает валидацию формы и отправку данных на сервер
  */
 export const useRegistration = () => {
+    // 1. Достаем registerToken из контекста авторизации
+    const { registerToken } = useAuth();
+
+    // 2. Убираем phone и email из стейта регистрации
     const [registrationData, setRegistrationData] = useState({
         firstName: '',
         lastName: '',
         patronymic: '',
-        phone: '',
-        email: '',
         password: '',
         confirmPassword: '',
     });
@@ -56,6 +59,7 @@ export const useRegistration = () => {
         }
     }, []);
 
+    // 3. Убираем валидацию phone и email
     /**
      * Валидирует значение конкретного поля формы
      * @param field - имя поля для валидации
@@ -75,22 +79,12 @@ export const useRegistration = () => {
                 return '';
 
             case 'patronymic':
-                if (value.length > 50) return 'Отчество не должно превышать 50 символов';
-                return '';
-
-            case 'email':
-                if (!value.trim()) return 'Email обязателен для заполнения';
-                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return 'Введите корректный email';
-                return '';
-
-            case 'phone':
-                if (!value.trim()) return 'Телефон обязателен для заполнения';
-                if (value.replace(/\D/g, '').length < 11) return 'Введите корректный номер телефона';
+                if (value && value.length > 50) return 'Отчество не должно превышать 50 символов';
                 return '';
 
             case 'password':
                 if (!value.trim()) return 'Пароль обязателен для заполнения';
-                if (value.length < 6) return 'Пароль должен содержать минимум 6 символов';
+                if (value.length < 8) return 'Пароль должен содержать минимум 8 символов';
                 return '';
 
             case 'confirmPassword':
@@ -102,12 +96,13 @@ export const useRegistration = () => {
         }
     }, [registrationData.password]);
 
+    // 4. Удаляем phone и email из списка обязательных полей 
     /**
      * Проверяет валидность всей формы регистрации
      * @returns Булево значение валидности формы
      */
     const isValid = useCallback(() => {
-        const requiredFields = ['firstName', 'lastName', 'phone', 'email', 'password', 'confirmPassword'];
+        const requiredFields = ['firstName', 'lastName', 'password', 'confirmPassword'];
 
         for (const field of requiredFields) {
             const error = validateField(field, registrationData[field as keyof typeof registrationData]);
@@ -117,6 +112,7 @@ export const useRegistration = () => {
         return registrationData.password === registrationData.confirmPassword;
     }, [registrationData, validateField]);
 
+    // 5. Отправляем данные с использованием registerToken
     /**
      * Отправляет данные регистрации на сервер
      * @returns Промис с результатом регистрации
@@ -124,6 +120,10 @@ export const useRegistration = () => {
      */
     const register = useCallback(async () => {
         setErrors({});
+
+        if (!registerToken) {
+            return { success: false, message: 'Отсутствует токен регистрации. Пожалуйста, подтвердите телефон заново.' };
+        }
 
         const newErrors: Record<string, string> = {};
         Object.keys(registrationData).forEach(field => {
@@ -141,69 +141,33 @@ export const useRegistration = () => {
         setIsLoading(true);
 
         try {
-            const cleanedPhone = registrationData.phone.replace(/[\s\-\(\)]/g, '');
-            const result = await authApiService.register({
+            // Передаем registerToken и обновленные данные
+            const result = await authApiService.completeRegistration({
+                registerToken: registerToken,
                 firstName: registrationData.firstName,
                 lastName: registrationData.lastName,
                 patronymic: registrationData.patronymic || undefined,
-                phone: cleanedPhone,
-                email: registrationData.email,
                 password: registrationData.password,
             });
 
-            if (result.success) {
+            // Если вернулся accessToken, значит регистрация успешна
+            if (result.accessToken) {
                 return { success: true, message: 'Регистрация успешна' };
             } else {
-                let fieldErrors: Record<string, string> = {};
-
-                if (result.message?.includes('Email already exists')) {
-                    fieldErrors.email = 'Этот email уже используется';
-                } else if (result.message?.includes('Phone already exists')) {
-                    fieldErrors.phone = 'Этот номер телефона уже используется';
-                } else if (result.message?.includes('email')) {
-                    fieldErrors.email = result.message;
-                } else if (result.message?.includes('phone')) {
-                    fieldErrors.phone = result.message;
-                } else if (result.message?.includes('firstName') || result.message?.includes('name')) {
-                    fieldErrors.firstName = result.message;
-                } else if (result.message?.includes('lastName')) {
-                    fieldErrors.lastName = result.message;
-                }
-
-                if (Object.keys(fieldErrors).length > 0) {
-                    setErrors(fieldErrors);
-                }
-
-                return {
-                    success: false,
-                    message: result.message || 'Ошибка регистрации'
-                };
+                return { success: false, message: 'Ошибка регистрации: токен не получен' };
             }
+
         } catch (error: any) {
             console.log('Registration error:', error);
-
-            let errorMessage = 'Произошла неизвестная ошибка';
-            let fieldErrors: Record<string, string> = {};
-
-            if (error.message?.includes('Email already exists')) {
-                fieldErrors.email = 'Этот email уже используется';
-                errorMessage = 'Этот email уже используется';
-            } else if (error.message?.includes('Phone already exists')) {
-                fieldErrors.phone = 'Этот номер телефона уже используется';
-                errorMessage = 'Этот номер телефона уже используется';
-            } else {
-                errorMessage = error.message || 'Ошибка сети';
-            }
-
-            if (Object.keys(fieldErrors).length > 0) {
-                setErrors(fieldErrors);
-            }
-
+            
+            // Пытаемся вытащить сообщение об ошибке с бэкенда
+            let errorMessage = error instanceof Error ? error.message : 'Произошла неизвестная ошибка';
+            
             return { success: false, message: errorMessage };
         } finally {
             setIsLoading(false);
         }
-    }, [registrationData, validateField]);
+    }, [registrationData, validateField, registerToken]);
 
     return {
         registrationData,

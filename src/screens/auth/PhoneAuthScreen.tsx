@@ -32,36 +32,18 @@ export const PhoneAuthScreen: React.FC = () => {
         setPhone,
         setFocus,
         switchScreen,
-        checkPhone,
+        requestSmsCode,
         clearError,
     } = useAuth();
 
     const handlePhoneLogin = async () => {
         try {
-            const result = await checkPhone();
-
-            if (result.exists) {
-                Alert.alert('Успешно', result.message);
-                // navigation.navigate('SmsVerification', { phone });
-            } else {
-                Alert.alert(
-                    'Номер не найден',
-                    result.message,
-                    [
-                        {
-                            text: 'Зарегистрироваться',
-                            onPress: () => navigation.navigate('Registration')
-                        },
-                        {
-                            text: 'Отмена',
-                            style: 'cancel'
-                        }
-                    ]
-                );
-            }
+            await requestSmsCode();
+            // Если запрос прошел успешно, переходим на экран ввода кода
+            navigation.navigate('SmsVerification' as any, { phone }); 
         } catch (error) {
-            console.log('Phone check error:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Ошибка проверки номера';
+            console.log('SMS request error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Ошибка отправки SMS';
             Alert.alert('Ошибка', errorMessage);
         }
     };

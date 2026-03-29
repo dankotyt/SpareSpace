@@ -37,6 +37,8 @@ export const useAuthLogic = () => {
     const [user, setUser] = useState<any>(null);
     const [telegramLinked, setTelegramLinked] = useState(false);
     const [telegramProfile, setTelegramProfile] = useState<TelegramProfile | null>(null);
+    const [registerToken, setRegisterToken] = useState<string | null>(null);
+    const [twoFactorToken, setTwoFactorToken] = useState<string | null>(null);
 
     /**
      * Проверяет соединение с Telegram аккаунтом пользователя
@@ -196,42 +198,67 @@ export const useAuthLogic = () => {
         }
     }, [phone, email, password, validatePhone, validateEmail, validatePassword]);
 
-    /**
-     * Проверяет существование телефона в системе через API
-     * @returns Промис с информацией о существовании телефона
-     * @throws Error при некорректном телефоне или ошибке сети
-     */
-    const checkPhone = useCallback(async (): Promise<{ exists: boolean; message: string }> => {
-        if (!validatePhone(phone)) {
-            throw new Error('Некорректный номер телефона');
-        }
-
+    const requestSmsCode = useCallback(async () => {
+        if (!validatePhone(phone)) throw new Error('Некорректный номер телефона');
         setIsLoading(true);
         setError(null);
-
         try {
-            const response = await authApiService.checkPhone({ phone });
-
-            if (response.exists) {
-                return {
-                    exists: true,
-                    message: 'Номер найден в системе. На ваш номер отправлено SMS.'
-                };
-            } else {
-                return {
-                    exists: false,
-                    message: 'Этот номер не зарегистрирован. Хотите зарегистрироваться?'
-                };
-            }
-
+            const cleanedPhone = phone.replace(/[\s\-\(\)]/g, '');
+            await authApiService.requestSmsCode(cleanedPhone);
         } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Ошибка проверки номера';
-            setError(errorMessage);
+            setError(err instanceof Error ? err.message : 'Ошибка отправки SMS');
             throw err;
         } finally {
             setIsLoading(false);
         }
     }, [phone, validatePhone]);
+
+    const verifySmsCode = useCallback(async (code: string) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const cleanedPhone = phone.replace(/[\s\-\(\)]/g, '');
+            const response = await authApiService.verifySmsCode({ phone: cleanedPhone, code });
+
+            if (response.requiresRegistration && response.registerToken) {
+                setRegisterToken(response.registerToken);
+            } else if (response.requiresTwoFactor && response.twoFactorToken) {
+                setTwoFactorToken(response.twoFactorToken);
+            } else if (response.accessToken) {
+                setIsAuthenticated(true);
+                const profileRes = await authApiService.getProfile();
+                if (profileRes.success && profileRes.data) setUser(profileRes.data);
+            }
+
+            return response;
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Неверный код');
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    }, [phone]);
+
+    const verifyTwoFactor = useCallback(async (code: string) => {
+        if (!twoFactorToken) throw new Error('Отсутствует токен 2FA');
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await authApiService.verifyTwoFactor({ twoFactorToken, code });
+            if (response.accessToken) {
+                setIsAuthenticated(true);
+                const profileRes = await authApiService.getProfile();
+                if (profileRes.success && profileRes.data) setUser(profileRes.data);
+                return true;
+            }
+            return false;
+        } catch(err) {
+            setError(err instanceof Error ? err.message : 'Неверный код 2FA');
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    }, [twoFactorToken]);
 
     /**
      * Выполняет вход пользователя по email и паролю
@@ -256,6 +283,11 @@ export const useAuthLogic = () => {
 
         try {
             const response = await authApiService.login({ email, password });
+            
+            if (response.requiresTwoFactor && response.twoFactorToken) {
+                setTwoFactorToken(response.twoFactorToken);
+                return response;
+            }
 
             if (response.accessToken) {
                 setIsAuthenticated(true);
@@ -280,9 +312,11 @@ export const useAuthLogic = () => {
      */
     const logout = useCallback(async () => {
         try {
-            await tokenService.removeToken();
+            // await tokenService.removeToken();
+            await authApiService.logout();
         } catch (error) {
-            console.error('Error removing token:', error);
+            // console.error('Error removing token:', error);
+            console.error('Error logging out:', error);
         }
 
         setIsAuthenticated(false);
@@ -290,6 +324,8 @@ export const useAuthLogic = () => {
         setPhone('+7');
         setEmail('');
         setPassword('');
+        setRegisterToken(null);
+        setTwoFactorToken(null);
         setError(null);
     }, []);
 
@@ -418,17 +454,24 @@ export const useAuthLogic = () => {
         user,
         telegramLinked,
         telegramProfile,
+        registerToken,
+        twoFactorToken,
 
         // Методы
         setPhone: handleSetPhone,
         setEmail: handleSetEmail,
         setPassword: handleSetPassword,
         setFocus: handleSetFocus,
+        setRegisterToken,
+        setTwoFactorToken,
         validatePhone,
         validateEmail,
         validatePassword,
         switchScreen,
-        checkPhone,
+        
+        requestSmsCode,
+        verifySmsCode,
+        verifyTwoFactor,
         login,
         logout,
         clearError,

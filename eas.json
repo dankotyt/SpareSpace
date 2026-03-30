@@ -5,6 +5,17 @@
   "build": {
     "development": {
       "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "YANDEX_MAP_API_KEY": "739cf6b7-3d35-49b9-ad0a-d6c751d9ad85",
+        "YANDEX_MAP_GEOCODER_API_KEY": "ccf14e9f-cd50-45db-8464-6cb58bf512f5",
+        "API_BASE_URL": "http://188.225.11.17:3000"
+      }
+    },
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      },
       "distribution": "internal"
     },
     "production": {

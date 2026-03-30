@@ -9,6 +9,8 @@ import { useAuth } from '@hooks/auth/useAuth';
 import { expoNotificationService } from '@services/expoNotificationService';
 import { tokenService } from '@services/tokenService';
 import * as Notifications from 'expo-notifications';
+import {YANDEX_MAP_CONFIG} from "@/config/mapConfig";
+import {YaMap} from "react-native-yamap";
 
 if (Platform.OS === 'android') {
     (Text as any).defaultProps = (Text as any).defaultProps || {};
@@ -16,6 +18,13 @@ if (Platform.OS === 'android') {
 
     (TextInput as any).defaultProps = (TextInput as any).defaultProps || {};
     (TextInput as any).defaultProps.allowFontScaling = false;
+}
+
+if (YANDEX_MAP_CONFIG.apiKey) {
+    YaMap.init(YANDEX_MAP_CONFIG.apiKey);
+    console.log('✅ Yandex Maps initialized');
+} else {
+    console.warn('⚠️ Yandex Maps API key not found');
 }
 // Используем возвращаемый тип из методов Notifications
 const DeepLinkHandler: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -102,6 +111,21 @@ const NotificationInitializer: React.FC<{ children: React.ReactNode }> = ({ chil
 };
 
 export default function App() {
+    useEffect(() => {
+        const initMap = async () => {
+            try {
+                if (YANDEX_MAP_CONFIG.apiKey) {
+                    await YaMap.init(YANDEX_MAP_CONFIG.apiKey);
+                } else {
+                    console.warn('Нет API ключа');
+                }
+            } catch (error) {
+                console.error('Ошибка при инициализации YaMap:', error);
+            }
+        };
+
+        initMap();
+    }, []);
     return (
         <AuthProvider>
             <AdvertisementProvider>

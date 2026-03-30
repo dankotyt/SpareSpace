@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {expoNotificationService} from "@services/expoNotificationService";
+import { fcmService } from "@services/fcmService";
 
 class TokenService {
     private readonly TOKEN_KEY = 'access_token';
@@ -65,7 +65,7 @@ class TokenService {
                 this.DEVICE_ID_KEY
             ]);
             // Удаляем FCM токен при выходе
-            await expoNotificationService.deleteToken();
+            await fcmService.deleteToken();
         } catch (error) {
             console.error('Error clearing tokens:', error);
         }

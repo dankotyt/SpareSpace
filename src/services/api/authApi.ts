@@ -1,5 +1,5 @@
 import { tokenService } from "@services/tokenService";
-import { expoNotificationService } from "@services/expoNotificationService";
+import { fcmService } from "@services/fcmService";
 import { RegistrationData, LoginCredentials } from '@/types/auth';
 import { API_BASE_URL } from '@/config/env';
 import { Platform } from 'react-native';
@@ -49,7 +49,7 @@ class AuthApiService {
      */
     private async getDeviceInfo() {
         try {
-            const pushToken = await expoNotificationService.getPushToken(); // Используем notificationService
+            const pushToken = await fcmService.getFCMToken();
             return {
                 fcmToken: pushToken, // Отправляем как fcmToken для совместимости с бэкендом
                 deviceId: await this.getDeviceId(),
@@ -69,8 +69,6 @@ class AuthApiService {
      * Получает или генерирует ID устройства
      */
     private async getDeviceId(): Promise<string> {
-        // Здесь можно использовать react-native-device-info
-        // или другой способ получения уникального ID
         const savedDeviceId = await tokenService.getDeviceId();
         if (savedDeviceId) {
             return savedDeviceId;
@@ -89,9 +87,6 @@ class AuthApiService {
 
     async register(userData: RegistrationData): Promise<ApiResponse> {
         const { confirmPassword, firstName, lastName, patronymic, ...restData } = userData;
-
-        // Получаем информацию об устройстве
-        const deviceInfo = await this.getDeviceInfo();
 
         const apiData = {
             ...restData,
@@ -264,7 +259,7 @@ class AuthApiService {
      * Обновляет FCM токен отдельно (если нужно)
      */
     async updateFCMToken(): Promise<boolean> {
-        return expoNotificationService.sendTokenToBackend();
+        return fcmService.sendTokenToBackend();
     }
 }
 

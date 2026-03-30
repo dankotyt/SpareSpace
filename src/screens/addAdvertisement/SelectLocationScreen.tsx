@@ -10,38 +10,40 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import MapView, { Marker, PROVIDER_DEFAULT, Region } from 'react-native-maps';
+import YaMap, { Marker, InitialRegion } from 'react-native-yamap';
 import { Ionicons } from '@expo/vector-icons';
 import { BackButton } from '@/components/ui/BackButton';
 import { COLORS } from '@/shared/constants/colors';
 import { RootStackParamList } from '@/navigation/types';
 import { geocodingService } from '@/services/mapGeocodingService';
 import debounce from 'lodash/debounce';
-import {LocationData} from "@/types/advertisement";
+import { LocationData } from "@/types/advertisement";
 
 type SelectLocationScreenNavigationProp = StackNavigationProp<RootStackParamList, 'SelectLocationScreen'>;
 
 export const SelectLocationScreen: React.FC = () => {
     const navigation = useNavigation<SelectLocationScreenNavigationProp>();
     const route = useRoute();
-
     const params = route.params as any;
+
     const [selectedLocation, setSelectedLocation] = useState<{
         latitude: number;
         longitude: number;
     } | null>(params?.initialLocation || null);
-
     const [currentAddress, setCurrentAddress] = useState<string>('');
     const [isLoadingAddress, setIsLoadingAddress] = useState(false);
-    const [region, setRegion] = useState<Region>({
-        latitude: 55.7558,
-        longitude: 37.6173,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-    });
 
-    const mapRef = useRef<MapView>(null);
-    const onLocationSelect = params?.onLocationSelect;
+    const mapRef = useRef<YaMap>(null);
+
+    // начальный регион карты
+    const initialRegion: InitialRegion = {
+        lat: 55.7558,
+        lon: 37.6173,
+        zoom: 12,
+        tilt: 0,
+        azimuth: 0,
+    };
+
     const debouncedGeocode = useCallback(
         debounce(async (location: { latitude: number; longitude: number }) => {
             try {
@@ -58,14 +60,16 @@ export const SelectLocationScreen: React.FC = () => {
         []
     );
 
+    // Обработка нажатия на карту – координаты приходят напрямую в event.nativeEvent
     const handleMapPress = (event: any) => {
-        const { coordinate } = event.nativeEvent;
+        const { lat, lon } = event.nativeEvent; // <-- исправлено
+        const coordinate = { latitude: lat, longitude: lon };
         setSelectedLocation(coordinate);
         debouncedGeocode(coordinate);
-    };
-
-    const handleRegionChange = (newRegion: Region) => {
-        setRegion(newRegion);
+        // центрируем карту на выбранной точке
+        if (mapRef.current) {
+            mapRef.current.setCenter({ lat, lon }, 15, 0, 0, 0.5);
+        }
     };
 
     const handleConfirmLocation = async () => {
@@ -73,24 +77,16 @@ export const SelectLocationScreen: React.FC = () => {
             Alert.alert('Ошибка', 'Пожалуйста, выберите местоположение на карте');
             return;
         }
-
         try {
             setIsLoadingAddress(true);
             const address = currentAddress || await geocodingService.reverseGeocode(selectedLocation);
-
             const locationData: LocationData = {
                 ...selectedLocation,
                 address
             };
-
             const onLocationSelected = (route.params as any)?.onLocationSelected;
-
-            if (onLocationSelected) {
-                onLocationSelected(locationData);
-            }
-
+            if (onLocationSelected) onLocationSelected(locationData);
             navigation.goBack();
-
         } catch (error) {
             console.error('Error getting address:', error);
             Alert.alert('Ошибка', 'Не удалось определить адрес. Попробуйте еще раз.');
@@ -99,37 +95,33 @@ export const SelectLocationScreen: React.FC = () => {
         }
     };
 
-    const handleBack = () => {
-        navigation.goBack();
-    };
+    const handleBack = () => navigation.goBack();
 
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <BackButton onPress={handleBack} backgroundColor={COLORS.white}/>
+                <BackButton onPress={handleBack} backgroundColor={COLORS.white} />
                 <Text style={styles.title}>Выберите местоположение</Text>
             </View>
 
-            <MapView
+            <YaMap
                 ref={mapRef}
                 style={styles.map}
-                provider={PROVIDER_DEFAULT}
-                region={region}
-                onRegionChangeComplete={handleRegionChange}
-                onPress={handleMapPress}
-                showsUserLocation={true}
-                showsMyLocationButton={true}
-                showsCompass={true}
-                showsScale={true}
+                initialRegion={initialRegion}
+                onMapPress={handleMapPress}
+                showUserPosition={true}
             >
                 {selectedLocation && (
-                    <Marker coordinate={selectedLocation}>
+                    <Marker point={{
+                        lat: selectedLocation.latitude,
+                        lon: selectedLocation.longitude
+                    }}>
                         <View style={styles.marker}>
                             <Ionicons name="location" size={32} color={COLORS.primary} />
                         </View>
                     </Marker>
                 )}
-            </MapView>
+            </YaMap>
 
             <View style={styles.instruction}>
                 <Ionicons name="information-circle-outline" size={20} color={COLORS.primary} />

@@ -15,14 +15,14 @@ export default {
         },
         ios: {
             supportsTablet: true,
-            bundleIdentifier: "com.sparespace"
+            bundleIdentifier: "com.spare_space"
         },
         android: {
             adaptiveIcon: {
                 foregroundImage: "./assets/adaptive-icon.png",
                 backgroundColor: "#ffffff"
             },
-            package: "com.sparespace"
+            package: "com.spare_space"
         },
         web: {
             favicon: "./assets/favicon.png"

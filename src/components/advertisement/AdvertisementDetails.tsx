@@ -9,7 +9,7 @@ import {
     Alert, Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import MapView, { Marker } from 'react-native-maps';
+import YaMap, {Marker, CameraPosition, InitialRegion} from 'react-native-yamap';
 import { COLORS } from '@/shared/constants/colors';
 import { Listing } from "@/types/profile";
 import {formatListingForDisplay, formatNumberWithSpaces} from "@shared/utils/listingFormatter";
@@ -139,6 +139,24 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
         const favorite = await favoritesService.isListingFavorite(listing.id);
         setIsFavorite(favorite);
     };
+
+    /**
+     * Возвращает начальный регион для карты в формате CameraPosition
+     */
+    const getInitialRegionForMap = (): InitialRegion | undefined => {
+        const coordinates = parseLocation(listing.location);
+        if (coordinates) {
+            return {
+                lat: coordinates.latitude,
+                lon: coordinates.longitude,
+                zoom: 15,
+                tilt: 0,
+                azimuth: 0,
+            };
+        }
+        return undefined;
+    };
+
 
     /**
      * Обрабатывает добавление/удаление объявления из избранного
@@ -664,22 +682,29 @@ export const AdvertisementDetails: React.FC<AdvertisementDetailsProps> = ({
                 <Text style={styles.address}>{listing.address}</Text>
             </View>
 
-            {/* Карта */}
+            {/* Расположение */}
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Расположение</Text>
                 <TouchableOpacity style={styles.mapContainer} onPress={handleMapPress}>
-                    <MapView
-                        style={styles.map}
-                        initialRegion={getInitialRegion()}
-                        scrollEnabled={false}
-                        zoomEnabled={false}
-                        pitchEnabled={false}
-                        rotateEnabled={false}
-                    >
-                        {parseLocation(listing.location) && (
-                            <Marker coordinate={parseLocation(listing.location)!} />
-                        )}
-                    </MapView>
+                    {getInitialRegionForMap() ? (
+                        <YaMap
+                            style={styles.map}
+                            initialRegion={getInitialRegionForMap()!}
+                            scrollGesturesEnabled={false}
+                            zoomGesturesEnabled={false}
+                            tiltGesturesEnabled={false}
+                            rotateGesturesEnabled={false}
+                        >
+                            <Marker point={{
+                                lat: parseLocation(listing.location)!.latitude,
+                                lon: parseLocation(listing.location)!.longitude
+                            }} />
+                        </YaMap>
+                    ) : (
+                        <View style={[styles.map, styles.mapPlaceholder]}>
+                            <Text>Адрес: {listing.address}</Text>
+                        </View>
+                    )}
                 </TouchableOpacity>
             </View>
 
@@ -1005,6 +1030,13 @@ const styles = StyleSheet.create({
     amenityText: {
         fontSize: 12,
         color: COLORS.primary,
+    },
+    mapPlaceholder: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: COLORS.gray[100],
+        borderRadius: 8,
+        padding: 16,
     },
     description: {
         fontSize: 14,

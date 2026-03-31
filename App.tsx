@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import {Linking, Platform, TextInput, Text} from 'react-native';
+import {Linking, Platform, TextInput, Text, ActivityIndicator, View} from 'react-native';
 import { AppNavigator } from '@/navigation/AppNavigator';
 import { AuthProvider } from '@/services/AuthProvider';
 import { AdvertisementProvider } from '@/services/AdvertisementContext';
@@ -10,6 +10,8 @@ import { tokenService } from '@services/tokenService';
 import { fcmService } from '@services/fcmService';
 import {YANDEX_MAP_CONFIG} from "@/config/mapConfig";
 import {YaMap} from "react-native-yamap";
+import * as Font from 'expo-font';
+import { Ionicons } from '@expo/vector-icons';
 
 if (Platform.OS === 'android') {
     (Text as any).defaultProps = (Text as any).defaultProps || {};
@@ -101,6 +103,8 @@ const NotificationInitializer: React.FC<{ children: React.ReactNode }> = ({ chil
 };
 
 export default function App() {
+    const [setFontsLoaded] = useState(false);
+
     useEffect(() => {
         const initMap = async () => {
             try {
@@ -116,6 +120,17 @@ export default function App() {
 
         initMap();
     }, []);
+
+    useEffect(() => {
+        const loadFonts = async () => {
+            await Font.loadAsync({
+                ...Ionicons.font,
+            });
+            setFontsLoaded(true);
+        };
+        loadFonts();
+    }, []);
+
     return (
         <AuthProvider>
             <AdvertisementProvider>

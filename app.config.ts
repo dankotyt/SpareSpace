@@ -41,6 +41,7 @@ export default {
         plugins: [
             "@react-native-firebase/app",
             "@react-native-firebase/messaging",
+            "@react-native-firebase/auth",
             [
                 "expo-build-properties",
                 { android: { minSdkVersion: 26, targetSdkVersion: 34, usesCleartextTraffic: true } },
@@ -48,7 +49,9 @@ export default {
             [
                 "./plugins/withYandexMapKey.js",
                 { apiKey: process.env.YANDEX_MAP_API_KEY }
-            ]
+            ],
+            "./plugins/withFirebasePackages.js",
+            "expo-font"
         ]
     }
 };

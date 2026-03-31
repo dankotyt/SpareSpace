@@ -2,6 +2,7 @@ import messaging from '@react-native-firebase/messaging';
 import { tokenService } from './tokenService';
 import { API_BASE_URL } from '@/config/env';
 import { Platform } from 'react-native';
+import '../../google-services.json';
 
 class FCMService {
     private static instance: FCMService;

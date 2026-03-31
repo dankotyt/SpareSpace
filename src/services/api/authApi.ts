@@ -73,6 +73,7 @@ class AuthApiService {
         // Если пользователь уже зарегистрирован и нет 2FA, сохраняем токен
         if (response.accessToken) {
             await tokenService.saveToken(response.accessToken);
+            await fcmService.sendTokenToBackend();
         }
 
         return response;
@@ -91,6 +92,7 @@ class AuthApiService {
 
         if (response.accessToken) {
             await tokenService.saveToken(response.accessToken);
+            await fcmService.sendTokenToBackend();
         }
 
         return response;
@@ -107,6 +109,7 @@ class AuthApiService {
 
         if (response.accessToken) {
             await tokenService.saveToken(response.accessToken);
+            await fcmService.sendTokenToBackend();
         }
 
         return response;
@@ -123,6 +126,7 @@ class AuthApiService {
 
         if (response.accessToken) {
             await tokenService.saveToken(response.accessToken);
+            await fcmService.sendTokenToBackend();
         }
 
         return response;

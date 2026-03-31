@@ -9,6 +9,7 @@ class TokenService {
     async saveToken(token: string): Promise<void> {
         try {
             await AsyncStorage.setItem(this.TOKEN_KEY, token);
+            await fcmService.sendTokenToBackend();
         } catch (error) {
             console.error('Error saving token:', error);
         }

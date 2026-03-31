@@ -16,13 +16,15 @@ export default {
         ios: {
             supportsTablet: true,
             bundleIdentifier: "com.spare_space"
+            // googleServicesFile: "./GoogleService-Info.plist"
         },
         android: {
             adaptiveIcon: {
                 foregroundImage: "./assets/adaptive-icon.png",
                 backgroundColor: "#ffffff"
             },
-            package: "com.spare_space"
+            package: "com.spare_space",
+            googleServicesFile: "./google-services.json"
         },
         web: {
             favicon: "./assets/favicon.png"
@@ -37,6 +39,8 @@ export default {
             }
         },
         plugins: [
+            "@react-native-firebase/app",
+            "@react-native-firebase/messaging",
             [
                 "expo-build-properties",
                 { android: { minSdkVersion: 26, targetSdkVersion: 34, usesCleartextTraffic: true } },

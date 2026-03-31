@@ -86,7 +86,7 @@ export const useAuthLogic = () => {
             }
 
         } catch (error) {
-            await tokenService.removeToken();
+            await tokenService.clearTokens();
             setUser(null);
             setTelegramLinked(false);
             setTelegramProfile(null);

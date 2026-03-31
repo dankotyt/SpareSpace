@@ -40,13 +40,13 @@ export type ListingResponse = Listing;
 class ListingApiService {
 
     /**
-     * Базовый метод для выполнения авторизованных HTTP запросов
+     * Авторизованный метод для выполнения авторизованных HTTP запросов
      * @param endpoint - конечная точка API
      * @param options - опции запроса fetch
      * @returns Промис с данными ответа
      * @throws Error при отсутствии токена или ошибке сервера
      */
-    private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    private async authRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
         const url = `${API_BASE_URL}${endpoint}`;
         const token = await tokenService.getToken();
 
@@ -74,12 +74,36 @@ class ListingApiService {
     }
 
     /**
+     * Метод для публичных запросов (без авторизации)
+     */
+    private async publicRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+        const url = `${API_BASE_URL}${endpoint}`;
+
+        const config: RequestInit = {
+            headers: {
+                'Content-Type': 'application/json',
+                ...options.headers,
+            },
+            ...options,
+        };
+
+        const response = await fetch(url, config);
+        const responseData = await response.json();
+
+        if (!response.ok) {
+            throw new Error(responseData.message || `HTTP error! status: ${response.status}`);
+        }
+
+        return responseData;
+    }
+
+    /**
      * Создает новое объявление (парковочное место, гараж или кладовую)
      * @param listingData - данные для создания объявления
      * @returns Промис с созданным объявлением в формате для отображения
      */
     async createListing(listingData: CreateListingRequest): Promise<ListingResponse> {
-        const result = await this.request<ListingResponse>('/listings', {
+        const result = await this.authRequest<ListingResponse>('/listings', {
             method: 'POST',
             body: JSON.stringify(listingData),
         });
@@ -110,7 +134,7 @@ class ListingApiService {
             return listings.map(formatListingForDisplay);
 
         } catch (error) {
-            const response = await this.request<{ listings: ListingResponse[] }>('/listings');
+            const response = await this.publicRequest<{ listings: ListingResponse[] }>('/listings');
             const listings = response.listings || [];
             return listings.map(formatListingForDisplay);
         }
@@ -126,7 +150,7 @@ class ListingApiService {
             if (profileResponse.success && profileResponse.data) {
                 const userId = profileResponse.data.id;
 
-                const response = await this.request<{ listings: ListingResponse[] }>(`/listings/user/${userId}`);
+                const response = await this.authRequest<{ listings: ListingResponse[] }>(`/listings/user/${userId}`);
                 const listings = response.listings || [];
 
                 return listings.map(formatListingForDisplay);
@@ -145,7 +169,7 @@ class ListingApiService {
      * @returns Промис с данными объявления в формате для отображения
      */
     async getListingById(id: number): Promise<ListingResponse> {
-        const listing = await this.request<ListingResponse>(`/listings/${id}`);
+        const listing = await this.publicRequest<ListingResponse>(`/listings/${id}`);
 
         return formatListingForDisplay(listing);
     }
@@ -157,7 +181,7 @@ class ListingApiService {
      * @returns Промис с обновленным объявлением
      */
     async updateListing(id: number, listingData: Partial<CreateListingRequest>): Promise<ListingResponse> {
-        const listing = await this.request<ListingResponse>(`/listings/${id}`, {
+        const listing = await this.authRequest<ListingResponse>(`/listings/${id}`, {
             method: 'PATCH',
             body: JSON.stringify(listingData),
         });
@@ -170,7 +194,7 @@ class ListingApiService {
      * @param id - ID объявления для удаления
      */
     async deleteListing(id: number): Promise<void> {
-        await this.request(`/listings/${id}`, {
+        await this.authRequest(`/listings/${id}`, {
             method: 'DELETE',
         });
     }

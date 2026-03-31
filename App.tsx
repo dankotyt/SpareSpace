@@ -19,12 +19,6 @@ if (Platform.OS === 'android') {
     (TextInput as any).defaultProps.allowFontScaling = false;
 }
 
-if (YANDEX_MAP_CONFIG.apiKey) {
-    YaMap.init(YANDEX_MAP_CONFIG.apiKey);
-    console.log('✅ Yandex Maps initialized');
-} else {
-    console.warn('⚠️ Yandex Maps API key not found');
-}
 // Используем возвращаемый тип из методов Notifications
 const DeepLinkHandler: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { updateTelegramToken } = useAuth();
